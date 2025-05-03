@@ -2,6 +2,18 @@
 name = "par-reader"
 version = "0.1.0"
 edition = "2024"
+description = "A Rust library for reading Parquet files with schema validation and advanced filtering"
 
 [dependencies]
-parquet = "55.0.0"
+parquet = { version = "55.0.0", features = ["async", "arrow"] }
+arrow = "55.0.0"
+# Async support
+tokio = { version = "1.36.0", features = ["full"] }
+futures = "0.3.30"
+# Parallel processing
+rayon = "1.8.1"
+# Logging
+log = "0.4.20"
+env_logger = "0.11.3"
+# Error handling
+thiserror = "1.0.57"

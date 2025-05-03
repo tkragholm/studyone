@@ -1,45 +1,41 @@
 //! Error handling for the `ParquetReader`.
 
-use std::{io, fmt};
+use std::io;
+use arrow::error::ArrowError;
 use parquet::errors::ParquetError;
+use thiserror::Error;
 
 /// Specialized error type for the `ParquetReader`
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum ParquetReaderError {
     /// Error opening or reading a file
-    IoError(io::Error),
+    #[error("IO error: {0}")]
+    IoError(#[from] io::Error),
+    
     /// Error processing Parquet data
-    ParquetError(ParquetError),
+    #[error("Parquet error: {0}")]
+    ParquetError(#[from] ParquetError),
+    
+    /// Error with Arrow data processing
+    #[error("Arrow error: {0}")]
+    ArrowError(#[from] ArrowError),
+    
     /// Error with schema compatibility
+    #[error("Schema error: {0}")]
     SchemaError(String),
+    
     /// Error with file metadata
+    #[error("Metadata error: {0}")]
     MetadataError(String),
+    
+    /// Error with filter expression
+    #[error("Filter error: {0}")]
+    FilterError(String),
+    
+    /// Error with async operations
+    #[error("Async error: {0}")]
+    AsyncError(String),
 }
-
-impl From<io::Error> for ParquetReaderError {
-    fn from(error: io::Error) -> Self {
-        Self::IoError(error)
-    }
-}
-
-impl From<ParquetError> for ParquetReaderError {
-    fn from(error: ParquetError) -> Self {
-        Self::ParquetError(error)
-    }
-}
-
-impl fmt::Display for ParquetReaderError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::IoError(e) => write!(f, "IO error: {e}"),
-            Self::ParquetError(e) => write!(f, "Parquet error: {e}"),
-            Self::SchemaError(msg) => write!(f, "Schema error: {msg}"),
-            Self::MetadataError(msg) => write!(f, "Metadata error: {msg}"),
-        }
-    }
-}
-
-impl std::error::Error for ParquetReaderError {}
 
 /// Result type for `ParquetReader` operations
 pub type Result<T> = std::result::Result<T, ParquetReaderError>;

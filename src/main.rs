@@ -1,25 +1,61 @@
 use par_reader::{
-    ParquetReader, ParquetReaderConfig, Result,
+    // Arrow types
+    ArrowSchema,
+    // Filtering
+    Expr,
+    LiteralValue,
+    // Original types
+    ParquetReader,
+    ParquetReaderConfig,
+    RecordBatch,
+    Result,
+    load_parquet_files_parallel,
+    load_parquet_files_parallel_async,
+    // Utility functions
+    read_parquet,
+    // Async functionality
+    read_parquet_async,
+    read_parquet_with_filter_async,
 };
+
 use parquet::file::metadata::ParquetMetaDataReader;
 use parquet::file::reader::{FileReader, SerializedFileReader};
+use std::collections::HashSet;
 use std::fs::File;
+use std::path::Path;
+use std::sync::Arc;
+use std::time::Instant;
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
+    // Setup logging
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
+
     // Create reader config
-    let _config = ParquetReaderConfig {
+    let config = ParquetReaderConfig {
         read_page_indexes: true,
         validate_schema: true,
         fail_on_schema_incompatibility: false,
         ..Default::default()
     };
 
-    // Real files for testing
+    // Real files for testing - adjust these paths to your environment
     let paths = vec![
         "/Users/tobiaskragholm/generated_data/parquet/akm/2020.parquet",
         "/Users/tobiaskragholm/generated_data/parquet/akm/2021.parquet",
         "/Users/tobiaskragholm/generated_data/parquet/akm/2022.parquet",
     ];
+
+    // If the files don't exist, use an example message
+    if !Path::new(&paths[0]).exists() {
+        println!("Example files not found. This is a demo of the library's capabilities.");
+        println!(
+            "To use this example, adjust the file paths in the code to your own Parquet files."
+        );
+        return Ok(());
+    }
+
+    println!("============= ORIGINAL IMPLEMENTATION =============");
 
     let mut reader = ParquetReader::new();
 
@@ -35,62 +71,185 @@ fn main() -> Result<()> {
         }
     }
 
-    // Simplified approach: just read files directly
-    println!("\nReading files individually:");
+    // Schema validation
+    println!("\nValidating schemas across files:");
+    match reader.validate_schemas(&path_refs) {
+        Ok(()) => println!("  All schemas are compatible"),
+        Err(e) => println!("  Schema validation error: {e}"),
+    }
 
-    for path in &paths {
-        println!("\nFile: {path}");
+    // Get detailed schema compatibility report
+    println!("\nDetailed schema compatibility report:");
+    match reader.get_schema_compatibility_report(&path_refs) {
+        Ok(report) => {
+            println!("  Compatible: {}", report.compatible);
+            if !report.issues.is_empty() {
+                println!("  Issues found:");
+                for issue in report.issues {
+                    println!("    - {:#?}", issue);
+                }
+            } else {
+                println!("  No issues found");
+            }
+        }
+        Err(e) => println!("  Error getting schema report: {e}"),
+    }
 
-        match File::open(path) {
-            Ok(file) => {
-                match SerializedFileReader::new(file) {
-                    Ok(reader) => {
-                        let metadata = reader.metadata();
-                        println!("  Number of rows: {}", metadata.file_metadata().num_rows());
-                        println!("  Number of row groups: {}", metadata.num_row_groups());
+    println!("\n============= NEW ARROW IMPLEMENTATION =============");
 
-                        // Print column names
-                        let schema = metadata.file_metadata().schema();
-                        println!("  Columns:");
-                        for field in schema.get_fields() {
-                            println!("    - {}", field.name());
-                        }
+    // Example: Read a single file with Arrow
+    if let Some(path) = paths.first() {
+        println!("\nReading a single file with Arrow ({path}):");
+        let start = Instant::now();
+        match read_parquet(Path::new(path), None, None) {
+            Ok(batches) => {
+                println!(
+                    "  Read {} record batches in {:?}",
+                    batches.len(),
+                    start.elapsed()
+                );
+                println!(
+                    "  Total rows: {}",
+                    batches.iter().map(|b| b.num_rows()).sum::<usize>()
+                );
 
-                        // Print a few rows
-                        println!("  Sample rows:");
-                        let mut row_iter = reader.into_iter();
-                        for i in 0..3 {
-                            match row_iter.next() {
-                                Some(Ok(row)) => println!("    Row {i}: {row}"),
-                                Some(Err(e)) => println!("    Error: {e}"),
-                                None => break,
+                // Print some sample data from the first batch
+                if let Some(first_batch) = batches.first() {
+                    println!("\n  Schema:");
+                    for field in first_batch.schema().fields() {
+                        println!("    - {} ({})", field.name(), field.data_type());
+                    }
+
+                    println!("\n  First 3 rows:");
+                    for row_idx in 0..std::cmp::min(3, first_batch.num_rows()) {
+                        print!("    Row {row_idx}: [");
+                        for col_idx in 0..first_batch.num_columns() {
+                            let column = first_batch.column(col_idx);
+                            print!("{}: ", first_batch.schema().field(col_idx).name());
+
+                            if column.is_null(row_idx) {
+                                print!("NULL");
+                            } else {
+                                print!("Value"); // Simplified - actual value display would depend on column type
+                            }
+
+                            if col_idx < first_batch.num_columns() - 1 {
+                                print!(", ");
                             }
                         }
+                        println!("]");
                     }
-                    Err(e) => println!("  Error reading parquet file: {e}"),
                 }
             }
-            Err(e) => println!("  Error opening file: {e}"),
+            Err(e) => println!("  Error reading file: {e}"),
         }
     }
 
-    // Simple sequential reading
-    println!("\nSimple sequential multi-file reading:");
-    let mut total_rows = 0;
+    // Example: Parallel reading of multiple files
+    println!("\nReading multiple files in parallel:");
+    let start = Instant::now();
+    match load_parquet_files_parallel(Path::new(&paths[0]).parent().unwrap(), None, None) {
+        Ok(batches) => {
+            println!(
+                "  Read {} record batches in {:?}",
+                batches.len(),
+                start.elapsed()
+            );
+            println!(
+                "  Total rows: {}",
+                batches.iter().map(|b| b.num_rows()).sum::<usize>()
+            );
+        }
+        Err(e) => println!("  Error reading files: {e}"),
+    }
 
-    for path in &paths {
-        if let Ok(file) = File::open(path) {
-            if let Ok(reader) = SerializedFileReader::new(file) {
-                let file_rows = reader.metadata().file_metadata().num_rows();
-                total_rows += file_rows;
-                println!("  Read {file_rows} rows from {path}");
+    println!("\n============= FILTERING CAPABILITIES =============");
+
+    // Example: Create and use a simple filter
+    println!("\nFiltering with a simple condition (year > 2020):");
+    let filter_expr = Expr::Gt("year".to_string(), LiteralValue::Int(2020));
+
+    if let Some(path) = paths.first() {
+        match read_parquet_with_filter_async(Path::new(path), &filter_expr, None, None).await {
+            Ok(batches) => {
+                println!("  Filtered to {} record batches", batches.len());
+                println!(
+                    "  Total filtered rows: {}",
+                    batches.iter().map(|b| b.num_rows()).sum::<usize>()
+                );
             }
+            Err(e) => println!("  Error applying filter: {e}"),
         }
     }
 
-    println!("  Total rows: {total_rows}");
+    // Example: Create and use a more complex filter
+    println!("\nFiltering with a complex condition (year > 2020 AND status = 'active'):");
+    let complex_filter = Expr::And(vec![
+        Expr::Gt("year".to_string(), LiteralValue::Int(2020)),
+        Expr::Eq(
+            "status".to_string(),
+            LiteralValue::String("active".to_string()),
+        ),
+    ]);
 
-    // Example 3: Read metadata with page indexes
+    if let Some(path) = paths.first() {
+        match read_parquet_with_filter_async(Path::new(path), &complex_filter, None, None).await {
+            Ok(batches) => {
+                println!("  Filtered to {} record batches", batches.len());
+                println!(
+                    "  Total filtered rows: {}",
+                    batches.iter().map(|b| b.num_rows()).sum::<usize>()
+                );
+            }
+            Err(e) => println!("  Error applying complex filter: {e}"),
+        }
+    }
+
+    println!("\n============= ASYNC CAPABILITIES =============");
+
+    // Example: Read asynchronously
+    println!("\nReading a file asynchronously:");
+    if let Some(path) = paths.first() {
+        let start = Instant::now();
+        match read_parquet_async(Path::new(path), None, None).await {
+            Ok(batches) => {
+                println!(
+                    "  Read {} record batches in {:?}",
+                    batches.len(),
+                    start.elapsed()
+                );
+                println!(
+                    "  Total rows: {}",
+                    batches.iter().map(|b| b.num_rows()).sum::<usize>()
+                );
+            }
+            Err(e) => println!("  Error reading file asynchronously: {e}"),
+        }
+    }
+
+    // Example: Read multiple files asynchronously in parallel
+    println!("\nReading multiple files asynchronously in parallel:");
+    let start = Instant::now();
+    match load_parquet_files_parallel_async(Path::new(&paths[0]).parent().unwrap(), None, None)
+        .await
+    {
+        Ok(batches) => {
+            println!(
+                "  Read {} record batches in {:?}",
+                batches.len(),
+                start.elapsed()
+            );
+            println!(
+                "  Total rows: {}",
+                batches.iter().map(|b| b.num_rows()).sum::<usize>()
+            );
+        }
+        Err(e) => println!("  Error reading files asynchronously: {e}"),
+    }
+
+    println!("\n============= METADATA OPERATIONS =============");
+
+    // Example: Read metadata with page indexes
     println!("\nReading metadata with page indexes:");
     if let Some(path) = paths.first() {
         let file = match File::open(path) {
