@@ -7,10 +7,8 @@ use std::sync::Arc;
 
 use parquet::errors::Result as ParquetResult;
 use parquet::file::reader::{FileReader, SerializedFileReader};
-use parquet::schema::types::Type;
 
-use crate::error::{ParquetReaderError, Result};
-use crate::schema::{find_schema_incompatibilities, schemas_compatible, SchemaCompatibilityReport, SchemaIssue};
+use crate::schema::{find_schema_incompatibilities, schemas_compatible, SchemaCompatibilityReport};
 
 /// A struct for reading Parquet files with schema validation
 pub struct ParquetReader {

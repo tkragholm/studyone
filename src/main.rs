@@ -1,15 +1,13 @@
 use par_reader::{
-    ParquetReader, ParquetReaderConfig, ParquetReaderError, Result,
-    schema::SchemaCompatibilityReport,
+    ParquetReader, ParquetReaderConfig, Result,
 };
 use parquet::file::metadata::ParquetMetaDataReader;
 use parquet::file::reader::{FileReader, SerializedFileReader};
 use std::fs::File;
-use std::path::Path;
 
 fn main() -> Result<()> {
     // Create reader config
-    let config = ParquetReaderConfig {
+    let _config = ParquetReaderConfig {
         read_page_indexes: true,
         validate_schema: true,
         fail_on_schema_incompatibility: false,
@@ -26,7 +24,7 @@ fn main() -> Result<()> {
     let mut reader = ParquetReader::new();
 
     // Use string slices directly
-    let path_refs: Vec<&str> = paths.iter().map(|s| s.as_ref()).collect();
+    let path_refs: Vec<&str> = paths.to_vec();
 
     // Preload all files to cache their metadata
     println!("Preloading files to cache metadata...");
