@@ -1,13 +1,10 @@
 use par_reader::{
     // Arrow types
-    ArrowSchema,
-    // Filtering
     Expr,
     LiteralValue,
     // Original types
     ParquetReader,
     ParquetReaderConfig,
-    RecordBatch,
     Result,
     load_parquet_files_parallel,
     load_parquet_files_parallel_async,
@@ -19,11 +16,8 @@ use par_reader::{
 };
 
 use parquet::file::metadata::ParquetMetaDataReader;
-use parquet::file::reader::{FileReader, SerializedFileReader};
-use std::collections::HashSet;
 use std::fs::File;
 use std::path::Path;
-use std::sync::Arc;
 use std::time::Instant;
 
 #[tokio::main]
@@ -32,7 +26,7 @@ async fn main() -> Result<()> {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
     // Create reader config
-    let config = ParquetReaderConfig {
+    let _config = ParquetReaderConfig {
         read_page_indexes: true,
         validate_schema: true,
         fail_on_schema_incompatibility: false,
