@@ -9,13 +9,70 @@ use arrow::array::Array;
 use arrow::datatypes::Schema;
 use arrow::record_batch::RecordBatch;
 use futures::{StreamExt, TryStreamExt};
-use parquet::arrow::{ProjectionMask, async_reader::ParquetRecordBatchStreamBuilder};
+use parquet::arrow::async_reader::ParquetRecordBatchStreamBuilder;
 use tokio::fs::{self, File};
 
 use crate::error::{ParquetReaderError, Result};
 use crate::filter::{Expr, evaluate_expr, filter_record_batch};
-use crate::utils::DEFAULT_BATCH_SIZE;
-use crate::utils::get_batch_size;
+use crate::utils::{
+    DEFAULT_BATCH_SIZE, create_parquet_error, get_batch_size, log_operation_complete,
+    log_operation_start, log_warning, validate_directory,
+};
+
+/// Find all Parquet files in a directory asynchronously
+///
+/// # Arguments
+/// * `dir` - Path to the directory to search
+///
+/// # Returns
+/// A vector of paths to Parquet files
+///
+/// # Errors
+/// Returns an error if directory reading fails
+pub async fn find_parquet_files_async(dir: &Path) -> Result<Vec<PathBuf>> {
+    log_operation_start("Searching for parquet files asynchronously in", dir);
+
+    // Validate directory
+    validate_directory(dir)?;
+
+    // Find all parquet files in the directory
+    let mut parquet_files = Vec::<PathBuf>::new();
+
+    let mut entries = fs::read_dir(dir).await.map_err(|e| {
+        ParquetReaderError::IoError(std::io::Error::new(
+            std::io::ErrorKind::PermissionDenied,
+            format!("Failed to read directory {}: {}", dir.display(), e),
+        ))
+    })?;
+
+    while let Some(entry_result) = entries.next_entry().await.map_err(|e| {
+        ParquetReaderError::IoError(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            format!("Failed to read directory entry: {e}"),
+        ))
+    })? {
+        let path = entry_result.path();
+        let metadata = fs::metadata(&path).await.map_err(|e| {
+            ParquetReaderError::IoError(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("Failed to read metadata for {}: {}", path.display(), e),
+            ))
+        })?;
+
+        if metadata.is_file() && path.extension().is_some_and(|ext| ext == "parquet") {
+            parquet_files.push(path);
+        }
+    }
+
+    // If no files found, log a warning
+    if parquet_files.is_empty() {
+        log_warning("No Parquet files found in directory", Some(dir));
+    } else {
+        log_operation_complete("found", dir, parquet_files.len(), None);
+    }
+
+    Ok(parquet_files)
+}
 
 /// Read a Parquet file asynchronously into Arrow record batches
 ///
@@ -37,7 +94,8 @@ pub async fn read_parquet_async(
     schema: Option<&Schema>,
     batch_size: Option<usize>,
 ) -> Result<Vec<RecordBatch>> {
-    log::info!("Reading parquet file asynchronously: {}", path.display());
+    let start = std::time::Instant::now();
+    log_operation_start("Reading parquet file asynchronously", path);
 
     // Open file asynchronously
     let file = File::open(path).await.map_err(|e| {
@@ -50,36 +108,17 @@ pub async fn read_parquet_async(
     // Create the builder
     let mut builder = ParquetRecordBatchStreamBuilder::new(file)
         .await
-        .map_err(|e| {
-            ParquetReaderError::ParquetError(parquet::errors::ParquetError::General(format!(
-                "Failed to create parquet reader: {e}"
-            )))
-        })?;
+        .map_err(|e| create_parquet_error("Failed to create parquet reader", e))?;
 
     // Apply projection if schema is provided
     if let Some(schema) = schema {
-        // Convert schema to projection indices, skipping fields that don't exist
-        let mut projection = Vec::new();
+        // Use the common projection helper
         let file_schema = builder.schema();
+        let (has_projection, projection_mask) =
+            crate::utils::create_projection(schema, &file_schema, builder.parquet_schema());
 
-        for f in schema.fields() {
-            let field_name = f.name();
-            match file_schema.index_of(field_name) {
-                Ok(idx) => projection.push(idx),
-                Err(_) => {
-                    // Skip fields that don't exist in the file
-                    log::warn!("Field {field_name} not found in parquet file, skipping");
-                }
-            }
-        }
-
-        // If no fields matched, just read all columns
-        if projection.is_empty() {
-            log::warn!("No matching fields found in schema projection, reading all columns");
-        } else {
-            // Create projection mask and apply to builder
-            let projection_mask = ProjectionMask::leaves(builder.parquet_schema(), projection);
-            builder = builder.with_projection(projection_mask);
+        if has_projection {
+            builder = builder.with_projection(projection_mask.unwrap());
         }
     }
 
@@ -91,24 +130,17 @@ pub async fn read_parquet_async(
     builder = builder.with_batch_size(batch_size);
 
     // Build the stream
-    let stream = builder.build().map_err(|e| {
-        ParquetReaderError::ParquetError(parquet::errors::ParquetError::General(format!(
-            "Failed to build parquet stream: {e}"
-        )))
-    })?;
+    let stream = builder
+        .build()
+        .map_err(|e| create_parquet_error("Failed to build parquet stream", e))?;
 
     // Collect results
-    let batches = stream.try_collect::<Vec<_>>().await.map_err(|e| {
-        ParquetReaderError::ParquetError(parquet::errors::ParquetError::General(format!(
-            "Failed to read record batches: {e}"
-        )))
-    })?;
+    let batches = stream
+        .try_collect::<Vec<_>>()
+        .await
+        .map_err(|e| create_parquet_error("Failed to read record batches", e))?;
 
-    log::info!(
-        "Successfully read {} batches from {}",
-        batches.len(),
-        path.display()
-    );
+    log_operation_complete("read", path, batches.len(), Some(start.elapsed()));
 
     Ok(batches)
 }
@@ -140,21 +172,7 @@ pub async fn read_parquet_with_pnr_filter_async(
 
     for batch in batches {
         // Find the PNR column
-        let pnr_col_name = match batch.schema().field_with_name("PNR") {
-            Ok(_) => "PNR",
-            Err(_) => match batch.schema().field_with_name("pnr") {
-                Ok(_) => "pnr",
-                Err(_) => {
-                    return Err(ParquetReaderError::MetadataError(
-                        "PNR column not found in record batch".to_string(),
-                    ));
-                }
-            },
-        };
-
-        let pnr_idx = batch.schema().index_of(pnr_col_name).map_err(|e| {
-            ParquetReaderError::MetadataError(format!("PNR column not found in record batch: {e}"))
-        })?;
+        let (_, pnr_idx) = crate::utils::find_pnr_column(&batch)?;
 
         let pnr_array = batch.column(pnr_idx);
         let str_array = pnr_array
@@ -175,17 +193,8 @@ pub async fn read_parquet_with_pnr_filter_async(
         }
         let filter_mask = arrow::array::BooleanArray::from(values);
 
-        // Apply the filter to all columns
-        let filtered_columns: Vec<arrow::array::ArrayRef> = batch
-            .columns()
-            .iter()
-            .map(|col| arrow::compute::filter(col, &filter_mask))
-            .collect::<arrow::error::Result<_>>()
-            .map_err(ParquetReaderError::ArrowError)?;
-
-        // Create a new record batch with filtered data
-        let filtered_batch = RecordBatch::try_new(batch.schema(), filtered_columns)
-            .map_err(ParquetReaderError::ArrowError)?;
+        // Use the common filter function
+        let filtered_batch = crate::filter::filter_record_batch(&batch, &filter_mask)?;
 
         // Only add non-empty batches
         if filtered_batch.num_rows() > 0 {
@@ -231,11 +240,7 @@ pub async fn read_parquet_with_filter_async(
     // Create the builder
     let mut builder = ParquetRecordBatchStreamBuilder::new(file)
         .await
-        .map_err(|e| {
-            ParquetReaderError::ParquetError(parquet::errors::ParquetError::General(format!(
-                "Failed to create parquet reader: {e}"
-            )))
-        })?;
+        .map_err(|e| create_parquet_error("Failed to create parquet reader", e))?;
 
     // Get all columns required by the filter expression
     let mut all_required_columns = expr.required_columns();
@@ -249,21 +254,23 @@ pub async fn read_parquet_with_filter_async(
 
     // Create the projection from required columns
     if !all_required_columns.is_empty() {
+        // Convert set to Schema for our projection helper
+        let fields = all_required_columns
+            .iter()
+            .map(|name| arrow::datatypes::Field::new(name, arrow::datatypes::DataType::Utf8, true))
+            .collect::<Vec<_>>();
+        let projected_schema = Schema::new(fields);
+
+        // Use our common projection helper
         let file_schema = builder.schema();
-        let mut projection = Vec::new();
+        let (has_projection, projection_mask) = crate::utils::create_projection(
+            &projected_schema,
+            &file_schema,
+            builder.parquet_schema(),
+        );
 
-        for col_name in all_required_columns {
-            match file_schema.index_of(&col_name) {
-                Ok(idx) => projection.push(idx),
-                Err(_) => {
-                    log::warn!("Column {col_name} not found in parquet file, skipping");
-                }
-            }
-        }
-
-        if !projection.is_empty() {
-            let projection_mask = ProjectionMask::leaves(builder.parquet_schema(), projection);
-            builder = builder.with_projection(projection_mask);
+        if has_projection {
+            builder = builder.with_projection(projection_mask.unwrap());
         }
     }
 
@@ -275,11 +282,9 @@ pub async fn read_parquet_with_filter_async(
     builder = builder.with_batch_size(batch_size);
 
     // Build the stream
-    let stream = builder.build().map_err(|e| {
-        ParquetReaderError::ParquetError(parquet::errors::ParquetError::General(format!(
-            "Failed to build parquet stream: {e}"
-        )))
-    })?;
+    let stream = builder
+        .build()
+        .map_err(|e| create_parquet_error("Failed to build parquet stream", e))?;
 
     // Process the stream with filtering
     let mut results = Vec::new();
@@ -287,11 +292,8 @@ pub async fn read_parquet_with_filter_async(
     tokio::pin!(stream);
 
     while let Some(batch_result) = stream.next().await {
-        let batch = batch_result.map_err(|e| {
-            ParquetReaderError::ParquetError(parquet::errors::ParquetError::General(format!(
-                "Failed to read record batch: {e}"
-            )))
-        })?;
+        let batch =
+            batch_result.map_err(|e| create_parquet_error("Failed to read record batch", e))?;
 
         // Apply the filter expression
         let mask = evaluate_expr(&batch, expr)?;
@@ -336,50 +338,13 @@ pub async fn load_parquet_files_parallel_async(
         dir.display()
     );
 
-    // Check if the directory exists
-    if !dir.exists() || !dir.is_dir() {
-        return Err(ParquetReaderError::IoError(std::io::Error::new(
-            std::io::ErrorKind::NotFound,
-            format!("Directory does not exist: {}", dir.display()),
-        )));
-    }
-
     // Find all parquet files in the directory
-    let mut parquet_files = Vec::<PathBuf>::new();
-
-    let mut entries = fs::read_dir(dir).await.map_err(|e| {
-        ParquetReaderError::IoError(std::io::Error::new(
-            std::io::ErrorKind::PermissionDenied,
-            format!("Failed to read directory {}: {}", dir.display(), e),
-        ))
-    })?;
-
-    while let Some(entry_result) = entries.next_entry().await.map_err(|e| {
-        ParquetReaderError::IoError(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            format!("Failed to read directory entry: {e}"),
-        ))
-    })? {
-        let path = entry_result.path();
-        let metadata = fs::metadata(&path).await.map_err(|e| {
-            ParquetReaderError::IoError(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                format!("Failed to read metadata for {}: {}", path.display(), e),
-            ))
-        })?;
-
-        if metadata.is_file() && path.extension().is_some_and(|ext| ext == "parquet") {
-            parquet_files.push(path);
-        }
-    }
+    let parquet_files = find_parquet_files_async(dir).await?;
 
     // If no files found, return empty result
     if parquet_files.is_empty() {
-        log::warn!("No Parquet files found in directory: {}", dir.display());
         return Ok(Vec::new());
     }
-
-    log::info!("Found {} Parquet files in directory", parquet_files.len());
 
     // Process each file and collect results
     let schema_arc = schema.map(|s| Arc::new(s.clone()));
@@ -440,50 +405,13 @@ pub async fn load_parquet_files_parallel_with_filter_async(
         dir.display()
     );
 
-    // Check if the directory exists
-    if !dir.exists() || !dir.is_dir() {
-        return Err(ParquetReaderError::IoError(std::io::Error::new(
-            std::io::ErrorKind::NotFound,
-            format!("Directory does not exist: {}", dir.display()),
-        )));
-    }
-
     // Find all parquet files in the directory
-    let mut parquet_files = Vec::<PathBuf>::new();
-
-    let mut entries = fs::read_dir(dir).await.map_err(|e| {
-        ParquetReaderError::IoError(std::io::Error::new(
-            std::io::ErrorKind::PermissionDenied,
-            format!("Failed to read directory {}: {}", dir.display(), e),
-        ))
-    })?;
-
-    while let Some(entry_result) = entries.next_entry().await.map_err(|e| {
-        ParquetReaderError::IoError(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            format!("Failed to read directory entry: {e}"),
-        ))
-    })? {
-        let path = entry_result.path();
-        let metadata = fs::metadata(&path).await.map_err(|e| {
-            ParquetReaderError::IoError(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                format!("Failed to read metadata for {}: {}", path.display(), e),
-            ))
-        })?;
-
-        if metadata.is_file() && path.extension().is_some_and(|ext| ext == "parquet") {
-            parquet_files.push(path);
-        }
-    }
+    let parquet_files = find_parquet_files_async(dir).await?;
 
     // If no files found, return empty result
     if parquet_files.is_empty() {
-        log::warn!("No Parquet files found in directory: {}", dir.display());
         return Ok(Vec::new());
     }
-
-    log::info!("Found {} Parquet files in directory", parquet_files.len());
 
     // Create futures for each file with filtering
     let column_vec = columns.map(<[std::string::String]>::to_vec);
