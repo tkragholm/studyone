@@ -13,6 +13,8 @@ use crate::schema::{find_schema_incompatibilities, schemas_compatible, SchemaCom
 /// A struct for reading Parquet files with schema validation
 pub struct ParquetReader {
     metadata_cache: HashMap<String, Arc<parquet::file::metadata::ParquetMetaData>>,
+    // Maximum number of entries to keep in the metadata cache
+    max_cache_size: usize,
 }
 
 impl Default for ParquetReader {
@@ -22,10 +24,17 @@ impl Default for ParquetReader {
 }
 
 impl ParquetReader {
-    /// Creates a new `ParquetReader`
+    /// Creates a new `ParquetReader` with default settings
     #[must_use] pub fn new() -> Self {
+        // Default to caching metadata for up to 100 files
+        Self::with_cache_size(100)
+    }
+    
+    /// Creates a new `ParquetReader` with a specific cache size
+    #[must_use] pub fn with_cache_size(max_cache_size: usize) -> Self {
         Self {
-            metadata_cache: HashMap::new(),
+            metadata_cache: HashMap::with_capacity(max_cache_size),
+            max_cache_size,
         }
     }
 
@@ -47,6 +56,24 @@ impl ParquetReader {
 
         // Cache metadata for later schema comparison
         let file_path = path.to_string_lossy().to_string();
+        
+        // Check if we need to evict some cache entries
+        if self.metadata_cache.len() >= self.max_cache_size {
+            // Evict least recently used entries (simple approach: just remove 20% of entries)
+            let num_to_remove = self.max_cache_size / 5;
+            if num_to_remove > 0 {
+                let keys_to_remove: Vec<String> = self.metadata_cache
+                    .keys()
+                    .take(num_to_remove)
+                    .cloned()
+                    .collect();
+                    
+                for key in keys_to_remove {
+                    self.metadata_cache.remove(&key);
+                }
+            }
+        }
+        
         self.metadata_cache.entry(file_path).or_insert_with(|| {
             let metadata = reader.metadata().clone();
             Arc::new(metadata)

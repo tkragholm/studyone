@@ -149,6 +149,9 @@ impl Expr {
 /// # Errors
 /// Returns an error if expression evaluation fails
 pub fn evaluate_expr(batch: &RecordBatch, expr: &Expr) -> Result<BooleanArray> {
+    use arrow::compute::kernels::cmp::{eq, gt};
+    use arrow::compute::{and, not, or};
+
     match expr {
         Expr::AlwaysTrue => {
             // Create a boolean array with all true values
@@ -170,12 +173,23 @@ pub fn evaluate_expr(batch: &RecordBatch, expr: &Expr) -> Result<BooleanArray> {
             // Evaluate the first expression
             let mut result = evaluate_expr(batch, &exprs[0])?;
 
-            // Apply AND with each subsequent expression
+            // Apply AND with each subsequent expression using vectorized operations
             for expr in &exprs[1..] {
                 let mask = evaluate_expr(batch, expr)?;
 
-                // Apply logical AND
-                result = apply_logical_and(&result, &mask)?;
+                // Use Arrow's vectorized 'and' function instead of row-by-row
+                let result_ref = and(&result, &mask)
+                    .map_err(|e| ParquetReaderError::FilterError(e.to_string()))?;
+
+                result = result_ref
+                    .as_any()
+                    .downcast_ref::<BooleanArray>()
+                    .ok_or_else(|| {
+                        ParquetReaderError::FilterError(
+                            "Failed to downcast boolean array".to_string(),
+                        )
+                    })?
+                    .clone();
             }
 
             Ok(result)
@@ -189,12 +203,23 @@ pub fn evaluate_expr(batch: &RecordBatch, expr: &Expr) -> Result<BooleanArray> {
             // Evaluate the first expression
             let mut result = evaluate_expr(batch, &exprs[0])?;
 
-            // Apply OR with each subsequent expression
+            // Apply OR with each subsequent expression using vectorized operations
             for expr in &exprs[1..] {
                 let mask = evaluate_expr(batch, expr)?;
 
-                // Apply logical OR
-                result = apply_logical_or(&result, &mask)?;
+                // Use Arrow's vectorized 'or' function instead of row-by-row
+                let result_ref = or(&result, &mask)
+                    .map_err(|e| ParquetReaderError::FilterError(e.to_string()))?;
+
+                result = result_ref
+                    .as_any()
+                    .downcast_ref::<BooleanArray>()
+                    .ok_or_else(|| {
+                        ParquetReaderError::FilterError(
+                            "Failed to downcast boolean array".to_string(),
+                        )
+                    })?
+                    .clone();
             }
 
             Ok(result)
@@ -203,17 +228,16 @@ pub fn evaluate_expr(batch: &RecordBatch, expr: &Expr) -> Result<BooleanArray> {
         Expr::Not(expr) => {
             let mask = evaluate_expr(batch, expr)?;
 
-            // Apply logical NOT
-            let mut values = Vec::with_capacity(mask.len());
-            for i in 0..mask.len() {
-                if mask.is_null(i) {
-                    values.push(false); // NULL becomes false when NOT applied
-                } else {
-                    values.push(!mask.value(i));
-                }
-            }
+            // Use Arrow's vectorized 'not' function instead of row-by-row
+            let result = not(&mask).map_err(|e| ParquetReaderError::FilterError(e.to_string()))?;
 
-            Ok(BooleanArray::from(values))
+            Ok(result
+                .as_any()
+                .downcast_ref::<BooleanArray>()
+                .ok_or_else(|| {
+                    ParquetReaderError::FilterError("Failed to downcast boolean array".to_string())
+                })?
+                .clone())
         }
 
         Expr::Eq(col_name, literal_value) => {
@@ -223,21 +247,29 @@ pub fn evaluate_expr(batch: &RecordBatch, expr: &Expr) -> Result<BooleanArray> {
             })?;
             let column = batch.column(col_idx);
 
-            // Create a boolean mask based on equality comparison
+            // Create a boolean mask based on equality comparison using vectorized operations
             match literal_value {
                 LiteralValue::String(s) => {
                     if let Some(str_array) =
                         column.as_any().downcast_ref::<arrow::array::StringArray>()
                     {
-                        let mut values = Vec::with_capacity(str_array.len());
-                        for i in 0..str_array.len() {
-                            if str_array.is_null(i) {
-                                values.push(false);
-                            } else {
-                                values.push(str_array.value(i) == s);
-                            }
-                        }
-                        Ok(BooleanArray::from(values))
+                        // Create a constant array of comparison values
+                        let literal_array =
+                            arrow::array::StringArray::from(vec![s.as_str(); str_array.len()]);
+
+                        // Use Arrow's vectorized eq function
+                        let result = eq(str_array, &literal_array)
+                            .map_err(|e| ParquetReaderError::FilterError(e.to_string()))?;
+
+                        Ok(result
+                            .as_any()
+                            .downcast_ref::<BooleanArray>()
+                            .ok_or_else(|| {
+                                ParquetReaderError::FilterError(
+                                    "Failed to downcast boolean array".to_string(),
+                                )
+                            })?
+                            .clone())
                     } else {
                         Err(ParquetReaderError::FilterError(format!(
                             "Column {col_name} is not a string array"
@@ -248,27 +280,43 @@ pub fn evaluate_expr(batch: &RecordBatch, expr: &Expr) -> Result<BooleanArray> {
                     if let Some(int_array) =
                         column.as_any().downcast_ref::<arrow::array::Int32Array>()
                     {
-                        let mut values = Vec::with_capacity(int_array.len());
-                        for i in 0..int_array.len() {
-                            if int_array.is_null(i) {
-                                values.push(false);
-                            } else {
-                                values.push(i64::from(int_array.value(i)) == *n);
-                            }
-                        }
-                        Ok(BooleanArray::from(values))
+                        // Create a constant array of comparison values
+                        let literal_array =
+                            arrow::array::Int32Array::from(vec![*n as i32; int_array.len()]);
+
+                        // Use Arrow's vectorized eq function
+                        let result = eq(int_array, &literal_array)
+                            .map_err(|e| ParquetReaderError::FilterError(e.to_string()))?;
+
+                        Ok(result
+                            .as_any()
+                            .downcast_ref::<BooleanArray>()
+                            .ok_or_else(|| {
+                                ParquetReaderError::FilterError(
+                                    "Failed to downcast boolean array".to_string(),
+                                )
+                            })?
+                            .clone())
                     } else if let Some(int_array) =
                         column.as_any().downcast_ref::<arrow::array::Int64Array>()
                     {
-                        let mut values = Vec::with_capacity(int_array.len());
-                        for i in 0..int_array.len() {
-                            if int_array.is_null(i) {
-                                values.push(false);
-                            } else {
-                                values.push(int_array.value(i) == *n);
-                            }
-                        }
-                        Ok(BooleanArray::from(values))
+                        // Create a constant array of comparison values
+                        let literal_array =
+                            arrow::array::Int64Array::from(vec![*n; int_array.len()]);
+
+                        // Use Arrow's vectorized eq function
+                        let result = eq(int_array, &literal_array)
+                            .map_err(|e| ParquetReaderError::FilterError(e.to_string()))?;
+
+                        Ok(result
+                            .as_any()
+                            .downcast_ref::<BooleanArray>()
+                            .ok_or_else(|| {
+                                ParquetReaderError::FilterError(
+                                    "Failed to downcast boolean array".to_string(),
+                                )
+                            })?
+                            .clone())
                     } else {
                         Err(ParquetReaderError::FilterError(format!(
                             "Column {col_name} is not an integer array"
@@ -288,33 +336,49 @@ pub fn evaluate_expr(batch: &RecordBatch, expr: &Expr) -> Result<BooleanArray> {
             })?;
             let column = batch.column(col_idx);
 
-            // Create a boolean mask based on greater than comparison
+            // Create a boolean mask based on greater than comparison using vectorized operations
             match literal_value {
                 LiteralValue::Int(n) => {
                     if let Some(int_array) =
                         column.as_any().downcast_ref::<arrow::array::Int32Array>()
                     {
-                        let mut values = Vec::with_capacity(int_array.len());
-                        for i in 0..int_array.len() {
-                            if int_array.is_null(i) {
-                                values.push(false);
-                            } else {
-                                values.push(i64::from(int_array.value(i)) > *n);
-                            }
-                        }
-                        Ok(BooleanArray::from(values))
+                        // Create a constant array of comparison values
+                        let literal_array =
+                            arrow::array::Int32Array::from(vec![*n as i32; int_array.len()]);
+
+                        // Use Arrow's vectorized gt function
+                        let result = gt(int_array, &literal_array)
+                            .map_err(|e| ParquetReaderError::FilterError(e.to_string()))?;
+
+                        Ok(result
+                            .as_any()
+                            .downcast_ref::<BooleanArray>()
+                            .ok_or_else(|| {
+                                ParquetReaderError::FilterError(
+                                    "Failed to downcast boolean array".to_string(),
+                                )
+                            })?
+                            .clone())
                     } else if let Some(int_array) =
                         column.as_any().downcast_ref::<arrow::array::Int64Array>()
                     {
-                        let mut values = Vec::with_capacity(int_array.len());
-                        for i in 0..int_array.len() {
-                            if int_array.is_null(i) {
-                                values.push(false);
-                            } else {
-                                values.push(int_array.value(i) > *n);
-                            }
-                        }
-                        Ok(BooleanArray::from(values))
+                        // Create a constant array of comparison values
+                        let literal_array =
+                            arrow::array::Int64Array::from(vec![*n; int_array.len()]);
+
+                        // Use Arrow's vectorized gt function
+                        let result = gt(int_array, &literal_array)
+                            .map_err(|e| ParquetReaderError::FilterError(e.to_string()))?;
+
+                        Ok(result
+                            .as_any()
+                            .downcast_ref::<BooleanArray>()
+                            .ok_or_else(|| {
+                                ParquetReaderError::FilterError(
+                                    "Failed to downcast boolean array".to_string(),
+                                )
+                            })?
+                            .clone())
                     } else {
                         Err(ParquetReaderError::FilterError(format!(
                             "Column {col_name} is not an integer array"
@@ -334,57 +398,6 @@ pub fn evaluate_expr(batch: &RecordBatch, expr: &Expr) -> Result<BooleanArray> {
     }
 }
 
-/// Applies logical AND between two boolean arrays
-fn apply_logical_and(left: &BooleanArray, right: &BooleanArray) -> Result<BooleanArray> {
-    if left.len() != right.len() {
-        return Err(ParquetReaderError::FilterError(
-            "Boolean arrays have different lengths".to_string(),
-        ));
-    }
-
-    let mut values = Vec::with_capacity(left.len());
-    for i in 0..left.len() {
-        let left_val = if left.is_null(i) {
-            false
-        } else {
-            left.value(i)
-        };
-        let right_val = if right.is_null(i) {
-            false
-        } else {
-            right.value(i)
-        };
-        values.push(left_val && right_val);
-    }
-
-    Ok(BooleanArray::from(values))
-}
-
-/// Applies logical OR between two boolean arrays
-fn apply_logical_or(left: &BooleanArray, right: &BooleanArray) -> Result<BooleanArray> {
-    if left.len() != right.len() {
-        return Err(ParquetReaderError::FilterError(
-            "Boolean arrays have different lengths".to_string(),
-        ));
-    }
-
-    let mut values = Vec::with_capacity(left.len());
-    for i in 0..left.len() {
-        let left_val = if left.is_null(i) {
-            false
-        } else {
-            left.value(i)
-        };
-        let right_val = if right.is_null(i) {
-            false
-        } else {
-            right.value(i)
-        };
-        values.push(left_val || right_val);
-    }
-
-    Ok(BooleanArray::from(values))
-}
 
 /// Filters a record batch based on a boolean mask
 ///

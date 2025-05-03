@@ -331,7 +331,7 @@ pub async fn read_parquet_with_filter_async(
 pub async fn load_parquet_files_parallel_async(
     dir: &Path,
     schema: Option<&Schema>,
-    batch_size: Option<usize>,
+    _batch_size: Option<usize>, // Unused but kept for API compatibility
 ) -> Result<Vec<RecordBatch>> {
     log::info!(
         "Loading Parquet files from directory asynchronously: {}",
@@ -349,28 +349,36 @@ pub async fn load_parquet_files_parallel_async(
     // Process each file and collect results
     let schema_arc = schema.map(|s| Arc::new(s.clone()));
 
-    // Create futures for each file
-    let futures = parquet_files.iter().map(|path| {
-        let path = path.clone();
-        let schema_clone = schema_arc.clone();
-
-        async move { read_parquet_async(&path, schema_clone.as_deref(), batch_size).await }
-    });
-
-    // Run all futures and combine results
-    let results = futures::future::join_all(futures).await;
-
-    // Combine all the batches
-    let mut combined_batches = Vec::new();
-    for result in results {
-        match result {
-            Ok(batches) => combined_batches.extend(batches),
+    use itertools::Itertools;
+    use futures::stream::{self, StreamExt};
+    
+    // Determine optimal parallelism based on CPU count
+    let num_cpus = num_cpus::get();
+    
+    // Process files in optimal batches to avoid creating too many futures at once
+    let results = stream::iter(parquet_files.clone()) // Clone to avoid ownership issues
+        .map(|path| {
+            let schema_clone = schema_arc.clone();
+            async move { read_parquet_async(&path, schema_clone.as_deref(), None).await }
+        })
+        .buffer_unordered(num_cpus) // Process up to num_cpus files concurrently
+        .collect::<Vec<_>>()
+        .await;
+    
+    // Combine all the batches efficiently using itertools
+    let combined_batches = results
+        .into_iter()
+        .map(|result| match result {
+            Ok(batches) => Ok(batches),
             Err(e) => {
                 log::error!("Error loading parquet file: {e}");
-                return Err(e);
+                Err(e)
             }
-        }
-    }
+        })
+        .collect::<Result<Vec<Vec<RecordBatch>>>>()?
+        .into_iter()
+        .flatten()
+        .collect_vec();
 
     log::info!(
         "Successfully loaded {} batches from {} Parquet files",
