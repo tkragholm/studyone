@@ -137,7 +137,7 @@ pub fn log_warning(message: &str, path: Option<&Path>) {
     if let Some(path) = path {
         log::warn!("{}: {}", message, path.display());
     } else {
-        log::warn!("{}", message);
+        log::warn!("{message}");
     }
 }
 
@@ -152,7 +152,7 @@ pub fn log_warning(message: &str, path: Option<&Path>) {
 /// A tuple with:
 /// - Boolean indicating if projection was applied
 /// - Optional projection mask if applied
-pub fn create_projection(
+#[must_use] pub fn create_projection(
     schema: &Schema,
     file_schema: &Schema,
     parquet_schema: &parquet::schema::types::SchemaDescriptor,
