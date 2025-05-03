@@ -253,7 +253,7 @@ pub fn evaluate_expr(batch: &RecordBatch, expr: &Expr) -> Result<BooleanArray> {
                             if int_array.is_null(i) {
                                 values.push(false);
                             } else {
-                                values.push(int_array.value(i) as i64 == *n);
+                                values.push(i64::from(int_array.value(i)) == *n);
                             }
                         }
                         Ok(BooleanArray::from(values))
@@ -299,7 +299,7 @@ pub fn evaluate_expr(batch: &RecordBatch, expr: &Expr) -> Result<BooleanArray> {
                             if int_array.is_null(i) {
                                 values.push(false);
                             } else {
-                                values.push(int_array.value(i) as i64 > *n);
+                                values.push(i64::from(int_array.value(i)) > *n);
                             }
                         }
                         Ok(BooleanArray::from(values))
