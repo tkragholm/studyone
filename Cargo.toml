@@ -1,0 +1,7 @@
+[package]
+name = "par-reader"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+parquet = "55.0.0"
