@@ -11,13 +11,13 @@ arrow = "55.0.0"
 tokio = { version = "1.44.2", features = ["full"] }
 futures = "0.3.30"
 # Parallel processing
-rayon = "1.8.1"
+rayon = "1.10.0"
 # Utility
-itertools = "0.12.1"  # For optimized iterations and efficient data transformations
+itertools = "0.14.0"  # For optimized iterations and efficient data transformations
 num_cpus = "1.16.0"   # For optimal parallelism based on available CPUs
 # Logging
 log = "0.4.20"
-env_logger = "0.11.3"
+env_logger = "0.11.8"
 # Error handling
 thiserror = "2.0.12"
 snmalloc-rs = { version = "0.3.8", features = ["lto", "check", "native-cpu"] }
