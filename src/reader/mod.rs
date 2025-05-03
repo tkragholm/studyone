@@ -22,9 +22,9 @@ impl Default for ParquetReader {
 }
 
 impl ParquetReader {
-    /// Creates a new ParquetReader
-    pub fn new() -> Self {
-        ParquetReader {
+    /// Creates a new `ParquetReader`
+    #[must_use] pub fn new() -> Self {
+        Self {
             metadata_cache: HashMap::new(),
         }
     }
@@ -64,8 +64,7 @@ impl ParquetReader {
             Some(metadata) => metadata,
             None => {
                 return Err(parquet::errors::ParquetError::General(format!(
-                    "Metadata for {} not found in cache",
-                    first_path
+                    "Metadata for {first_path} not found in cache"
                 )));
             }
         };
@@ -79,8 +78,7 @@ impl ParquetReader {
                 Some(metadata) => metadata,
                 None => {
                     return Err(parquet::errors::ParquetError::General(format!(
-                        "Metadata for {} not found in cache",
-                        path
+                        "Metadata for {path} not found in cache"
                     )));
                 }
             };
@@ -91,16 +89,14 @@ impl ParquetReader {
             // First check if number of columns match
             if first_num_columns != current_num_columns {
                 return Err(parquet::errors::ParquetError::General(format!(
-                    "Number of columns in {} ({}) doesn't match {} ({})",
-                    path, current_num_columns, first_path, first_num_columns
+                    "Number of columns in {path} ({current_num_columns}) doesn't match {first_path} ({first_num_columns})"
                 )));
             }
 
             // Then do detailed schema comparison
             if !schemas_compatible(first_schema, current_schema) {
                 return Err(parquet::errors::ParquetError::General(format!(
-                    "Schema for {} is incompatible with {}",
-                    path, first_path
+                    "Schema for {path} is incompatible with {first_path}"
                 )));
             }
         }
@@ -131,8 +127,7 @@ impl ParquetReader {
             Some(metadata) => metadata,
             None => {
                 return Err(parquet::errors::ParquetError::General(format!(
-                    "Metadata for {} not found in cache",
-                    first_path
+                    "Metadata for {first_path} not found in cache"
                 )));
             }
         };
@@ -145,8 +140,7 @@ impl ParquetReader {
                 Some(metadata) => metadata,
                 None => {
                     return Err(parquet::errors::ParquetError::General(format!(
-                        "Metadata for {} not found in cache",
-                        path
+                        "Metadata for {path} not found in cache"
                     )));
                 }
             };
@@ -223,7 +217,7 @@ impl Iterator for ParquetRowIterator<'_> {
                         self.current_path_idx += 1;
                         return Some(Err(e));
                     }
-                };
+                }
             } else {
                 // We've processed all files
                 return None;

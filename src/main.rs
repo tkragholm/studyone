@@ -24,14 +24,14 @@ fn main() -> Result<()> {
     let mut reader = ParquetReader::new();
 
     // Use string slices directly
-    let path_refs: Vec<&str> = paths.to_vec();
+    let path_refs: Vec<&str> = paths.clone();
 
     // Preload all files to cache their metadata
     println!("Preloading files to cache metadata...");
     for path in &path_refs {
         match reader.read_file(path) {
-            Ok(_) => println!("  Loaded {}", path),
-            Err(e) => println!("  Failed to load {}: {}", path, e),
+            Ok(_) => println!("  Loaded {path}"),
+            Err(e) => println!("  Failed to load {path}: {e}"),
         }
     }
 
@@ -39,7 +39,7 @@ fn main() -> Result<()> {
     println!("\nReading files individually:");
 
     for path in &paths {
-        println!("\nFile: {}", path);
+        println!("\nFile: {path}");
 
         match File::open(path) {
             Ok(file) => {
@@ -61,16 +61,16 @@ fn main() -> Result<()> {
                         let mut row_iter = reader.into_iter();
                         for i in 0..3 {
                             match row_iter.next() {
-                                Some(Ok(row)) => println!("    Row {}: {}", i, row),
-                                Some(Err(e)) => println!("    Error: {}", e),
+                                Some(Ok(row)) => println!("    Row {i}: {row}"),
+                                Some(Err(e)) => println!("    Error: {e}"),
                                 None => break,
                             }
                         }
                     }
-                    Err(e) => println!("  Error reading parquet file: {}", e),
+                    Err(e) => println!("  Error reading parquet file: {e}"),
                 }
             }
-            Err(e) => println!("  Error opening file: {}", e),
+            Err(e) => println!("  Error opening file: {e}"),
         }
     }
 
@@ -83,12 +83,12 @@ fn main() -> Result<()> {
             if let Ok(reader) = SerializedFileReader::new(file) {
                 let file_rows = reader.metadata().file_metadata().num_rows();
                 total_rows += file_rows;
-                println!("  Read {} rows from {}", file_rows, path);
+                println!("  Read {file_rows} rows from {path}");
             }
         }
     }
 
-    println!("  Total rows: {}", total_rows);
+    println!("  Total rows: {total_rows}");
 
     // Example 3: Read metadata with page indexes
     println!("\nReading metadata with page indexes:");
@@ -96,7 +96,7 @@ fn main() -> Result<()> {
         let file = match File::open(path) {
             Ok(f) => f,
             Err(e) => {
-                eprintln!("Error opening file {}: {}", path, e);
+                eprintln!("Error opening file {path}: {e}");
                 return Err(e.into());
             }
         };
@@ -104,7 +104,7 @@ fn main() -> Result<()> {
         let mut metadata_reader = ParquetMetaDataReader::new().with_page_indexes(true);
 
         match metadata_reader.try_parse(&file) {
-            Ok(_) => {
+            Ok(()) => {
                 let metadata = metadata_reader.finish().unwrap();
                 println!("Successfully read metadata with page indexes");
                 println!("  Number of row groups: {}", metadata.num_row_groups());
@@ -115,7 +115,7 @@ fn main() -> Result<()> {
                 println!("  Has column index: {}", metadata.column_index().is_some());
                 println!("  Has offset index: {}", metadata.offset_index().is_some());
             }
-            Err(e) => eprintln!("Error reading metadata: {}", e),
+            Err(e) => eprintln!("Error reading metadata: {e}"),
         }
     }
 

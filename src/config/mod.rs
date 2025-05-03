@@ -1,6 +1,6 @@
-//! Configuration for ParquetReader.
+//! Configuration for `ParquetReader`.
 
-/// Configuration for the ParquetReader
+/// Configuration for the `ParquetReader`
 #[derive(Debug, Clone)]
 pub struct ParquetReaderConfig {
     /// Whether to read page indexes
@@ -15,7 +15,7 @@ pub struct ParquetReaderConfig {
 
 impl Default for ParquetReaderConfig {
     fn default() -> Self {
-        ParquetReaderConfig {
+        Self {
             read_page_indexes: false,
             validate_schema: true,
             fail_on_schema_incompatibility: true,

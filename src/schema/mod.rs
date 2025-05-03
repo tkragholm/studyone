@@ -23,7 +23,7 @@ pub struct SchemaIssue {
 }
 
 /// Checks if two schemas are compatible for merging datasets
-pub fn schemas_compatible(schema1: &Type, schema2: &Type) -> bool {
+#[must_use] pub fn schemas_compatible(schema1: &Type, schema2: &Type) -> bool {
     // For simplicity, we check that the schema names and structures are identical
     // In a real-world scenario, you might want to implement a more sophisticated
     // compatibility check depending on your use case
@@ -68,7 +68,7 @@ pub fn schemas_compatible(schema1: &Type, schema2: &Type) -> bool {
 }
 
 /// Finds and returns detailed incompatibilities between two schemas
-pub fn find_schema_incompatibilities(
+#[must_use] pub fn find_schema_incompatibilities(
     schema1: &Type,
     schema2: &Type,
     reference_path: &str,
@@ -161,7 +161,7 @@ pub fn find_schema_incompatibilities(
 }
 
 /// Checks if two field types are compatible
-pub fn types_compatible(field1: &Type, field2: &Type) -> bool {
+#[must_use] pub fn types_compatible(field1: &Type, field2: &Type) -> bool {
     // Check repetition - nullable vs required could matter depending on your use case
     if field1.get_basic_info().repetition() != field2.get_basic_info().repetition() {
         return false;
