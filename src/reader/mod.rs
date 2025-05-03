@@ -30,6 +30,9 @@ impl ParquetReader {
     }
 
     /// Reads a single Parquet file and returns the reader
+    ///
+    /// # Errors
+    /// Returns an error if the file cannot be opened or if the Parquet file is invalid
     pub fn read_file(&mut self, path: &str) -> ParquetResult<SerializedFileReader<File>> {
         let path = Path::new(path);
         let file = File::open(path).map_err(|e| {
@@ -53,6 +56,9 @@ impl ParquetReader {
     }
 
     /// Validates that all files in the list have compatible schemas
+    ///
+    /// # Errors
+    /// Returns an error if any of the file schemas are incompatible or if metadata cannot be found
     pub fn validate_schemas(&self, paths: &[&str]) -> ParquetResult<()> {
         if paths.is_empty() || paths.len() == 1 {
             return Ok(());
@@ -60,13 +66,10 @@ impl ParquetReader {
 
         // Read the first file's schema to compare with others
         let first_path = paths[0];
-        let first_metadata = match self.metadata_cache.get(first_path) {
-            Some(metadata) => metadata,
-            None => {
-                return Err(parquet::errors::ParquetError::General(format!(
-                    "Metadata for {first_path} not found in cache"
-                )));
-            }
+        let Some(first_metadata) = self.metadata_cache.get(first_path) else {
+            return Err(parquet::errors::ParquetError::General(format!(
+                "Metadata for {first_path} not found in cache"
+            )));
         };
 
         let first_schema = first_metadata.file_metadata().schema();
@@ -74,13 +77,10 @@ impl ParquetReader {
 
         // Compare with all other files
         for path in &paths[1..] {
-            let metadata = match self.metadata_cache.get(*path) {
-                Some(metadata) => metadata,
-                None => {
-                    return Err(parquet::errors::ParquetError::General(format!(
-                        "Metadata for {path} not found in cache"
-                    )));
-                }
+            let Some(metadata) = self.metadata_cache.get(*path) else {
+                return Err(parquet::errors::ParquetError::General(format!(
+                    "Metadata for {path} not found in cache"
+                )));
             };
 
             let current_schema = metadata.file_metadata().schema();
@@ -105,6 +105,9 @@ impl ParquetReader {
     }
 
     /// Returns detailed schema compatibility report
+    ///
+    /// # Errors
+    /// Returns an error if metadata for any of the files cannot be found in the cache
     pub fn get_schema_compatibility_report(
         &self,
         paths: &[&str],
@@ -123,26 +126,20 @@ impl ParquetReader {
 
         // Read the first file's schema
         let first_path = paths[0];
-        let first_metadata = match self.metadata_cache.get(first_path) {
-            Some(metadata) => metadata,
-            None => {
-                return Err(parquet::errors::ParquetError::General(format!(
-                    "Metadata for {first_path} not found in cache"
-                )));
-            }
+        let Some(first_metadata) = self.metadata_cache.get(first_path) else {
+            return Err(parquet::errors::ParquetError::General(format!(
+                "Metadata for {first_path} not found in cache"
+            )));
         };
 
         let first_schema = first_metadata.file_metadata().schema();
 
         // Compare with all other files
         for path in &paths[1..] {
-            let metadata = match self.metadata_cache.get(*path) {
-                Some(metadata) => metadata,
-                None => {
-                    return Err(parquet::errors::ParquetError::General(format!(
-                        "Metadata for {path} not found in cache"
-                    )));
-                }
+            let Some(metadata) = self.metadata_cache.get(*path) else {
+                return Err(parquet::errors::ParquetError::General(format!(
+                    "Metadata for {path} not found in cache"
+                )));
             };
 
             let current_schema = metadata.file_metadata().schema();
@@ -161,6 +158,9 @@ impl ParquetReader {
     }
 
     /// Reads multiple Parquet files and returns their rows as an iterator
+    ///
+    /// # Errors
+    /// Returns an error if schemas are incompatible or if any file cannot be read
     pub fn read_files<'a>(
         &'a mut self,
         paths: &'a [&'a str],
