@@ -115,7 +115,7 @@ pub async fn read_parquet_async(
         // Use the common projection helper
         let file_schema = builder.schema();
         let (has_projection, projection_mask) =
-            crate::utils::create_projection(schema, &file_schema, builder.parquet_schema());
+            crate::utils::create_projection(schema, file_schema, builder.parquet_schema());
 
         if has_projection {
             builder = builder.with_projection(projection_mask.unwrap());
@@ -265,7 +265,7 @@ pub async fn read_parquet_with_filter_async(
         let file_schema = builder.schema();
         let (has_projection, projection_mask) = crate::utils::create_projection(
             &projected_schema,
-            &file_schema,
+            file_schema,
             builder.parquet_schema(),
         );
 

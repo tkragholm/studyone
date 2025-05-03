@@ -228,7 +228,7 @@ pub fn read_parquet(
         // Apply schema projection
         let file_schema = reader_builder.schema();
         let (has_projection, projection_mask) =
-            create_projection(schema, &file_schema, reader_builder.parquet_schema());
+            create_projection(schema, file_schema, reader_builder.parquet_schema());
 
         if has_projection {
             // Build with projection
