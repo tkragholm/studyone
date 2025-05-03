@@ -31,6 +31,12 @@ pub struct ParquetReader {
     metadata_cache: HashMap<String, Arc<parquet::file::metadata::ParquetMetaData>>,
 }
 
+impl Default for ParquetReader {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ParquetReader {
     /// Creates a new ParquetReader
     pub fn new() -> Self {
@@ -54,10 +60,10 @@ impl ParquetReader {
 
         // Cache metadata for later schema comparison
         let file_path = path.to_string_lossy().to_string();
-        if !self.metadata_cache.contains_key(&file_path) {
+        self.metadata_cache.entry(file_path).or_insert_with(|| {
             let metadata = reader.metadata().clone();
-            self.metadata_cache.insert(file_path, Arc::new(metadata));
-        }
+            Arc::new(metadata)
+        });
 
         Ok(reader)
     }
@@ -208,7 +214,7 @@ pub struct ParquetRowIterator<'a> {
     current_iter: Option<Box<dyn Iterator<Item = ParquetResult<parquet::record::Row>> + 'a>>,
 }
 
-impl<'a> Iterator for ParquetRowIterator<'a> {
+impl Iterator for ParquetRowIterator<'_> {
     type Item = ParquetResult<parquet::record::Row>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -247,17 +253,17 @@ fn schemas_compatible(schema1: &Type, schema2: &Type) -> bool {
     // For simplicity, we check that the schema names and structures are identical
     // In a real-world scenario, you might want to implement a more sophisticated
     // compatibility check depending on your use case
-    
+
     // Check name
     if schema1.name() != schema2.name() {
         return false;
     }
-    
+
     // Check repetition
     if schema1.get_basic_info().repetition() != schema2.get_basic_info().repetition() {
         return false;
     }
-    
+
     // Check physical type only for primitive types
     if schema1.is_primitive() && schema2.is_primitive() {
         if schema1.get_physical_type() != schema2.get_physical_type() {
@@ -267,23 +273,23 @@ fn schemas_compatible(schema1: &Type, schema2: &Type) -> bool {
         // One is primitive and one isn't
         return false;
     }
-    
+
     // For group types, check children
     if schema1.is_group() && schema2.is_group() {
         let fields1 = schema1.get_fields();
         let fields2 = schema2.get_fields();
-        
+
         if fields1.len() != fields2.len() {
             return false;
         }
-        
+
         for (f1, f2) in fields1.iter().zip(fields2.iter()) {
             if !schemas_compatible(f1, f2) {
                 return false;
             }
         }
     }
-    
+
     true
 }
 
@@ -360,7 +366,7 @@ fn find_schema_incompatibilities(
                         f1.name()
                     )
                 };
-                
+
                 issues.push(SchemaIssue {
                     file_path: file_path.to_string(),
                     reference_path: reference_path.to_string(),
@@ -386,24 +392,23 @@ fn types_compatible(field1: &Type, field2: &Type) -> bool {
     if field1.get_basic_info().repetition() != field2.get_basic_info().repetition() {
         return false;
     }
-    
+
     // Check if both are the same kind (primitive or group)
     if field1.is_primitive() != field2.is_primitive() {
         return false;
     }
-    
+
     // For primitive types, check physical type
-    if field1.is_primitive() && field2.is_primitive() {
-        if field1.get_physical_type() != field2.get_physical_type() {
-            return false;
-        }
-        
-        // Could also check logical type here if needed
+    if field1.is_primitive()
+        && field2.is_primitive()
+        && field1.get_physical_type() != field2.get_physical_type()
+    {
+        return false;
     }
-    
+
     // For group types, we'd check children structure,
     // but that's handled by the recursive schema comparison
-    
+
     true
 }
 
@@ -504,10 +509,10 @@ fn main() -> Result<()> {
 
     // Simplified approach: just read files directly
     println!("\nReading files individually:");
-    
+
     for path in &paths {
         println!("\nFile: {}", path);
-        
+
         match File::open(path) {
             Ok(file) => {
                 match SerializedFileReader::new(file) {
@@ -515,14 +520,14 @@ fn main() -> Result<()> {
                         let metadata = reader.metadata();
                         println!("  Number of rows: {}", metadata.file_metadata().num_rows());
                         println!("  Number of row groups: {}", metadata.num_row_groups());
-                        
+
                         // Print column names
                         let schema = metadata.file_metadata().schema();
                         println!("  Columns:");
                         for field in schema.get_fields() {
                             println!("    - {}", field.name());
                         }
-                        
+
                         // Print a few rows
                         println!("  Sample rows:");
                         let mut row_iter = reader.into_iter();
@@ -533,18 +538,18 @@ fn main() -> Result<()> {
                                 None => break,
                             }
                         }
-                    },
+                    }
                     Err(e) => println!("  Error reading parquet file: {}", e),
                 }
-            },
+            }
             Err(e) => println!("  Error opening file: {}", e),
         }
     }
-    
+
     // Simple sequential reading
     println!("\nSimple sequential multi-file reading:");
     let mut total_rows = 0;
-    
+
     for path in &paths {
         if let Ok(file) = File::open(path) {
             if let Ok(reader) = SerializedFileReader::new(file) {
@@ -554,7 +559,7 @@ fn main() -> Result<()> {
             }
         }
     }
-    
+
     println!("  Total rows: {}", total_rows);
 
     // Example 3: Read metadata with page indexes
