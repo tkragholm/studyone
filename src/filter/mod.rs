@@ -99,7 +99,7 @@ pub enum LiteralValue {
 
 impl Expr {
     /// Returns a set of all column names required by this expression
-    pub fn required_columns(&self) -> HashSet<String> {
+    #[must_use] pub fn required_columns(&self) -> HashSet<String> {
         let mut columns = HashSet::new();
         self.collect_required_columns(&mut columns);
         columns
@@ -218,8 +218,7 @@ pub fn evaluate_expr(batch: &RecordBatch, expr: &Expr) -> Result<BooleanArray> {
         // Other expression types would need to be implemented here
         // For brevity, this is a partial implementation
         _ => Err(ParquetReaderError::FilterError(format!(
-            "Unsupported filter expression: {:?}",
-            expr
+            "Unsupported filter expression: {expr:?}"
         ))),
     }
 }
@@ -361,7 +360,7 @@ pub fn read_parquet_with_filter(
 ///
 /// # Returns
 /// An expression that matches records where PNR is in the provided set
-pub fn create_pnr_filter(pnrs: &HashSet<String>) -> Expr {
+#[must_use] pub fn create_pnr_filter(pnrs: &HashSet<String>) -> Expr {
     let values = pnrs
         .iter()
         .map(|s| LiteralValue::String(s.clone()))

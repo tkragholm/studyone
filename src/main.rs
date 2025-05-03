@@ -77,13 +77,13 @@ async fn main() -> Result<()> {
     match reader.get_schema_compatibility_report(&path_refs) {
         Ok(report) => {
             println!("  Compatible: {}", report.compatible);
-            if !report.issues.is_empty() {
+            if report.issues.is_empty() {
+                println!("  No issues found");
+            } else {
                 println!("  Issues found:");
                 for issue in report.issues {
-                    println!("    - {:#?}", issue);
+                    println!("    - {issue:#?}");
                 }
-            } else {
-                println!("  No issues found");
             }
         }
         Err(e) => println!("  Error getting schema report: {e}"),
@@ -104,7 +104,7 @@ async fn main() -> Result<()> {
                 );
                 println!(
                     "  Total rows: {}",
-                    batches.iter().map(|b| b.num_rows()).sum::<usize>()
+                    batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
                 );
 
                 // Print some sample data from the first batch
@@ -151,7 +151,7 @@ async fn main() -> Result<()> {
             );
             println!(
                 "  Total rows: {}",
-                batches.iter().map(|b| b.num_rows()).sum::<usize>()
+                batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
             );
         }
         Err(e) => println!("  Error reading files: {e}"),
@@ -169,7 +169,7 @@ async fn main() -> Result<()> {
                 println!("  Filtered to {} record batches", batches.len());
                 println!(
                     "  Total filtered rows: {}",
-                    batches.iter().map(|b| b.num_rows()).sum::<usize>()
+                    batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
                 );
             }
             Err(e) => println!("  Error applying filter: {e}"),
@@ -192,7 +192,7 @@ async fn main() -> Result<()> {
                 println!("  Filtered to {} record batches", batches.len());
                 println!(
                     "  Total filtered rows: {}",
-                    batches.iter().map(|b| b.num_rows()).sum::<usize>()
+                    batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
                 );
             }
             Err(e) => println!("  Error applying complex filter: {e}"),
@@ -214,7 +214,7 @@ async fn main() -> Result<()> {
                 );
                 println!(
                     "  Total rows: {}",
-                    batches.iter().map(|b| b.num_rows()).sum::<usize>()
+                    batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
                 );
             }
             Err(e) => println!("  Error reading file asynchronously: {e}"),
@@ -235,7 +235,7 @@ async fn main() -> Result<()> {
             );
             println!(
                 "  Total rows: {}",
-                batches.iter().map(|b| b.num_rows()).sum::<usize>()
+                batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
             );
         }
         Err(e) => println!("  Error reading files asynchronously: {e}"),
