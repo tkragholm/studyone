@@ -218,7 +218,7 @@ pub fn evaluate_expr(batch: &RecordBatch, expr: &Expr) -> Result<BooleanArray> {
 
         Expr::Eq(col_name, literal_value) => {
             // Get the column
-            let col_idx = batch.schema().index_of(&col_name).map_err(|_| {
+            let col_idx = batch.schema().index_of(col_name).map_err(|_| {
                 ParquetReaderError::FilterError(format!("Column {col_name} not found in batch"))
             })?;
             let column = batch.column(col_idx);
@@ -283,7 +283,7 @@ pub fn evaluate_expr(batch: &RecordBatch, expr: &Expr) -> Result<BooleanArray> {
 
         Expr::Gt(col_name, literal_value) => {
             // Get the column
-            let col_idx = batch.schema().index_of(&col_name).map_err(|_| {
+            let col_idx = batch.schema().index_of(col_name).map_err(|_| {
                 ParquetReaderError::FilterError(format!("Column {col_name} not found in batch"))
             })?;
             let column = batch.column(col_idx);
