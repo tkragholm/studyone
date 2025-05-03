@@ -99,7 +99,8 @@ pub enum LiteralValue {
 
 impl Expr {
     /// Returns a set of all column names required by this expression
-    #[must_use] pub fn required_columns(&self) -> HashSet<String> {
+    #[must_use]
+    pub fn required_columns(&self) -> HashSet<String> {
         let mut columns = HashSet::new();
         self.collect_required_columns(&mut columns);
         columns
@@ -215,8 +216,118 @@ pub fn evaluate_expr(batch: &RecordBatch, expr: &Expr) -> Result<BooleanArray> {
             Ok(BooleanArray::from(values))
         }
 
-        // Other expression types would need to be implemented here
-        // For brevity, this is a partial implementation
+        Expr::Eq(col_name, literal_value) => {
+            // Get the column
+            let col_idx = batch.schema().index_of(&col_name).map_err(|_| {
+                ParquetReaderError::FilterError(format!("Column {col_name} not found in batch"))
+            })?;
+            let column = batch.column(col_idx);
+
+            // Create a boolean mask based on equality comparison
+            match literal_value {
+                LiteralValue::String(s) => {
+                    if let Some(str_array) =
+                        column.as_any().downcast_ref::<arrow::array::StringArray>()
+                    {
+                        let mut values = Vec::with_capacity(str_array.len());
+                        for i in 0..str_array.len() {
+                            if str_array.is_null(i) {
+                                values.push(false);
+                            } else {
+                                values.push(str_array.value(i) == s);
+                            }
+                        }
+                        Ok(BooleanArray::from(values))
+                    } else {
+                        Err(ParquetReaderError::FilterError(format!(
+                            "Column {col_name} is not a string array"
+                        )))
+                    }
+                }
+                LiteralValue::Int(n) => {
+                    if let Some(int_array) =
+                        column.as_any().downcast_ref::<arrow::array::Int32Array>()
+                    {
+                        let mut values = Vec::with_capacity(int_array.len());
+                        for i in 0..int_array.len() {
+                            if int_array.is_null(i) {
+                                values.push(false);
+                            } else {
+                                values.push(int_array.value(i) as i64 == *n);
+                            }
+                        }
+                        Ok(BooleanArray::from(values))
+                    } else if let Some(int_array) =
+                        column.as_any().downcast_ref::<arrow::array::Int64Array>()
+                    {
+                        let mut values = Vec::with_capacity(int_array.len());
+                        for i in 0..int_array.len() {
+                            if int_array.is_null(i) {
+                                values.push(false);
+                            } else {
+                                values.push(int_array.value(i) == *n);
+                            }
+                        }
+                        Ok(BooleanArray::from(values))
+                    } else {
+                        Err(ParquetReaderError::FilterError(format!(
+                            "Column {col_name} is not an integer array"
+                        )))
+                    }
+                }
+                _ => Err(ParquetReaderError::FilterError(format!(
+                    "Unsupported literal type for equality comparison: {literal_value:?}"
+                ))),
+            }
+        }
+
+        Expr::Gt(col_name, literal_value) => {
+            // Get the column
+            let col_idx = batch.schema().index_of(&col_name).map_err(|_| {
+                ParquetReaderError::FilterError(format!("Column {col_name} not found in batch"))
+            })?;
+            let column = batch.column(col_idx);
+
+            // Create a boolean mask based on greater than comparison
+            match literal_value {
+                LiteralValue::Int(n) => {
+                    if let Some(int_array) =
+                        column.as_any().downcast_ref::<arrow::array::Int32Array>()
+                    {
+                        let mut values = Vec::with_capacity(int_array.len());
+                        for i in 0..int_array.len() {
+                            if int_array.is_null(i) {
+                                values.push(false);
+                            } else {
+                                values.push(int_array.value(i) as i64 > *n);
+                            }
+                        }
+                        Ok(BooleanArray::from(values))
+                    } else if let Some(int_array) =
+                        column.as_any().downcast_ref::<arrow::array::Int64Array>()
+                    {
+                        let mut values = Vec::with_capacity(int_array.len());
+                        for i in 0..int_array.len() {
+                            if int_array.is_null(i) {
+                                values.push(false);
+                            } else {
+                                values.push(int_array.value(i) > *n);
+                            }
+                        }
+                        Ok(BooleanArray::from(values))
+                    } else {
+                        Err(ParquetReaderError::FilterError(format!(
+                            "Column {col_name} is not an integer array"
+                        )))
+                    }
+                }
+                _ => Err(ParquetReaderError::FilterError(format!(
+                    "Unsupported literal type for greater than comparison: {literal_value:?}"
+                ))),
+            }
+        }
+
+        // Other expression types would be implemented similarly
         _ => Err(ParquetReaderError::FilterError(format!(
             "Unsupported filter expression: {expr:?}"
         ))),
@@ -360,7 +471,8 @@ pub fn read_parquet_with_filter(
 ///
 /// # Returns
 /// An expression that matches records where PNR is in the provided set
-#[must_use] pub fn create_pnr_filter(pnrs: &HashSet<String>) -> Expr {
+#[must_use]
+pub fn create_pnr_filter(pnrs: &HashSet<String>) -> Expr {
     let values = pnrs
         .iter()
         .map(|s| LiteralValue::String(s.clone()))

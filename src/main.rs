@@ -20,6 +20,9 @@ use std::fs::File;
 use std::path::Path;
 use std::time::Instant;
 
+#[global_allocator]
+static ALLOC: snmalloc_rs::SnMalloc = snmalloc_rs::SnMalloc;
+
 #[tokio::main]
 async fn main() -> Result<()> {
     // Setup logging
@@ -104,7 +107,10 @@ async fn main() -> Result<()> {
                 );
                 println!(
                     "  Total rows: {}",
-                    batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
+                    batches
+                        .iter()
+                        .map(par_reader::RecordBatch::num_rows)
+                        .sum::<usize>()
                 );
 
                 // Print some sample data from the first batch
@@ -151,7 +157,10 @@ async fn main() -> Result<()> {
             );
             println!(
                 "  Total rows: {}",
-                batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
+                batches
+                    .iter()
+                    .map(par_reader::RecordBatch::num_rows)
+                    .sum::<usize>()
             );
         }
         Err(e) => println!("  Error reading files: {e}"),
@@ -160,8 +169,9 @@ async fn main() -> Result<()> {
     println!("\n============= FILTERING CAPABILITIES =============");
 
     // Example: Create and use a simple filter
-    println!("\nFiltering with a simple condition (year > 2020):");
-    let filter_expr = Expr::Gt("year".to_string(), LiteralValue::Int(2020));
+    // Using actual columns from the data: SOCIO > 200
+    println!("\nFiltering with a simple condition (SOCIO > 200):");
+    let filter_expr = Expr::Gt("SOCIO".to_string(), LiteralValue::Int(200));
 
     if let Some(path) = paths.first() {
         match read_parquet_with_filter_async(Path::new(path), &filter_expr, None, None).await {
@@ -169,7 +179,10 @@ async fn main() -> Result<()> {
                 println!("  Filtered to {} record batches", batches.len());
                 println!(
                     "  Total filtered rows: {}",
-                    batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
+                    batches
+                        .iter()
+                        .map(par_reader::RecordBatch::num_rows)
+                        .sum::<usize>()
                 );
             }
             Err(e) => println!("  Error applying filter: {e}"),
@@ -177,12 +190,12 @@ async fn main() -> Result<()> {
     }
 
     // Example: Create and use a more complex filter
-    println!("\nFiltering with a complex condition (year > 2020 AND status = 'active'):");
+    println!("\nFiltering with a complex condition (SOCIO > 200 AND CPRTYPE = 5):");
     let complex_filter = Expr::And(vec![
-        Expr::Gt("year".to_string(), LiteralValue::Int(2020)),
+        Expr::Gt("SOCIO".to_string(), LiteralValue::Int(200)),
         Expr::Eq(
-            "status".to_string(),
-            LiteralValue::String("active".to_string()),
+            "CPRTYPE".to_string(),
+            LiteralValue::Int(5),
         ),
     ]);
 
@@ -192,7 +205,10 @@ async fn main() -> Result<()> {
                 println!("  Filtered to {} record batches", batches.len());
                 println!(
                     "  Total filtered rows: {}",
-                    batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
+                    batches
+                        .iter()
+                        .map(par_reader::RecordBatch::num_rows)
+                        .sum::<usize>()
                 );
             }
             Err(e) => println!("  Error applying complex filter: {e}"),
@@ -214,7 +230,10 @@ async fn main() -> Result<()> {
                 );
                 println!(
                     "  Total rows: {}",
-                    batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
+                    batches
+                        .iter()
+                        .map(par_reader::RecordBatch::num_rows)
+                        .sum::<usize>()
                 );
             }
             Err(e) => println!("  Error reading file asynchronously: {e}"),
@@ -235,7 +254,10 @@ async fn main() -> Result<()> {
             );
             println!(
                 "  Total rows: {}",
-                batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
+                batches
+                    .iter()
+                    .map(par_reader::RecordBatch::num_rows)
+                    .sum::<usize>()
             );
         }
         Err(e) => println!("  Error reading files asynchronously: {e}"),

@@ -17,3 +17,8 @@ log = "0.4.20"
 env_logger = "0.11.3"
 # Error handling
 thiserror = "2.0.12"
+snmalloc-rs = { version = "0.3.8", features = ["lto", "check", "native-cpu"] }
+
+[profile.release]
+lto = true
+codegen-units = 16 # 1 for max performance
