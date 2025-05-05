@@ -391,8 +391,7 @@ impl ExpressionFilter {
             LiteralValue::String(s) => self.evaluate_string_eq(column, col_name, s),
             LiteralValue::Int(n) => self.evaluate_int_eq(column, col_name, *n),
             _ => crate::filter::error::filter_err(format!(
-                "Unsupported literal type for equality comparison: {:?}",
-                literal_value
+                "Unsupported literal type for equality comparison: {literal_value:?}"
             )),
         }
     }
@@ -716,7 +715,7 @@ impl ExpressionFilter {
                     if int_array.is_null(i) {
                         in_set.push(false);
                     } else {
-                        in_set.push(int_values.contains(&(int_array.value(i) as i64)));
+                        in_set.push(int_values.contains(&i64::from(int_array.value(i))));
                     }
                 }
                 return Ok(BooleanArray::from(in_set));
@@ -768,7 +767,7 @@ impl ExpressionFilter {
         Err(anyhow::anyhow!("Column {col_name} is not a string array"))
     }
 
-    /// Evaluates STARTS_WITH expression
+    /// Evaluates `STARTS_WITH` expression
     fn evaluate_starts_with_expression(
         &self,
         batch: &RecordBatch,
@@ -796,7 +795,7 @@ impl ExpressionFilter {
         Err(anyhow::anyhow!("Column {col_name} is not a string array"))
     }
 
-    /// Evaluates ENDS_WITH expression
+    /// Evaluates `ENDS_WITH` expression
     fn evaluate_ends_with_expression(
         &self,
         batch: &RecordBatch,

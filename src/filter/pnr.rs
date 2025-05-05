@@ -134,13 +134,10 @@ impl PnrFilter {
 impl BatchFilter for PnrFilter {
     fn filter(&self, batch: &RecordBatch) -> Result<RecordBatch> {
         // Find the PNR column - first try the specified column name
-        let col_idx = match batch.schema().index_of(&self.pnr_column) {
-            Ok(idx) => idx,
-            Err(_) => {
-                // If that fails, try to auto-detect
-                let (_, idx) = Self::find_pnr_column(batch)?;
-                idx
-            }
+        let col_idx = if let Ok(idx) = batch.schema().index_of(&self.pnr_column) { idx } else {
+            // If that fails, try to auto-detect
+            let (_, idx) = Self::find_pnr_column(batch)?;
+            idx
         };
 
         let pnr_array = batch.column(col_idx);
@@ -197,13 +194,13 @@ pub fn create_pnr_expression_filter<S: ::std::hash::BuildHasher>(
 ///
 /// # Arguments
 /// * `pnr_batch` - Batch containing PNR column
-/// * `pnr_column` - Name of the PNR column in pnr_batch
+/// * `pnr_column` - Name of the PNR column in `pnr_batch`
 /// * `join_batch` - Batch to filter
 /// * `join_column` - Name of the join column in both batches
 /// * `pnr_filter` - Optional set of PNR values to filter by
 ///
 /// # Returns
-/// A filtered batch with rows from join_batch that match the PNR filter
+/// A filtered batch with rows from `join_batch` that match the PNR filter
 ///
 /// # Errors
 /// Returns an error if joining or filtering fails

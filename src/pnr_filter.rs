@@ -1,7 +1,7 @@
 //! Optimized PNR filtering utilities - DEPRECATED
 //!
 //! This module is maintained for backward compatibility only.
-//! Use the new filter module instead: crate::filter::pnr
+//! Use the new filter module instead: `crate::filter::pnr`
 
 use crate::RecordBatch;
 use crate::Result;

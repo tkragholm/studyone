@@ -55,7 +55,7 @@ pub fn filter_path_err<T>(message: impl AsRef<str>, path: impl AsRef<Path>) -> R
 /// # Returns
 /// A filter error for the missing column
 pub fn column_not_found<T>(column_name: &str) -> Result<T> {
-    filter_err(format!("Column '{}' not found", column_name))
+    filter_err(format!("Column '{column_name}' not found"))
 }
 
 /// Create a column type error
@@ -68,8 +68,7 @@ pub fn column_not_found<T>(column_name: &str) -> Result<T> {
 /// A filter error for the type mismatch
 pub fn column_type_error<T>(column_name: &str, expected_type: &str) -> Result<T> {
     filter_err(format!(
-        "Column '{}' is not a {} array",
-        column_name, expected_type
+        "Column '{column_name}' is not a {expected_type} array"
     ))
 }
 
@@ -81,7 +80,7 @@ pub fn column_type_error<T>(column_name: &str, expected_type: &str) -> Result<T>
 /// # Returns
 /// A filter error for the invalid expression
 pub fn invalid_expr<T>(expr: impl std::fmt::Debug) -> Result<T> {
-    filter_err(format!("Unsupported filter expression: {:?}", expr))
+    filter_err(format!("Unsupported filter expression: {expr:?}"))
 }
 
 /// Extension trait for Result<RecordBatch> to add filter-specific context methods
@@ -104,10 +103,10 @@ impl<T, E: std::error::Error + Send + Sync + 'static> FilterResultExt<T>
     }
 
     fn with_column_context(self, column_name: &str) -> Result<T> {
-        self.with_context(|| format!("Error processing column '{}'", column_name))
+        self.with_context(|| format!("Error processing column '{column_name}'"))
     }
 
     fn with_expr_context(self, expr: impl std::fmt::Debug) -> Result<T> {
-        self.with_context(|| format!("Error evaluating expression: {:?}", expr))
+        self.with_context(|| format!("Error evaluating expression: {expr:?}"))
     }
 }
