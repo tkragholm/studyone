@@ -148,7 +148,7 @@ pub fn create_date_range_expression_filter(
         let start_days = start.num_days_from_ce() - 719_163;
         conditions.push(Expr::GtEq(
             date_column.to_string(),
-            LiteralValue::Date(start_days as i32),
+            LiteralValue::Date(start_days),
         ));
     }
     
@@ -157,7 +157,7 @@ pub fn create_date_range_expression_filter(
         let end_days = end.num_days_from_ce() - 719_163;
         conditions.push(Expr::LtEq(
             date_column.to_string(),
-            LiteralValue::Date(end_days as i32),
+            LiteralValue::Date(end_days),
         ));
     }
     

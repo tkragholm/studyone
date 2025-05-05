@@ -206,7 +206,7 @@ impl BatchFilter for OrFilter {
         // Combine all filtered batches
         if filtered_batches.is_empty() {
             // No rows matched any filter
-            return Ok(RecordBatch::new_empty(batch.schema()));
+            Ok(RecordBatch::new_empty(batch.schema()))
         } else if filtered_batches.len() == 1 {
             // Only one filter matched
             return Ok(filtered_batches.remove(0));
