@@ -22,16 +22,16 @@ use std::collections::{HashMap, HashSet};
 ///
 /// # Returns
 /// * `Result<RecordBatch>` - The filtered record batch
-pub fn filter_batch_by_pnr(
+pub fn filter_batch_by_pnr<S: ::std::hash::BuildHasher>(
     batch: &RecordBatch,
     pnr_column: &str,
-    pnr_filter: &HashSet<String>,
+    pnr_filter: &HashSet<String, S>,
 ) -> Result<RecordBatch> {
     // Find the PNR column
     let pnr_idx = batch
         .schema()
         .index_of(pnr_column)
-        .context("PNR column '{pnr_column}' not found")?;
+        .with_context(|| format!("PNR column '{}' not found", pnr_column))?;
 
     let pnr_array = batch.column(pnr_idx);
     let pnr_array = pnr_array
@@ -64,7 +64,7 @@ pub fn filter_batch_by_pnr(
 ///
 /// # Returns
 /// * `Result<BooleanArray>` - Boolean mask where true means PNR in filter
-fn create_pnr_mask(pnr_array: &StringArray, pnr_filter: &HashSet<String>) -> Result<BooleanArray> {
+fn create_pnr_mask<S: ::std::hash::BuildHasher>(pnr_array: &StringArray, pnr_filter: &HashSet<String, S>) -> Result<BooleanArray> {
     // Pre-size the mask vector for efficiency
     let mut mask_values = Vec::with_capacity(pnr_array.len());
 
@@ -132,7 +132,7 @@ pub fn join_and_filter_by_pnr(
     let pnr_idx = pnr_batch
         .schema()
         .index_of(pnr_column)
-        .context("PNR column '{pnr_column}' not found")?;
+        .with_context(|| format!("PNR column '{}' not found", pnr_column))?;
 
     let join_idx_pnr = pnr_batch.schema().index_of(join_column).map_err(|e| {
         ParquetReaderError::MetadataError(format!(

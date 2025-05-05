@@ -168,10 +168,10 @@ pub async fn load_parquet_files_parallel_with_filter_async(
 ///
 /// # Errors
 /// Returns an error if directory reading, file reading, or filtering fails
-pub async fn load_parquet_files_parallel_with_pnr_filter_async(
+pub async fn load_parquet_files_parallel_with_pnr_filter_async<S: ::std::hash::BuildHasher>(
     dir: &Path,
     schema: Option<&Schema>,
-    pnr_filter: Option<&HashSet<String>>,
+    pnr_filter: Option<&HashSet<String, S>>,
 ) -> Result<Vec<RecordBatch>> {
     log::info!(
         "Loading Parquet files with PNR filter from directory asynchronously: {}",
@@ -194,7 +194,7 @@ pub async fn load_parquet_files_parallel_with_pnr_filter_async(
     // Determine optimal parallelism based on CPU count
     let num_cpus = num_cpus::get();
     let schema_arc = schema.map(|s| Arc::new(s.clone()));
-    let pnr_filter_arc = pnr_filter.map(|f| Arc::new(f.clone()));
+    let pnr_filter_arc = pnr_filter.map(|f| Arc::new(f));
 
     // Process files in optimal batches
     let results = stream::iter(parquet_files.clone())

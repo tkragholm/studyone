@@ -165,6 +165,9 @@ impl RegistryManager {
     }
 
     /// Load data from a registered source asynchronously
+    ///
+    /// # Errors
+    /// Returns an error if the loader or path is not found, or if there's a problem loading the data
     pub async fn load_async(&self, name: &str) -> Result<Vec<RecordBatch>> {
         // First check if data is already cached
         {
@@ -177,25 +180,35 @@ impl RegistryManager {
             }
         }
 
-        // Data not cached, load it
-        let loaders = self.loaders.read().map_err(|_| {
-            Error::InvalidOperation("Failed to acquire read lock on loaders".to_string())
-        })?;
+        // Clone the values we need before the await point to avoid holding RwLockReadGuard across await
+        let loader_and_path = {
+            // Data not cached, load it
+            let loaders = self.loaders.read().map_err(|_| {
+                Error::InvalidOperation("Failed to acquire read lock on loaders".to_string())
+            })?;
 
-        let paths = self.paths.read().map_err(|_| {
-            Error::InvalidOperation("Failed to acquire read lock on paths".to_string())
-        })?;
+            let paths = self.paths.read().map_err(|_| {
+                Error::InvalidOperation("Failed to acquire read lock on paths".to_string())
+            })?;
 
-        let loader = loaders
-            .get(name)
-            .ok_or_else(|| Error::ValidationError(format!("No loader registered for {name}")))?;
+            let loader = loaders
+                .get(name)
+                .ok_or_else(|| Error::ValidationError(format!("No loader registered for {name}")))?
+                .clone();
 
-        let path = paths
-            .get(name)
-            .ok_or_else(|| Error::ValidationError(format!("No path registered for {name}")))?;
+            let path = paths
+                .get(name)
+                .ok_or_else(|| Error::ValidationError(format!("No path registered for {name}")))?
+                .clone();
 
+            (loader, path)
+        };
+
+        // Now we can safely use await since we no longer hold the read lock
+        let (loader, path) = loader_and_path;
+        
         // Load the data asynchronously
-        let data = loader.load_async(path, None).await?;
+        let data = loader.load_async(&path, None).await?;
 
         // Cache the data
         let mut cache = self.data_cache.write().map_err(|_| {
@@ -235,6 +248,9 @@ impl RegistryManager {
     }
 
     /// Load data from multiple registered sources asynchronously
+    ///
+    /// # Errors
+    /// Returns an error if any registry loader or path is not found, or if there's a problem loading data
     pub async fn load_multiple_async(
         &self,
         names: &[&str],
@@ -245,7 +261,7 @@ impl RegistryManager {
             .map(|&name| {
                 let name_owned = name.to_string();
                 async move {
-                    let result = self.load_async(name).await;
+                    let result = self.load_async(&name_owned).await;
                     (name_owned, result)
                 }
             })
@@ -275,7 +291,7 @@ impl RegistryManager {
         pnr_filter: &HashSet<String>,
     ) -> Result<HashMap<String, Vec<RecordBatch>>> {
         // First, check if filtered data is already cached
-        let cache_key = self.generate_cache_key(pnr_filter);
+        let cache_key = Self::generate_cache_key(pnr_filter);
         {
             let filtered_cache = self.filtered_cache.lock().map_err(|_| {
                 Error::InvalidOperation("Failed to acquire lock on filtered cache".to_string())
@@ -333,13 +349,20 @@ impl RegistryManager {
     }
 
     /// Filter data by PNR values asynchronously
+    ///
+    /// # Errors
+    /// Returns an error if the loaders or paths are not found, or if there's a problem loading or filtering the data
     pub async fn filter_by_pnr_async(
         &self,
         names: &[&str],
         pnr_filter: &HashSet<String>,
     ) -> Result<HashMap<String, Vec<RecordBatch>>> {
         // First, check if filtered data is already cached
-        let cache_key = self.generate_cache_key(pnr_filter);
+        let cache_key = Self::generate_cache_key(pnr_filter);
+        let names_vec = names.iter().map(|&s| s.to_string()).collect::<Vec<_>>();
+        let pnr_filter_cloned = pnr_filter.clone();
+        
+        // Check cache first
         {
             let filtered_cache = self.filtered_cache.lock().map_err(|_| {
                 Error::InvalidOperation("Failed to acquire lock on filtered cache".to_string())
@@ -347,30 +370,37 @@ impl RegistryManager {
 
             if let Some(cache_entry) = filtered_cache.get(&cache_key) {
                 let mut result = HashMap::new();
-                for &name in names {
+                for name in &names_vec {
                     if let Some(data) = cache_entry.get(name) {
-                        result.insert(name.to_string(), data.clone());
+                        result.insert(name.clone(), data.clone());
                     }
                 }
 
-                if result.len() == names.len() {
+                if result.len() == names_vec.len() {
                     return Ok(result);
                 }
             }
         }
 
-        // Not cached, load and filter the data asynchronously
-        let data = self.load_multiple_async(names).await?;
-
-        // Build a filter plan
-        let schemas = self.get_schemas(names)?;
-        let joins = self.get_joins_for_registries(names);
-        let pnr_columns = self.get_pnr_columns(names)?;
-
+        // Prepare the filter plan data before calling async operations
+        let (schemas, joins, pnr_columns) = {
+            let schemas = self.get_schemas(names)?;
+            let joins = self.get_joins_for_registries(names);
+            let pnr_columns = self.get_pnr_columns(names)?;
+            
+            (schemas, joins, pnr_columns)
+        };
+        
+        // Build the filter plan before any async operations
         let plan = build_filter_plan(&schemas, &joins, &pnr_columns);
 
+        // Not cached, load and filter the data asynchronously
+        // Use string slices as the names to pass to load_multiple_async
+        let name_refs: Vec<&str> = names_vec.iter().map(|s| s.as_str()).collect();
+        let data = self.load_multiple_async(&name_refs).await?;
+
         // Apply the filter plan
-        let filtered_data = apply_filter_plan(&plan, &data, pnr_filter)?;
+        let filtered_data = apply_filter_plan(&plan, &data, &pnr_filter_cloned)?;
 
         // Cache the filtered data
         {
@@ -398,13 +428,12 @@ impl RegistryManager {
 
     /// Get the schema for a registry
     pub fn get_schema(&self, name: &str) -> Result<SchemaRef> {
-        let loaders = self.loaders.read().map_err(|_| {
+        // Get the loader directly to avoid holding the lock longer than necessary
+        let loader = self.loaders.read().map_err(|_| {
             Error::InvalidOperation("Failed to acquire read lock on loaders".to_string())
-        })?;
-
-        let loader = loaders
-            .get(name)
-            .ok_or_else(|| Error::ValidationError(format!("No loader registered for {name}")))?;
+        })?.get(name)
+            .ok_or_else(|| Error::ValidationError(format!("No loader registered for {name}")))?
+            .clone();
 
         Ok(loader.get_schema())
     }
@@ -416,19 +445,15 @@ impl RegistryManager {
 
     /// Clear all caches
     pub fn clear_caches(&self) -> Result<()> {
-        // Clear data cache
-        let mut data_cache = self.data_cache.write().map_err(|_| {
-            Error::InvalidOperation("Failed to acquire write lock on data cache".to_string())
-        })?;
+        // Clear data cache - drop lock immediately after clearing
+        self.data_cache.write()
+            .map_err(|_| Error::InvalidOperation("Failed to acquire write lock on data cache".to_string()))?
+            .clear();
 
-        data_cache.clear();
-
-        // Clear filtered cache
-        let mut filtered_cache = self.filtered_cache.lock().map_err(|_| {
-            Error::InvalidOperation("Failed to acquire lock on filtered cache".to_string())
-        })?;
-
-        filtered_cache.clear();
+        // Clear filtered cache - drop lock immediately after clearing
+        self.filtered_cache.lock()
+            .map_err(|_| Error::InvalidOperation("Failed to acquire lock on filtered cache".to_string()))?
+            .clear();
 
         Ok(())
     }
@@ -436,7 +461,7 @@ impl RegistryManager {
     // Helper functions
 
     /// Generate a cache key for the given PNR filter
-    fn generate_cache_key(&self, pnr_filter: &HashSet<String>) -> String {
+    fn generate_cache_key(pnr_filter: &HashSet<String>) -> String {
         // Sort the PNRs to ensure consistent cache keys
         let mut pnrs: Vec<&String> = pnr_filter.iter().collect();
         pnrs.sort();
@@ -462,18 +487,27 @@ impl RegistryManager {
 
     /// Get schemas for the specified registries
     fn get_schemas(&self, names: &[&str]) -> Result<HashMap<String, SchemaRef>> {
-        let loaders = self.loaders.read().map_err(|_| {
-            Error::InvalidOperation("Failed to acquire read lock on loaders".to_string())
-        })?;
-
-        let mut schemas = HashMap::with_capacity(names.len());
-
-        for &name in names {
-            let loader = loaders.get(name).ok_or_else(|| {
-                Error::ValidationError(format!("No loader registered for {name}"))
+        // Get a clone of all loaders we need at once to minimize lock time
+        let loaders_map = {
+            let loaders = self.loaders.read().map_err(|_| {
+                Error::InvalidOperation("Failed to acquire read lock on loaders".to_string())
             })?;
-
-            schemas.insert(name.to_string(), loader.get_schema());
+            
+            let mut loader_map = HashMap::with_capacity(names.len());
+            for &name in names {
+                if let Some(loader) = loaders.get(name) {
+                    loader_map.insert(name.to_string(), loader.clone());
+                } else {
+                    return Err(Error::ValidationError(format!("No loader registered for {name}")).into());
+                }
+            }
+            loader_map
+        };
+        
+        // Build the schemas map
+        let mut schemas = HashMap::with_capacity(names.len());
+        for (name, loader) in loaders_map {
+            schemas.insert(name, loader.get_schema());
         }
 
         Ok(schemas)
@@ -481,19 +515,28 @@ impl RegistryManager {
 
     /// Get PNR column names for the specified registries
     fn get_pnr_columns(&self, names: &[&str]) -> Result<HashMap<String, String>> {
-        let loaders = self.loaders.read().map_err(|_| {
-            Error::InvalidOperation("Failed to acquire read lock on loaders".to_string())
-        })?;
-
-        let mut pnr_columns = HashMap::with_capacity(names.len());
-
-        for &name in names {
-            let loader = loaders.get(name).ok_or_else(|| {
-                Error::ValidationError(format!("No loader registered for {name}"))
+        // Get a clone of all loaders we need at once to minimize lock time
+        let loaders_map = {
+            let loaders = self.loaders.read().map_err(|_| {
+                Error::InvalidOperation("Failed to acquire read lock on loaders".to_string())
             })?;
-
+            
+            let mut loader_map = HashMap::with_capacity(names.len());
+            for &name in names {
+                if let Some(loader) = loaders.get(name) {
+                    loader_map.insert(name.to_string(), loader.clone());
+                } else {
+                    return Err(Error::ValidationError(format!("No loader registered for {name}")).into());
+                }
+            }
+            loader_map
+        };
+        
+        // Build the pnr_columns map
+        let mut pnr_columns = HashMap::with_capacity(names.len());
+        for (name, loader) in loaders_map {
             if let Some(column) = loader.get_pnr_column_name() {
-                pnr_columns.insert(name.to_string(), column.to_string());
+                pnr_columns.insert(name, column.to_string());
             }
         }
 

@@ -27,10 +27,10 @@ use crate::utils::{DEFAULT_BATCH_SIZE, get_batch_size};
 ///
 /// # Errors
 /// Returns an error if file reading or filtering fails
-pub async fn read_parquet_with_pnr_filter_async(
+pub async fn read_parquet_with_pnr_filter_async<S: ::std::hash::BuildHasher>(
     path: &Path,
     schema: Option<&arrow::datatypes::Schema>,
-    pnr_filter: &HashSet<String>,
+    pnr_filter: &HashSet<String, S>,
     batch_size: Option<usize>,
 ) -> Result<Vec<RecordBatch>> {
     // First read the file
@@ -87,6 +87,9 @@ pub async fn read_parquet_with_pnr_filter_async(
 ///
 /// # Errors
 /// Returns an error if file reading or filtering fails
+///
+/// # Panics
+/// Panics if the projection mask is Some but is attempted to be unwrapped as None
 pub async fn read_parquet_with_filter_async(
     path: &Path,
     expr: &Expr,
@@ -192,10 +195,10 @@ pub async fn read_parquet_with_filter_async(
 ///
 /// # Errors
 /// Returns an error if file reading or filtering fails
-pub async fn read_parquet_with_optional_pnr_filter_async(
+pub async fn read_parquet_with_optional_pnr_filter_async<S: ::std::hash::BuildHasher>(
     path: &Path,
     schema: Option<&arrow::datatypes::Schema>,
-    pnr_filter: Option<&HashSet<String>>,
+    pnr_filter: Option<&HashSet<String, S>>,
 ) -> Result<Vec<RecordBatch>> {
     match pnr_filter {
         Some(filter) => read_parquet_with_pnr_filter_async(path, schema, filter, None).await,

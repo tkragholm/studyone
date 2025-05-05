@@ -29,6 +29,9 @@ use crate::utils::{
 ///
 /// # Errors
 /// Returns an error if file reading fails
+///
+/// # Panics
+/// Panics if the projection mask is Some but is attempted to be unwrapped as None
 pub async fn read_parquet_async(
     path: &Path,
     schema: Option<&Schema>,

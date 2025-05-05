@@ -102,7 +102,7 @@ async fn main() -> Result<()> {
     if let Some(path) = paths.first() {
         println!("\nReading a single file with Arrow ({path}):");
         let start = Instant::now();
-        match read_parquet(Path::new(path), None, None) {
+        match read_parquet::<std::collections::hash_map::RandomState>(Path::new(path), None, None) {
             Ok(batches) => {
                 println!(
                     "  Read {} record batches in {:?}",
@@ -152,7 +152,7 @@ async fn main() -> Result<()> {
     // Example: Parallel reading of multiple files
     println!("\nReading multiple files in parallel:");
     let start = Instant::now();
-    match load_parquet_files_parallel(Path::new(&paths[0]).parent().unwrap(), None, None) {
+    match load_parquet_files_parallel::<std::collections::hash_map::RandomState>(Path::new(&paths[0]).parent().unwrap(), None, None) {
         Ok(batches) => {
             println!(
                 "  Read {} record batches in {:?}",

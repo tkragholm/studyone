@@ -68,7 +68,7 @@ pub fn filter_by_date_range(
 
     // Apply start date filter if specified
     if let Some(start) = start_date {
-        let start_days = start.num_days_from_ce() - 719163;
+        let start_days = start.num_days_from_ce() - 719_163;
 
         // Create array of the start date for vectorized comparison
         let start_date_array = Date32Array::from(vec![start_days; batch.num_rows()]);
@@ -84,7 +84,7 @@ pub fn filter_by_date_range(
 
     // Apply end date filter if specified
     if let Some(end) = end_date {
-        let end_days = end.num_days_from_ce() - 719163;
+        let end_days = end.num_days_from_ce() - 719_163;
 
         // Create array of the end date for vectorized comparison
         let end_date_array = Date32Array::from(vec![end_days; batch.num_rows()]);
@@ -146,7 +146,7 @@ pub fn add_year_column(batch: &RecordBatch, date_column: &str) -> Result<RecordB
             year_values.push(None);
         } else {
             let days = date_array.value(i);
-            let date = NaiveDate::from_num_days_from_ce_opt(days + 719163).unwrap_or_default();
+            let date = NaiveDate::from_num_days_from_ce_opt(days + 719_163).unwrap_or_default();
             year_values.push(Some(date.year()));
         }
     }

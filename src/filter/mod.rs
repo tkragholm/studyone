@@ -150,9 +150,6 @@ impl Expr {
 /// # Errors
 /// Returns an error if expression evaluation fails
 pub fn evaluate_expr(batch: &RecordBatch, expr: &Expr) -> Result<BooleanArray> {
-    use arrow::compute::kernels::cmp::{eq, gt};
-    use arrow::compute::{and, not, or};
-
     match expr {
         Expr::AlwaysTrue => {
             // Create a boolean array with all true values
@@ -166,63 +163,152 @@ pub fn evaluate_expr(batch: &RecordBatch, expr: &Expr) -> Result<BooleanArray> {
             Ok(BooleanArray::from(values))
         }
 
-        Expr::And(exprs) => {
-            if exprs.is_empty() {
-                return Ok(BooleanArray::from(vec![true; batch.num_rows()]));
-            }
+        Expr::And(exprs) => evaluate_and_expression(batch, exprs),
 
-            // Evaluate the first expression
-            let mut result = evaluate_expr(batch, &exprs[0])?;
+        Expr::Or(exprs) => evaluate_or_expression(batch, exprs),
 
-            // Apply AND with each subsequent expression using vectorized operations
-            for expr in &exprs[1..] {
-                let mask = evaluate_expr(batch, expr)?;
+        Expr::Not(expr) => evaluate_not_expression(batch, expr),
 
-                // Use Arrow's vectorized 'and' function instead of row-by-row
-                let result_ref = and(&result, &mask)
-                    .context("Failed to apply AND operation to filter arrays".to_string())?;
+        Expr::Eq(col_name, literal_value) => evaluate_eq_expression(batch, col_name, literal_value),
 
-                result = result_ref
-                    .as_any()
-                    .downcast_ref::<BooleanArray>()
-                    .ok_or_else(|| anyhow::anyhow!("Failed to downcast boolean array"))?
-                    .clone();
-            }
+        Expr::Gt(col_name, literal_value) => evaluate_gt_expression(batch, col_name, literal_value),
 
-            Ok(result)
-        }
+        // Other expression types would be implemented similarly
+        _ => Err(anyhow::anyhow!("Unsupported filter expression: {expr:?}")),
+    }
+}
 
-        Expr::Or(exprs) => {
-            if exprs.is_empty() {
-                return Ok(BooleanArray::from(vec![false; batch.num_rows()]));
-            }
+/// Evaluates a logical AND expression
+fn evaluate_and_expression(batch: &RecordBatch, exprs: &[Expr]) -> Result<BooleanArray> {
+    use arrow::compute::and;
 
-            // Evaluate the first expression
-            let mut result = evaluate_expr(batch, &exprs[0])?;
+    if exprs.is_empty() {
+        return Ok(BooleanArray::from(vec![true; batch.num_rows()]));
+    }
 
-            // Apply OR with each subsequent expression using vectorized operations
-            for expr in &exprs[1..] {
-                let mask = evaluate_expr(batch, expr)?;
+    // Evaluate the first expression
+    let mut result = evaluate_expr(batch, &exprs[0])?;
 
-                // Use Arrow's vectorized 'or' function instead of row-by-row
-                let result_ref = or(&result, &mask)
-                    .map_err(|e| ParquetReaderError::FilterError(e.to_string()))?;
+    // Apply AND with each subsequent expression using vectorized operations
+    for expr in &exprs[1..] {
+        let mask = evaluate_expr(batch, expr)?;
 
-                result = result_ref
-                    .as_any()
-                    .downcast_ref::<BooleanArray>()
-                    .ok_or_else(|| anyhow::anyhow!("Failed to downcast boolean array"))?
-                    .clone();
-            }
+        // Use Arrow's vectorized 'and' function instead of row-by-row
+        let result_ref = and(&result, &mask)
+            .context("Failed to apply AND operation to filter arrays")?;
 
-            Ok(result)
-        }
+        result = result_ref
+            .as_any()
+            .downcast_ref::<BooleanArray>()
+            .ok_or_else(|| anyhow::anyhow!("Failed to downcast boolean array"))?
+            .clone();
+    }
 
-        Expr::Not(expr) => {
-            let mask = evaluate_expr(batch, expr)?;
+    Ok(result)
+}
 
-            // Use Arrow's vectorized 'not' function instead of row-by-row
-            let result = not(&mask).map_err(|e| ParquetReaderError::FilterError(e.to_string()))?;
+/// Evaluates a logical OR expression
+fn evaluate_or_expression(batch: &RecordBatch, exprs: &[Expr]) -> Result<BooleanArray> {
+    use arrow::compute::or;
+
+    if exprs.is_empty() {
+        return Ok(BooleanArray::from(vec![false; batch.num_rows()]));
+    }
+
+    // Evaluate the first expression
+    let mut result = evaluate_expr(batch, &exprs[0])?;
+
+    // Apply OR with each subsequent expression using vectorized operations
+    for expr in &exprs[1..] {
+        let mask = evaluate_expr(batch, expr)?;
+
+        // Use Arrow's vectorized 'or' function instead of row-by-row
+        let result_ref = or(&result, &mask)
+            .map_err(|e| ParquetReaderError::FilterError(e.to_string()))?;
+
+        result = result_ref
+            .as_any()
+            .downcast_ref::<BooleanArray>()
+            .ok_or_else(|| anyhow::anyhow!("Failed to downcast boolean array"))?
+            .clone();
+    }
+
+    Ok(result)
+}
+
+/// Evaluates a logical NOT expression
+fn evaluate_not_expression(batch: &RecordBatch, expr: &Expr) -> Result<BooleanArray> {
+    use arrow::compute::not;
+
+    let mask = evaluate_expr(batch, expr)?;
+
+    // Use Arrow's vectorized 'not' function instead of row-by-row
+    let result = not(&mask).map_err(|e| ParquetReaderError::FilterError(e.to_string()))?;
+
+    Ok(result
+        .as_any()
+        .downcast_ref::<BooleanArray>()
+        .ok_or_else(|| {
+            ParquetReaderError::FilterError("Failed to downcast boolean array".to_string())
+        })?
+        .clone())
+}
+
+/// Evaluates an equality comparison expression
+fn evaluate_eq_expression(batch: &RecordBatch, col_name: &str, literal_value: &LiteralValue) -> Result<BooleanArray> {
+    // Get the column
+    let col_idx = batch.schema().index_of(col_name).map_err(|_| {
+        ParquetReaderError::FilterError(format!("Column {col_name} not found in batch"))
+    })?;
+    let column = batch.column(col_idx);
+
+    // Create a boolean mask based on equality comparison using vectorized operations
+    match literal_value {
+        LiteralValue::String(s) => evaluate_string_eq(column, col_name, s),
+        LiteralValue::Int(n) => evaluate_int_eq(column, col_name, *n),
+        _ => Err(anyhow::anyhow!(
+            "Unsupported literal type for equality comparison: {literal_value:?}"
+        )),
+    }
+}
+
+/// Evaluates equality comparison for string types
+fn evaluate_string_eq(column: &arrow::array::ArrayRef, col_name: &str, s: &str) -> Result<BooleanArray> {
+    use arrow::compute::kernels::cmp::eq;
+    
+    if let Some(str_array) = column.as_any().downcast_ref::<arrow::array::StringArray>() {
+        // Create a constant array of comparison values
+        let literal_array = arrow::array::StringArray::from(vec![s; str_array.len()]);
+
+        // Use Arrow's vectorized eq function
+        let result = eq(str_array, &literal_array)
+            .map_err(|e| ParquetReaderError::FilterError(e.to_string()))?;
+
+        Ok(result
+            .as_any()
+            .downcast_ref::<BooleanArray>()
+            .ok_or_else(|| {
+                ParquetReaderError::FilterError("Failed to downcast boolean array".to_string())
+            })?
+            .clone())
+    } else {
+        Err(anyhow::anyhow!("Column {col_name} is not a string array"))
+    }
+}
+
+/// Evaluates equality comparison for integer types
+fn evaluate_int_eq(column: &arrow::array::ArrayRef, col_name: &str, n: i64) -> Result<BooleanArray> {
+    use arrow::compute::kernels::cmp::eq;
+    
+    if let Some(int_array) = column.as_any().downcast_ref::<arrow::array::Int32Array>() {
+        // Convert i64 to i32 safely
+        if let Ok(n_i32) = i32::try_from(n) {
+            // Create a constant array of comparison values
+            let literal_array = arrow::array::Int32Array::from(vec![n_i32; int_array.len()]);
+
+            // Use Arrow's vectorized eq function
+            let result = eq(int_array, &literal_array)
+                .map_err(|e| ParquetReaderError::FilterError(e.to_string()))?;
 
             Ok(result
                 .as_any()
@@ -231,155 +317,96 @@ pub fn evaluate_expr(batch: &RecordBatch, expr: &Expr) -> Result<BooleanArray> {
                     ParquetReaderError::FilterError("Failed to downcast boolean array".to_string())
                 })?
                 .clone())
+        } else {
+            // If the i64 value doesn't fit in i32, the equality will always be false
+            Ok(arrow::array::BooleanArray::from(vec![false; int_array.len()]))
         }
+    } else if let Some(int_array) = column.as_any().downcast_ref::<arrow::array::Int64Array>() {
+        // Create a constant array of comparison values
+        let literal_array = arrow::array::Int64Array::from(vec![n; int_array.len()]);
 
-        Expr::Eq(col_name, literal_value) => {
-            // Get the column
-            let col_idx = batch.schema().index_of(col_name).map_err(|_| {
-                ParquetReaderError::FilterError(format!("Column {col_name} not found in batch"))
-            })?;
-            let column = batch.column(col_idx);
+        // Use Arrow's vectorized eq function
+        let result = eq(int_array, &literal_array)
+            .map_err(|e| ParquetReaderError::FilterError(e.to_string()))?;
 
-            // Create a boolean mask based on equality comparison using vectorized operations
-            match literal_value {
-                LiteralValue::String(s) => {
-                    if let Some(str_array) =
-                        column.as_any().downcast_ref::<arrow::array::StringArray>()
-                    {
-                        // Create a constant array of comparison values
-                        let literal_array =
-                            arrow::array::StringArray::from(vec![s.as_str(); str_array.len()]);
+        Ok(result
+            .as_any()
+            .downcast_ref::<BooleanArray>()
+            .ok_or_else(|| {
+                ParquetReaderError::FilterError("Failed to downcast boolean array".to_string())
+            })?
+            .clone())
+    } else {
+        Err(anyhow::anyhow!("Column {col_name} is not an integer array"))
+    }
+}
 
-                        // Use Arrow's vectorized eq function
-                        let result = eq(str_array, &literal_array)
-                            .map_err(|e| ParquetReaderError::FilterError(e.to_string()))?;
+/// Evaluates a greater than comparison expression
+fn evaluate_gt_expression(batch: &RecordBatch, col_name: &str, literal_value: &LiteralValue) -> Result<BooleanArray> {
+    // Get the column
+    let col_idx = batch.schema().index_of(col_name).map_err(|_| {
+        ParquetReaderError::FilterError(format!("Column {col_name} not found in batch"))
+    })?;
+    let column = batch.column(col_idx);
 
-                        Ok(result
-                            .as_any()
-                            .downcast_ref::<BooleanArray>()
-                            .ok_or_else(|| {
-                                ParquetReaderError::FilterError(
-                                    "Failed to downcast boolean array".to_string(),
-                                )
-                            })?
-                            .clone())
-                    } else {
-                        Err(anyhow::anyhow!("Column {col_name} is not a string array"))
-                    }
-                }
-                LiteralValue::Int(n) => {
-                    if let Some(int_array) =
-                        column.as_any().downcast_ref::<arrow::array::Int32Array>()
-                    {
-                        // Create a constant array of comparison values
-                        let literal_array =
-                            arrow::array::Int32Array::from(vec![*n as i32; int_array.len()]);
+    // Create a boolean mask based on greater than comparison using vectorized operations
+    match literal_value {
+        LiteralValue::Int(n) => evaluate_int_gt(column, col_name, *n),
+        _ => Err(anyhow::anyhow!(
+            "Unsupported literal type for greater than comparison: {literal_value:?}"
+        )),
+    }
+}
 
-                        // Use Arrow's vectorized eq function
-                        let result = eq(int_array, &literal_array)
-                            .map_err(|e| ParquetReaderError::FilterError(e.to_string()))?;
+/// Evaluates greater than comparison for integer types
+fn evaluate_int_gt(column: &arrow::array::ArrayRef, col_name: &str, n: i64) -> Result<BooleanArray> {
+    use arrow::compute::kernels::cmp::gt;
+    
+    if let Some(int_array) = column.as_any().downcast_ref::<arrow::array::Int32Array>() {
+        // Convert i64 to i32 safely
+        if let Ok(n_i32) = i32::try_from(n) {
+            // Create a constant array of comparison values
+            let literal_array = arrow::array::Int32Array::from(vec![n_i32; int_array.len()]);
 
-                        Ok(result
-                            .as_any()
-                            .downcast_ref::<BooleanArray>()
-                            .ok_or_else(|| {
-                                ParquetReaderError::FilterError(
-                                    "Failed to downcast boolean array".to_string(),
-                                )
-                            })?
-                            .clone())
-                    } else if let Some(int_array) =
-                        column.as_any().downcast_ref::<arrow::array::Int64Array>()
-                    {
-                        // Create a constant array of comparison values
-                        let literal_array =
-                            arrow::array::Int64Array::from(vec![*n; int_array.len()]);
+            // Use Arrow's vectorized gt function
+            let result = gt(int_array, &literal_array)
+                .map_err(|e| ParquetReaderError::FilterError(e.to_string()))?;
 
-                        // Use Arrow's vectorized eq function
-                        let result = eq(int_array, &literal_array)
-                            .map_err(|e| ParquetReaderError::FilterError(e.to_string()))?;
-
-                        Ok(result
-                            .as_any()
-                            .downcast_ref::<BooleanArray>()
-                            .ok_or_else(|| {
-                                ParquetReaderError::FilterError(
-                                    "Failed to downcast boolean array".to_string(),
-                                )
-                            })?
-                            .clone())
-                    } else {
-                        Err(anyhow::anyhow!("Column {col_name} is not an integer array"))
-                    }
-                }
-                _ => Err(anyhow::anyhow!(
-                    "Unsupported literal type for equality comparison: {literal_value:?}"
-                )),
-            }
+            Ok(result
+                .as_any()
+                .downcast_ref::<BooleanArray>()
+                .ok_or_else(|| {
+                    ParquetReaderError::FilterError("Failed to downcast boolean array".to_string())
+                })?
+                .clone())
+        } else {
+            // If i64 value is too large for i32, for "a > b" the result depends on the sign
+            // If n is positive, nothing can be greater, so all false
+            // If n is negative, all values would be greater, so all true
+            let result = if n > 0 {
+                vec![false; int_array.len()]
+            } else {
+                vec![true; int_array.len()]
+            };
+            Ok(arrow::array::BooleanArray::from(result))
         }
+    } else if let Some(int_array) = column.as_any().downcast_ref::<arrow::array::Int64Array>() {
+        // Create a constant array of comparison values
+        let literal_array = arrow::array::Int64Array::from(vec![n; int_array.len()]);
 
-        Expr::Gt(col_name, literal_value) => {
-            // Get the column
-            let col_idx = batch.schema().index_of(col_name).map_err(|_| {
-                ParquetReaderError::FilterError(format!("Column {col_name} not found in batch"))
-            })?;
-            let column = batch.column(col_idx);
+        // Use Arrow's vectorized gt function
+        let result = gt(int_array, &literal_array)
+            .map_err(|e| ParquetReaderError::FilterError(e.to_string()))?;
 
-            // Create a boolean mask based on greater than comparison using vectorized operations
-            match literal_value {
-                LiteralValue::Int(n) => {
-                    if let Some(int_array) =
-                        column.as_any().downcast_ref::<arrow::array::Int32Array>()
-                    {
-                        // Create a constant array of comparison values
-                        let literal_array =
-                            arrow::array::Int32Array::from(vec![*n as i32; int_array.len()]);
-
-                        // Use Arrow's vectorized gt function
-                        let result = gt(int_array, &literal_array)
-                            .map_err(|e| ParquetReaderError::FilterError(e.to_string()))?;
-
-                        Ok(result
-                            .as_any()
-                            .downcast_ref::<BooleanArray>()
-                            .ok_or_else(|| {
-                                ParquetReaderError::FilterError(
-                                    "Failed to downcast boolean array".to_string(),
-                                )
-                            })?
-                            .clone())
-                    } else if let Some(int_array) =
-                        column.as_any().downcast_ref::<arrow::array::Int64Array>()
-                    {
-                        // Create a constant array of comparison values
-                        let literal_array =
-                            arrow::array::Int64Array::from(vec![*n; int_array.len()]);
-
-                        // Use Arrow's vectorized gt function
-                        let result = gt(int_array, &literal_array)
-                            .map_err(|e| ParquetReaderError::FilterError(e.to_string()))?;
-
-                        Ok(result
-                            .as_any()
-                            .downcast_ref::<BooleanArray>()
-                            .ok_or_else(|| {
-                                ParquetReaderError::FilterError(
-                                    "Failed to downcast boolean array".to_string(),
-                                )
-                            })?
-                            .clone())
-                    } else {
-                        Err(anyhow::anyhow!("Column {col_name} is not an integer array"))
-                    }
-                }
-                _ => Err(anyhow::anyhow!(
-                    "Unsupported literal type for greater than comparison: {literal_value:?}"
-                )),
-            }
-        }
-
-        // Other expression types would be implemented similarly
-        _ => Err(anyhow::anyhow!("Unsupported filter expression: {expr:?}")),
+        Ok(result
+            .as_any()
+            .downcast_ref::<BooleanArray>()
+            .ok_or_else(|| {
+                ParquetReaderError::FilterError("Failed to downcast boolean array".to_string())
+            })?
+            .clone())
+    } else {
+        Err(anyhow::anyhow!("Column {col_name} is not an integer array"))
     }
 }
 
@@ -444,10 +471,11 @@ pub fn read_parquet_with_filter(
         return Err(anyhow::anyhow!("File not found"));
     }
 
-    // Get all columns required by the filter expression
-    let mut all_required_columns = expr.required_columns();
+    // Get all columns required by the filter expression - used for projection below
+    let expr_required_columns = expr.required_columns();
 
     // Add any additional columns requested for projection
+    let mut all_required_columns = expr_required_columns;
     if let Some(cols) = columns {
         for col in cols {
             all_required_columns.insert(col.clone());
@@ -455,7 +483,7 @@ pub fn read_parquet_with_filter(
     }
 
     // Read the file with schema projection containing required columns
-    let batches = utils::read_parquet(path, None, None)
+    let batches = utils::read_parquet::<std::collections::hash_map::RandomState>(path, None, None)
         .with_context(|| format!("Failed to read Parquet file for filtering (path: {})", path.display()))?;
 
     // Filter each batch
@@ -500,7 +528,7 @@ pub fn read_parquet_with_filter(
 /// # Returns
 /// An expression that matches records where PNR is in the provided set
 #[must_use]
-pub fn create_pnr_filter(pnrs: &HashSet<String>) -> Expr {
+pub fn create_pnr_filter<S: ::std::hash::BuildHasher>(pnrs: &HashSet<String, S>) -> Expr {
     let values = pnrs
         .iter()
         .map(|s| LiteralValue::String(s.clone()))

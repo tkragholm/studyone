@@ -3,6 +3,7 @@
 use std::collections::HashSet;
 use std::fs::File;
 use std::path::{Path, PathBuf};
+use std::sync::Mutex;
 
 use arrow::array::{Array, BooleanArray, StringArray};
 use arrow::datatypes::Schema;
@@ -189,10 +190,13 @@ pub fn create_projection(
 ///
 /// # Errors
 /// Returns an error if the file cannot be opened or if the Parquet file is invalid
-pub fn read_parquet(
+///
+/// # Panics
+/// Panics if the projection mask is Some but is attempted to be unwrapped as None
+pub fn read_parquet<S: ::std::hash::BuildHasher + std::marker::Sync>(
     path: &Path,
     schema: Option<&Schema>,
-    pnr_filter: Option<&HashSet<String>>,
+    pnr_filter: Option<&HashSet<String, S>>,
 ) -> Result<Vec<RecordBatch>> {
     let start = std::time::Instant::now();
     log_operation_start("Reading parquet file", path);
@@ -235,8 +239,7 @@ pub fn read_parquet(
             .map_err(|e| anyhow::anyhow!("Failed to build parquet reader. Error: {}", e))?
     };
 
-    use rayon::prelude::*;
-    use std::sync::Mutex;
+    // Read the implementation to leverage rayon's parallel processing
 
     // Collect the batches first to enable parallel processing
     let batch_results: Vec<_> = reader.collect();
@@ -288,7 +291,7 @@ pub fn read_parquet(
 ///
 /// # Errors
 /// Returns an error if the PNR column cannot be found or filtered
-fn filter_batch_by_pnr(batch: &RecordBatch, pnr_filter: &HashSet<String>) -> Result<RecordBatch> {
+fn filter_batch_by_pnr<S: ::std::hash::BuildHasher + std::marker::Sync>(batch: &RecordBatch, pnr_filter: &HashSet<String, S>) -> Result<RecordBatch> {
     use itertools::Itertools;
 
     // Find the PNR column
@@ -382,10 +385,10 @@ pub fn find_parquet_files(dir: &Path) -> Result<Vec<PathBuf>> {
 ///
 /// # Errors
 /// Returns an error if directory reading fails or any file cannot be read
-pub fn load_parquet_files_parallel(
+pub fn load_parquet_files_parallel<S: ::std::hash::BuildHasher + std::marker::Sync>(
     dir: &Path,
     schema: Option<&Schema>,
-    pnr_filter: Option<&HashSet<String>>,
+    pnr_filter: Option<&HashSet<String, S>>,
 ) -> Result<Vec<RecordBatch>> {
     // Find all parquet files in the directory
     let parquet_files = find_parquet_files(dir)?;
@@ -397,7 +400,7 @@ pub fn load_parquet_files_parallel(
 
     // Clone schema and pnr_filter for sharing across threads
     let schema_arc = schema.map(|s| std::sync::Arc::new(s.clone()));
-    let pnr_filter_arc = pnr_filter.map(|f| std::sync::Arc::new(f.clone()));
+    let pnr_filter_arc = pnr_filter.map(|f| std::sync::Arc::new(f));
 
     // Process files in parallel using rayon
     let all_batches: Vec<Result<Vec<RecordBatch>>> = parquet_files
@@ -405,9 +408,9 @@ pub fn load_parquet_files_parallel(
         .map(|path| {
             // Use clone of schema and pnr_filter
             let schema_ref = schema_arc.as_ref().map(std::convert::AsRef::as_ref);
-            let pnr_filter_ref = pnr_filter_arc.as_ref().map(std::convert::AsRef::as_ref);
+            let pnr_filter_ref = pnr_filter_arc.as_ref().map(|v| &**v);
 
-            read_parquet(path, schema_ref, pnr_filter_ref)
+            read_parquet::<S>(path, schema_ref, pnr_filter_ref.map(|v| &**v))
         })
         .collect();
 

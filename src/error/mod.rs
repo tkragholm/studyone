@@ -71,6 +71,9 @@ pub type Result<T> = anyhow::Result<T>;
 // Convenience functions for working with errors and context
 
 /// Add path context to a Result
+///
+/// # Errors
+/// Returns an error if the input result is an error, with the path context added
 pub fn with_path_context<T, E: std::error::Error + Send + Sync + 'static>(
     result: std::result::Result<T, E>,
     path: impl AsRef<Path>,
@@ -80,6 +83,9 @@ pub fn with_path_context<T, E: std::error::Error + Send + Sync + 'static>(
 }
 
 /// Create a new IO error Result with path context
+///
+/// # Errors
+/// Always returns an IO error with the specified message and path
 pub fn io_err<T>(message: impl AsRef<str>, path: impl AsRef<Path>) -> Result<T> {
     Err(anyhow::anyhow!(
         "IO error: {} (path: {})",
@@ -89,6 +95,9 @@ pub fn io_err<T>(message: impl AsRef<str>, path: impl AsRef<Path>) -> Result<T> 
 }
 
 /// Create a new validation error Result
+///
+/// # Errors
+/// Always returns a validation error with the specified message
 pub fn validation_err<T>(message: impl AsRef<str>) -> Result<T> {
     Err(anyhow::anyhow!("Validation error: {}", message.as_ref()))
 }
@@ -222,7 +231,11 @@ impl ParquetReaderError {
         Self::Other(message.into())
     }
 
-    // Add path context to an error message (for backward compatibility)
+    /// Add path context to an error message (for backward compatibility)
+    ///
+    /// # Returns
+    /// Returns self with added path context
+    #[must_use]
     pub fn with_path<P: Into<PathBuf>>(self, path: P) -> Self {
         let path_str = path.into().display().to_string();
         match self {
@@ -245,7 +258,11 @@ impl ParquetReaderError {
         }
     }
 
-    // Add additional context to an error message (for backward compatibility)
+    /// Add additional context to an error message (for backward compatibility)
+    ///
+    /// # Returns
+    /// Returns self with added context prefix
+    #[must_use]
     pub fn context<S: Into<String>>(self, context: S) -> Self {
         let ctx = context.into();
         match self {
@@ -266,9 +283,15 @@ impl ParquetReaderError {
 /// Extension traits for easy context addition to Results
 pub trait ResultExt<T> {
     /// Add context to a Result
+    ///
+    /// # Errors
+    /// Returns the original error with additional context if the result is an error
     fn with_msg<S: AsRef<str>>(self, msg: S) -> Result<T>;
 
     /// Add context and path to a Result
+    ///
+    /// # Errors
+    /// Returns the original error with additional context including the path if the result is an error
     fn with_path_context<S: AsRef<str>, P: AsRef<Path>>(self, msg: S, path: P) -> Result<T>;
 }
 
