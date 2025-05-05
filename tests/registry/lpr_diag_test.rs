@@ -1,6 +1,6 @@
 use crate::utils::{
-    ensure_path_exists, print_batch_summary, print_sample_rows, print_schema_info, registry_dir,
-    registry_file, timed_execution,
+    ensure_path_exists, expr_to_filter, print_batch_summary, print_sample_rows, print_schema_info, 
+    registry_dir, registry_file, timed_execution,
 };
 use par_reader::{
     Expr, LiteralValue, RegistryManager, load_parquet_files_parallel, read_parquet,
@@ -58,7 +58,7 @@ async fn test_lpr_diag_filter_by_diagnosis() -> par_reader::Result<()> {
     // Using a comparison since Like operator doesn't exist
     let filter_expr = Expr::Eq(diag_column.to_string(), LiteralValue::String("C".to_string()));
 
-    let result = read_parquet_with_filter_async(&path, &filter_expr, None, None).await?;
+    let result = read_parquet_with_filter_async(&path, expr_to_filter(&filter_expr), None).await?;
     println!("Filtered to {} record batches", result.len());
     println!("Total filtered rows: {}", 
         result.iter().map(|b| b.num_rows()).sum::<usize>()
@@ -80,7 +80,7 @@ async fn test_lpr_diag_filter_by_diagnosis() -> par_reader::Result<()> {
         ]);
 
         // Attempt to use the complex filter
-        match read_parquet_with_filter_async(&path, &complex_filter, None, None).await {
+        match read_parquet_with_filter_async(&path, expr_to_filter(&complex_filter), None).await {
             Ok(batches) => {
                 println!("Complex filtered to {} record batches", batches.len());
                 println!("Total complex filtered rows: {}", 

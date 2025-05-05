@@ -1,4 +1,4 @@
-use crate::utils::{print_schema_info, registry_file};
+use crate::utils::{expr_to_filter, print_schema_info, registry_file};
 use par_reader::{Expr, LiteralValue, read_parquet, read_parquet_with_filter_async};
 
 /// Test simple filtering expressions
@@ -20,7 +20,7 @@ async fn test_simple_filters() -> par_reader::Result<()> {
     let filter_expr = Expr::Gt("SOCIO".to_string(), LiteralValue::Int(200));
 
     // Apply filter
-    let filtered_batches = read_parquet_with_filter_async(&path, &filter_expr, None, None).await?;
+    let filtered_batches = read_parquet_with_filter_async(&path, expr_to_filter(&filter_expr), None).await?;
     let filtered_rows = filtered_batches.iter().map(|b| b.num_rows()).sum::<usize>();
     println!("Rows after filter (SOCIO > 200): {}", filtered_rows);
     println!(
@@ -53,7 +53,7 @@ async fn test_complex_filters() -> par_reader::Result<()> {
     ]);
 
     // Apply AND filter
-    let and_filtered = read_parquet_with_filter_async(&path, &and_filter, None, None).await?;
+    let and_filtered = read_parquet_with_filter_async(&path, expr_to_filter(&and_filter), None).await?;
     let and_rows = and_filtered.iter().map(|b| b.num_rows()).sum::<usize>();
     println!(
         "Rows after AND filter (SOCIO > 200 AND CPRTYPE = 5): {}",
@@ -71,7 +71,7 @@ async fn test_complex_filters() -> par_reader::Result<()> {
     ]);
 
     // Apply OR filter
-    let or_filtered = read_parquet_with_filter_async(&path, &or_filter, None, None).await?;
+    let or_filtered = read_parquet_with_filter_async(&path, expr_to_filter(&or_filter), None).await?;
     let or_rows = or_filtered.iter().map(|b| b.num_rows()).sum::<usize>();
     println!(
         "Rows after OR filter (SOCIO > 300 OR CPRTYPE = 1): {}",
@@ -90,7 +90,7 @@ async fn test_complex_filters() -> par_reader::Result<()> {
     );
 
     // Apply the filter
-    let not_filtered = read_parquet_with_filter_async(&path, &not_filter, None, None).await?;
+    let not_filtered = read_parquet_with_filter_async(&path, expr_to_filter(&not_filter), None).await?;
     let not_rows = not_filtered.iter().map(|b| b.num_rows()).sum::<usize>();
     println!("Rows after filter (SOCIO > 200): {}", not_rows);
     println!(
@@ -144,7 +144,7 @@ async fn test_filter_data_types() -> par_reader::Result<()> {
 
     // Apply each filter and report results
     println!("\nTesting integer filter: {} > 200", int_column);
-    match read_parquet_with_filter_async(&path, &int_filter, None, None).await {
+    match read_parquet_with_filter_async(&path, expr_to_filter(&int_filter), None).await {
         Ok(filtered) => {
             let rows = filtered.iter().map(|b| b.num_rows()).sum::<usize>();
             println!("Filtered rows: {}", rows);
@@ -153,7 +153,7 @@ async fn test_filter_data_types() -> par_reader::Result<()> {
     }
 
     println!("\nTesting string filter: {} = '0101'", string_column);
-    match read_parquet_with_filter_async(&path, &string_filter, None, None).await {
+    match read_parquet_with_filter_async(&path, expr_to_filter(&string_filter), None).await {
         Ok(filtered) => {
             let rows = filtered.iter().map(|b| b.num_rows()).sum::<usize>();
             println!("Filtered rows: {}", rows);
@@ -162,7 +162,7 @@ async fn test_filter_data_types() -> par_reader::Result<()> {
     }
 
     println!("\nTesting date filter: {} >= '2020-01-01'", date_column);
-    match read_parquet_with_filter_async(&path, &date_filter, None, None).await {
+    match read_parquet_with_filter_async(&path, expr_to_filter(&date_filter), None).await {
         Ok(filtered) => {
             let rows = filtered.iter().map(|b| b.num_rows()).sum::<usize>();
             println!("Filtered rows: {}", rows);
@@ -201,7 +201,7 @@ async fn test_filter_performance() -> par_reader::Result<()> {
 
     // High selectivity test
     let high_start = std::time::Instant::now();
-    let high_result = read_parquet_with_filter_async(&path, &high_selectivity, None, None).await?;
+    let high_result = read_parquet_with_filter_async(&path, expr_to_filter(&high_selectivity), None).await?;
     let high_duration = high_start.elapsed();
     let high_rows = high_result.iter().map(|b| b.num_rows()).sum::<usize>();
     println!(
@@ -212,7 +212,7 @@ async fn test_filter_performance() -> par_reader::Result<()> {
     // Medium selectivity test
     let medium_start = std::time::Instant::now();
     let medium_result =
-        read_parquet_with_filter_async(&path, &medium_selectivity, None, None).await?;
+        read_parquet_with_filter_async(&path, expr_to_filter(&medium_selectivity), None).await?;
     let medium_duration = medium_start.elapsed();
     let medium_rows = medium_result.iter().map(|b| b.num_rows()).sum::<usize>();
     println!(
@@ -222,7 +222,7 @@ async fn test_filter_performance() -> par_reader::Result<()> {
 
     // Low selectivity test
     let low_start = std::time::Instant::now();
-    let low_result = read_parquet_with_filter_async(&path, &low_selectivity, None, None).await?;
+    let low_result = read_parquet_with_filter_async(&path, expr_to_filter(&low_selectivity), None).await?;
     let low_duration = low_start.elapsed();
     let low_rows = low_result.iter().map(|b| b.num_rows()).sum::<usize>();
     println!(

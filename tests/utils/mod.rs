@@ -1,8 +1,13 @@
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::time::Instant;
 
 use arrow::record_batch::RecordBatch;
-use par_reader::{ParquetReaderConfig, Result};
+use par_reader::{
+    filter::expr::{Expr, ExpressionFilter},
+    filter::core::BatchFilter,
+    ParquetReaderConfig, Result
+};
 
 /// Base path for test data files
 pub fn test_data_dir() -> PathBuf {
@@ -112,4 +117,12 @@ pub fn get_available_year_files(registry: &str) -> Vec<PathBuf> {
                 .collect()
         })
         .unwrap_or_default()
+}
+
+/// Convert an expression to a filter
+///
+/// Helper function to convert an Expr to an Arc<dyn BatchFilter + Send + Sync>
+/// for use with the read_parquet_with_filter_async function.
+pub fn expr_to_filter(expr: &Expr) -> Arc<dyn BatchFilter + Send + Sync> {
+    Arc::new(ExpressionFilter::new(expr.clone()))
 }

@@ -1,4 +1,4 @@
-use crate::utils::{print_schema_info, registry_dir, registry_file};
+use crate::utils::{expr_to_filter, print_schema_info, registry_dir, registry_file};
 use futures::future::join_all;
 use par_reader::{
     Expr, LiteralValue, load_parquet_files_parallel_async, read_parquet_async,
@@ -46,7 +46,7 @@ async fn test_async_filtering() -> par_reader::Result<()> {
 
     println!("Testing async filtering with condition (SOCIO > 200):");
     let start = std::time::Instant::now();
-    let batches = read_parquet_with_filter_async(&path, &filter_expr, None, None).await?;
+    let batches = read_parquet_with_filter_async(&path, expr_to_filter(&filter_expr), None).await?;
     let elapsed = start.elapsed();
 
     println!(

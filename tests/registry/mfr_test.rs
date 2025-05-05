@@ -1,6 +1,6 @@
 use crate::utils::{
-    print_batch_summary, print_sample_rows, print_schema_info, registry_dir, registry_file,
-    timed_execution,
+    expr_to_filter, print_batch_summary, print_sample_rows, print_schema_info, registry_dir, 
+    registry_file, timed_execution,
 };
 use par_reader::{
     Expr, LiteralValue, RegistryManager, load_parquet_files_parallel, read_parquet,
@@ -44,7 +44,7 @@ async fn test_mfr_filter_by_birth_details() -> par_reader::Result<()> {
     let weight_filter = Expr::Lt(weight_column.to_string(), LiteralValue::Int(2500)); // Low birth weight
 
     // Attempt to use the filter, but catch errors as the column might not match
-    match read_parquet_with_filter_async(&path, &weight_filter, None, None).await {
+    match read_parquet_with_filter_async(&path, expr_to_filter(&weight_filter), None).await {
         Ok(batches) => {
             println!("Filtered to {} record batches", batches.len());
             println!(
@@ -63,7 +63,7 @@ async fn test_mfr_filter_by_birth_details() -> par_reader::Result<()> {
     ]);
 
     // Attempt to use the complex filter, but catch errors as the columns might not match
-    match read_parquet_with_filter_async(&path, &complex_filter, None, None).await {
+    match read_parquet_with_filter_async(&path, expr_to_filter(&complex_filter), None).await {
         Ok(batches) => {
             println!("Complex filtered to {} record batches", batches.len());
             println!(

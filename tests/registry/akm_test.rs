@@ -1,6 +1,6 @@
 use crate::utils::{
-    ensure_path_exists, print_batch_summary, print_sample_rows, print_schema_info, registry_dir,
-    registry_file, timed_execution,
+    ensure_path_exists, expr_to_filter, print_batch_summary, print_sample_rows, print_schema_info, 
+    registry_dir, registry_file, timed_execution,
 };
 use par_reader::{
     Expr, LiteralValue, ParquetReader, RegistryManager, add_year_column, read_parquet,
@@ -89,7 +89,7 @@ async fn test_akm_filtering() -> par_reader::Result<()> {
     // Simple filter: SOCIO > 200
     let filter_expr = Expr::Gt("SOCIO".to_string(), LiteralValue::Int(200));
 
-    let result = read_parquet_with_filter_async(&path, &filter_expr, None, None).await?;
+    let result = read_parquet_with_filter_async(&path, expr_to_filter(&filter_expr), None).await?;
     println!("Filtered to {} record batches", result.len());
     println!("Total filtered rows: {}", result.iter().map(|batch| batch.num_rows()).sum::<usize>());
 
@@ -99,7 +99,7 @@ async fn test_akm_filtering() -> par_reader::Result<()> {
         Expr::Eq("CPRTYPE".to_string(), LiteralValue::Int(5)),
     ]);
 
-    let result = read_parquet_with_filter_async(&path, &complex_filter, None, None).await?;
+    let result = read_parquet_with_filter_async(&path, expr_to_filter(&complex_filter), None).await?;
     println!("Complex filtered to {} record batches", result.len());
     println!("Total complex filtered rows: {}", result.iter().map(|batch| batch.num_rows()).sum::<usize>());
 

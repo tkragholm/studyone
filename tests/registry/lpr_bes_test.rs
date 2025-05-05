@@ -1,6 +1,6 @@
 use crate::utils::{
-    ensure_path_exists, print_batch_summary, print_sample_rows, print_schema_info, registry_dir,
-    registry_file, timed_execution,
+    ensure_path_exists, expr_to_filter, print_batch_summary, print_sample_rows, print_schema_info, 
+    registry_dir, registry_file, timed_execution,
 };
 use par_reader::{
     Expr, LiteralValue, RegistryManager, load_parquet_files_parallel, read_parquet,
@@ -41,7 +41,7 @@ async fn test_lpr_bes_filter_by_procedure() -> par_reader::Result<()> {
     let filter_expr = Expr::Eq(proc_column.to_string(), LiteralValue::String("K".to_string()));
 
     // Attempt to use the filter, but catch errors as the column might not match
-    match read_parquet_with_filter_async(&path, &filter_expr, None, None).await {
+    match read_parquet_with_filter_async(&path, expr_to_filter(&filter_expr), None).await {
         Ok(batches) => {
             println!("Filtered to {} record batches", batches.len());
             println!("Total filtered rows: {}", 
@@ -63,7 +63,7 @@ async fn test_lpr_bes_filter_by_procedure() -> par_reader::Result<()> {
     ]);
 
     // Attempt to use the complex filter, but catch errors as the columns might not match
-    match read_parquet_with_filter_async(&path, &complex_filter, None, None).await {
+    match read_parquet_with_filter_async(&path, expr_to_filter(&complex_filter), None).await {
         Ok(batches) => {
             println!("Complex filtered to {} record batches", batches.len());
             println!("Total complex filtered rows: {}", 
