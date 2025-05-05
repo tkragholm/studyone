@@ -27,7 +27,7 @@ pub fn transform_records(
     // Use parallel processing for transformation
     let results: Vec<Result<RecordBatch>> = batches
         .par_iter()
-        .map(|batch| transformation(batch))
+        .map(transformation)
         .collect();
 
     // Filter out empty batches and collect results
@@ -263,7 +263,7 @@ pub fn map_categorical_values(
                 None
             } else {
                 let original_value = string_array.value(i);
-                mapping.get(original_value).map(Clone::clone)
+                mapping.get(original_value).cloned()
             }
         })
         .collect::<Vec<_>>();

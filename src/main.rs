@@ -43,11 +43,9 @@ async fn main() -> Result<()> {
     };
 
     // Real files for testing - adjust these paths to your environment
-    let paths = vec![
-        "/Users/tobiaskragholm/generated_data/parquet/akm/2020.parquet",
+    let paths = ["/Users/tobiaskragholm/generated_data/parquet/akm/2020.parquet",
         "/Users/tobiaskragholm/generated_data/parquet/akm/2021.parquet",
-        "/Users/tobiaskragholm/generated_data/parquet/akm/2022.parquet",
-    ];
+        "/Users/tobiaskragholm/generated_data/parquet/akm/2022.parquet"];
 
     // If the files don't exist, use an example message
     if !Path::new(&paths[0]).exists() {

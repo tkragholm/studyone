@@ -180,7 +180,7 @@ pub fn evaluate_expr(batch: &RecordBatch, expr: &Expr) -> Result<BooleanArray> {
 
                 // Use Arrow's vectorized 'and' function instead of row-by-row
                 let result_ref = and(&result, &mask)
-                    .context(format!("Failed to apply AND operation to filter arrays"))?;
+                    .context("Failed to apply AND operation to filter arrays".to_string())?;
 
                 result = result_ref
                     .as_any()

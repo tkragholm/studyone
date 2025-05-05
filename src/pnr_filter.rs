@@ -276,6 +276,12 @@ pub struct FilterPlan {
     join_filters: HashMap<String, (String, String)>, // (registry, parent_registry, parent_column)
 }
 
+impl Default for FilterPlan {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FilterPlan {
     /// Create a new filter plan
     pub fn new() -> Self {
