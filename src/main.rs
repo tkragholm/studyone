@@ -1,8 +1,6 @@
-use par_reader::{
-    Result,
-};
-use std::path::Path;
+use par_reader::Result;
 use std::io;
+use std::path::Path;
 
 #[global_allocator]
 static ALLOC: snmalloc_rs::SnMalloc = snmalloc_rs::SnMalloc;
@@ -23,9 +21,12 @@ async fn main() -> Result<()> {
 
     // Demo usage with basic registry manager example
     let data_dir = Path::new("/Users/tobiaskragholm/generated_data/parquet");
-    
+
     if !data_dir.exists() {
-        println!("\nExample data directory not found at: {}", data_dir.display());
+        println!(
+            "\nExample data directory not found at: {}",
+            data_dir.display()
+        );
         println!("Adjust the file paths in the code to use your own Parquet files.");
         return Ok(());
     }

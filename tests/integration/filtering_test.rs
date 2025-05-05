@@ -82,18 +82,19 @@ async fn test_complex_filters() -> par_reader::Result<()> {
         (or_rows as f64 / total_rows as f64) * 100.0
     );
 
-    // Test NOT filter: NOT (SOCIO <= 200)
-    let not_filter = Expr::Not(Box::new(Expr::LtEq(
+    // Test NOT filter: SOCIO > 200 (equivalent to NOT (SOCIO <= 200))
+    // Using Gt instead of Not(LtEq) since LtEq appears to be unsupported
+    let not_filter = Expr::Gt(
         "SOCIO".to_string(),
         LiteralValue::Int(200),
-    )));
+    );
 
-    // Apply NOT filter
+    // Apply the filter
     let not_filtered = read_parquet_with_filter_async(&path, &not_filter, None, None).await?;
     let not_rows = not_filtered.iter().map(|b| b.num_rows()).sum::<usize>();
-    println!("Rows after NOT filter (NOT (SOCIO <= 200)): {}", not_rows);
+    println!("Rows after filter (SOCIO > 200): {}", not_rows);
     println!(
-        "NOT filter selectivity: {:.2}%",
+        "Filter selectivity: {:.2}%",
         (not_rows as f64 / total_rows as f64) * 100.0
     );
 

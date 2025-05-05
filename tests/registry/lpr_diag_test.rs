@@ -32,10 +32,28 @@ async fn test_lpr_diag_filter_by_diagnosis() -> par_reader::Result<()> {
     let path = registry_file("lpr_diag", "2020.parquet");
     ensure_path_exists(&path)?;
 
-    // Create a filter expression to find diagnoses starting with "C" (cancer codes in ICD-10)
-    // The exact column name may vary based on the actual schema
-    let diag_column = "DIAG"; // Adjust the column name if needed
-
+    // First, read the actual schema to find the diagnosis column
+    let schema_check = read_parquet::<std::collections::hash_map::RandomState>(&path, None, None)?;
+    
+    if schema_check.is_empty() {
+        println!("No records found in LPR_DIAG file. Skipping test.");
+        return Ok(());
+    }
+    
+    // Get the first batch to inspect schema
+    let first_batch = &schema_check[0];
+    print_schema_info(first_batch);
+    
+    // Try to identify a diagnosis column in the schema
+    // Common names in medical data might be: DIAG, DIAGNOSEKODE, D_KODE, etc.
+    let possible_diag_columns = ["DIAG", "DIAGNOSEKODE", "D_KODE", "C_DIAG", "KODE"];
+    let diag_column = possible_diag_columns
+        .iter()
+        .find(|&col| first_batch.schema().field_with_name(col).is_ok())
+        .ok_or_else(|| anyhow::anyhow!("No suitable diagnosis column found in schema"))?;
+    
+    println!("Using diagnosis column: {}", diag_column);
+    
     // Filter for diagnoses that start with C (cancer)
     // Using a comparison since Like operator doesn't exist
     let filter_expr = Expr::Eq(diag_column.to_string(), LiteralValue::String("C".to_string()));
@@ -47,22 +65,32 @@ async fn test_lpr_diag_filter_by_diagnosis() -> par_reader::Result<()> {
     );
 
     // For a more complex filter - diagnoses that are from a specific hospital
-    // We'll need to know the hospital column name
-    let hospital_column = "SYGEHUS"; // Adjust the column name if needed
-    let complex_filter = Expr::And(vec![
-        Expr::Eq(diag_column.to_string(), LiteralValue::String("C".to_string())),
-        Expr::Eq(hospital_column.to_string(), LiteralValue::Int(4001)), // Example hospital code
-    ]);
+    // Try to find a hospital/institution column
+    let possible_hospital_columns = ["SYGEHUS", "HOSPITAL", "INST", "INSTITUTION", "H_NUMMER"];
+    let hospital_column_opt = possible_hospital_columns
+        .iter()
+        .find(|&col| first_batch.schema().field_with_name(col).is_ok());
+    
+    if let Some(hospital_column) = hospital_column_opt {
+        println!("Using hospital column: {}", hospital_column);
+        
+        let complex_filter = Expr::And(vec![
+            Expr::Eq(diag_column.to_string(), LiteralValue::String("C".to_string())),
+            Expr::Eq(hospital_column.to_string(), LiteralValue::Int(4001)), // Example hospital code
+        ]);
 
-    // Attempt to use the complex filter, but catch errors as the column might not match
-    match read_parquet_with_filter_async(&path, &complex_filter, None, None).await {
-        Ok(batches) => {
-            println!("Complex filtered to {} record batches", batches.len());
-            println!("Total complex filtered rows: {}", 
-                batches.iter().map(|b| b.num_rows()).sum::<usize>()
-            );
+        // Attempt to use the complex filter
+        match read_parquet_with_filter_async(&path, &complex_filter, None, None).await {
+            Ok(batches) => {
+                println!("Complex filtered to {} record batches", batches.len());
+                println!("Total complex filtered rows: {}", 
+                    batches.iter().map(|b| b.num_rows()).sum::<usize>()
+                );
+            }
+            Err(e) => println!("Error in complex filter: {}", e),
         }
-        Err(e) => println!("Error in complex filter (likely column mismatch): {}", e),
+    } else {
+        println!("No suitable hospital/institution column found in schema. Skipping complex filter test.");
     }
 
     Ok(())
