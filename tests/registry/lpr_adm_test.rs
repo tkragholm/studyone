@@ -81,7 +81,7 @@ async fn test_lpr_adm_date_transformation() -> par_reader::Result<()> {
                 // Print a few rows to verify
                 print_sample_rows(&transformed, 3);
             }
-            Err(e) => println!("Error adding year column: {}", e),
+            Err(e) => println!("Error adding year column: {e}"),
         }
     }
 
@@ -108,7 +108,7 @@ async fn test_lpr_adm_registry_manager() -> par_reader::Result<()> {
     println!("Loaded {} record batches", batches.len());
     println!(
         "Total rows: {}",
-        batches.iter().map(|b| b.num_rows()).sum::<usize>()
+        batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
     );
 
     // Print schema of first batch if available

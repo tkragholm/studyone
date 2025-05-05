@@ -43,9 +43,9 @@ async fn test_ind_filter_by_country() -> par_reader::Result<()> {
     match read_parquet_with_filter_async(&path, expr_to_filter(&filter_expr), None).await {
         Ok(batches) => {
             println!("Filtered to {} record batches", batches.len());
-            println!("Total filtered rows: {}", batches.iter().map(|batch| batch.num_rows()).sum::<usize>());
+            println!("Total filtered rows: {}", batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>());
         }
-        Err(e) => println!("Error in country filter (likely column mismatch): {}", e),
+        Err(e) => println!("Error in country filter (likely column mismatch): {e}"),
     }
 
     // For a more complex filter - specific country AND after a certain date
@@ -62,9 +62,9 @@ async fn test_ind_filter_by_country() -> par_reader::Result<()> {
     match read_parquet_with_filter_async(&path, expr_to_filter(&complex_filter), None).await {
         Ok(batches) => {
             println!("Complex filtered to {} record batches", batches.len());
-            println!("Total complex filtered rows: {}", batches.iter().map(|batch| batch.num_rows()).sum::<usize>());
+            println!("Total complex filtered rows: {}", batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>());
         }
-        Err(e) => println!("Error in complex filter (likely column mismatch): {}", e),
+        Err(e) => println!("Error in complex filter (likely column mismatch): {e}"),
     }
 
     Ok(())
@@ -87,7 +87,7 @@ async fn test_ind_registry_manager() -> par_reader::Result<()> {
     println!("Loaded {} record batches", batches.len());
     println!(
         "Total rows: {}",
-        batches.iter().map(|b| b.num_rows()).sum::<usize>()
+        batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
     );
 
     // Print schema of first batch if available

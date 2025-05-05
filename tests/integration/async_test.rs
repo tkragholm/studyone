@@ -22,7 +22,7 @@ async fn test_async_read() -> par_reader::Result<()> {
     println!("Read {} record batches in {:?}", batches.len(), elapsed);
     println!(
         "Total rows: {}",
-        batches.iter().map(|b| b.num_rows()).sum::<usize>()
+        batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
     );
 
     if let Some(first_batch) = batches.first() {
@@ -56,7 +56,7 @@ async fn test_async_filtering() -> par_reader::Result<()> {
     );
     println!(
         "Total filtered rows: {}",
-        batches.iter().map(|b| b.num_rows()).sum::<usize>()
+        batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
     );
 
     Ok(())
@@ -79,7 +79,7 @@ async fn test_parallel_async_read() -> par_reader::Result<()> {
     println!("Read {} record batches in {:?}", batches.len(), elapsed);
     println!(
         "Total rows: {}",
-        batches.iter().map(|b| b.num_rows()).sum::<usize>()
+        batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
     );
 
     Ok(())
@@ -97,7 +97,7 @@ async fn test_concurrent_async_operations() -> par_reader::Result<()> {
     for &registry in &registries {
         let dir = registry_dir(registry);
         if dir.exists() {
-            println!("Adding {} registry to concurrent processing", registry);
+            println!("Adding {registry} registry to concurrent processing");
             registry_dirs.push(dir);
             registry_names.push(registry);
         }
@@ -130,7 +130,7 @@ async fn test_concurrent_async_operations() -> par_reader::Result<()> {
     let results = join_all(tasks).await;
 
     let elapsed = start.elapsed();
-    println!("Completed all concurrent operations in {:?}", elapsed);
+    println!("Completed all concurrent operations in {elapsed:?}");
 
     // Process results
     let mut total_batches = 0;
@@ -138,34 +138,31 @@ async fn test_concurrent_async_operations() -> par_reader::Result<()> {
     let mut success_count = 0;
 
     for (i, result) in results.into_iter().enumerate() {
-        match result {
-            Ok(Ok(batches)) => {
-                let registry = if i < registry_names.len() {
-                    registry_names[i]
-                } else {
-                    "unknown"
-                };
-                let registry_rows = batches.iter().map(|b| b.num_rows()).sum::<usize>();
+        if let Ok(Ok(batches)) = result {
+            let registry = if i < registry_names.len() {
+                registry_names[i]
+            } else {
+                "unknown"
+            };
+            let registry_rows = batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>();
 
-                println!(
-                    "  {}: {} batches with {} rows",
-                    registry,
-                    batches.len(),
-                    registry_rows
-                );
+            println!(
+                "  {}: {} batches with {} rows",
+                registry,
+                batches.len(),
+                registry_rows
+            );
 
-                total_batches += batches.len();
-                total_rows += registry_rows;
-                success_count += 1;
-            }
-            _ => {
-                let registry = if i < registry_names.len() {
-                    registry_names[i]
-                } else {
-                    "unknown"
-                };
-                println!("  Error processing {}", registry);
-            }
+            total_batches += batches.len();
+            total_rows += registry_rows;
+            success_count += 1;
+        } else {
+            let registry = if i < registry_names.len() {
+                registry_names[i]
+            } else {
+                "unknown"
+            };
+            println!("  Error processing {registry}");
         }
     }
 
@@ -175,8 +172,8 @@ async fn test_concurrent_async_operations() -> par_reader::Result<()> {
         success_count,
         registry_names.len()
     );
-    println!("Total batches: {}", total_batches);
-    println!("Total rows: {}", total_rows);
+    println!("Total batches: {total_batches}");
+    println!("Total rows: {total_rows}");
 
     Ok(())
 }
@@ -204,7 +201,7 @@ async fn test_async_vs_sync_performance() -> par_reader::Result<()> {
     );
     println!(
         "Sync total rows: {}",
-        sync_batches.iter().map(|b| b.num_rows()).sum::<usize>()
+        sync_batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
     );
 
     // Test asynchronous read
@@ -220,16 +217,16 @@ async fn test_async_vs_sync_performance() -> par_reader::Result<()> {
     );
     println!(
         "Async total rows: {}",
-        async_batches.iter().map(|b| b.num_rows()).sum::<usize>()
+        async_batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
     );
 
     // Compare performance
     println!("\nPerformance comparison:");
-    println!("Sync read time: {:?}", sync_elapsed);
-    println!("Async read time: {:?}", async_elapsed);
+    println!("Sync read time: {sync_elapsed:?}");
+    println!("Async read time: {async_elapsed:?}");
 
     let speedup = sync_elapsed.as_micros() as f64 / async_elapsed.as_micros() as f64;
-    println!("Speedup factor: {:.2}x", speedup);
+    println!("Speedup factor: {speedup:.2}x");
 
     Ok(())
 }

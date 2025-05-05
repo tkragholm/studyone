@@ -45,10 +45,10 @@ async fn test_lpr_bes_filter_by_procedure() -> par_reader::Result<()> {
         Ok(batches) => {
             println!("Filtered to {} record batches", batches.len());
             println!("Total filtered rows: {}", 
-                batches.iter().map(|b| b.num_rows()).sum::<usize>()
+                batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
             );
         }
-        Err(e) => println!("Error in procedure filter (likely column mismatch): {}", e),
+        Err(e) => println!("Error in procedure filter (likely column mismatch): {e}"),
     }
 
     // For a more complex filter - specific procedure code AND after a certain date
@@ -67,10 +67,10 @@ async fn test_lpr_bes_filter_by_procedure() -> par_reader::Result<()> {
         Ok(batches) => {
             println!("Complex filtered to {} record batches", batches.len());
             println!("Total complex filtered rows: {}", 
-                batches.iter().map(|b| b.num_rows()).sum::<usize>()
+                batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
             );
         }
-        Err(e) => println!("Error in complex filter (likely column mismatch): {}", e),
+        Err(e) => println!("Error in complex filter (likely column mismatch): {e}"),
     }
 
     Ok(())
@@ -96,7 +96,7 @@ async fn test_lpr_bes_registry_manager() -> par_reader::Result<()> {
     println!("Loaded {} record batches", batches.len());
     println!(
         "Total rows: {}",
-        batches.iter().map(|b| b.num_rows()).sum::<usize>()
+        batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
     );
 
     // Print schema of first batch if available

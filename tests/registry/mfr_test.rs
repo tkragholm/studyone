@@ -49,10 +49,10 @@ async fn test_mfr_filter_by_birth_details() -> par_reader::Result<()> {
             println!("Filtered to {} record batches", batches.len());
             println!(
                 "Total filtered rows: {}",
-                batches.iter().map(|b| b.num_rows()).sum::<usize>()
+                batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
             );
         }
-        Err(e) => println!("Error in weight filter (likely column mismatch): {}", e),
+        Err(e) => println!("Error in weight filter (likely column mismatch): {e}"),
     }
 
     // For a more complex filter - low birth weight AND premature birth
@@ -68,10 +68,10 @@ async fn test_mfr_filter_by_birth_details() -> par_reader::Result<()> {
             println!("Complex filtered to {} record batches", batches.len());
             println!(
                 "Total complex filtered rows: {}",
-                batches.iter().map(|b| b.num_rows()).sum::<usize>()
+                batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
             );
         }
-        Err(e) => println!("Error in complex filter (likely column mismatch): {}", e),
+        Err(e) => println!("Error in complex filter (likely column mismatch): {e}"),
     }
 
     Ok(())
@@ -97,7 +97,7 @@ async fn test_mfr_registry_manager() -> par_reader::Result<()> {
     println!("Loaded {} record batches", batches.len());
     println!(
         "Total rows: {}",
-        batches.iter().map(|b| b.num_rows()).sum::<usize>()
+        batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
     );
 
     // Print schema of first batch if available

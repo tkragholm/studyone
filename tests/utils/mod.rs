@@ -10,17 +10,17 @@ use par_reader::{
 };
 
 /// Base path for test data files
-pub fn test_data_dir() -> PathBuf {
+#[must_use] pub fn test_data_dir() -> PathBuf {
     PathBuf::from("/Users/tobiaskragholm/generated_data/parquet")
 }
 
 /// Create a path to a specific registry folder
-pub fn registry_dir(registry: &str) -> PathBuf {
+#[must_use] pub fn registry_dir(registry: &str) -> PathBuf {
     test_data_dir().join(registry)
 }
 
 /// Create a path to a specific file in a registry folder
-pub fn registry_file(registry: &str, filename: &str) -> PathBuf {
+#[must_use] pub fn registry_file(registry: &str, filename: &str) -> PathBuf {
     registry_dir(registry).join(filename)
 }
 
@@ -33,7 +33,7 @@ pub fn ensure_path_exists(path: &Path) -> Result<()> {
 }
 
 /// Get default test configuration for parquet reading
-pub fn test_config() -> ParquetReaderConfig {
+#[must_use] pub fn test_config() -> ParquetReaderConfig {
     ParquetReaderConfig {
         read_page_indexes: true,
         validate_schema: true,
@@ -61,9 +61,9 @@ pub fn print_schema_info(batch: &RecordBatch) {
 
 /// Print sample rows from a batch
 pub fn print_sample_rows(batch: &RecordBatch, num_rows: usize) {
-    println!("First {} rows:", num_rows);
+    println!("First {num_rows} rows:");
     for row_idx in 0..std::cmp::min(num_rows, batch.num_rows()) {
-        print!("Row {}: [", row_idx);
+        print!("Row {row_idx}: [");
         for col_idx in 0..batch.num_columns() {
             let column = batch.column(col_idx);
             print!("{}: ", batch.schema().field(col_idx).name());
@@ -94,7 +94,7 @@ where
 }
 
 /// Get all available year files from a registry directory
-pub fn get_available_year_files(registry: &str) -> Vec<PathBuf> {
+#[must_use] pub fn get_available_year_files(registry: &str) -> Vec<PathBuf> {
     let dir = registry_dir(registry);
     if !dir.exists() {
         return Vec::new();
@@ -121,8 +121,8 @@ pub fn get_available_year_files(registry: &str) -> Vec<PathBuf> {
 
 /// Convert an expression to a filter
 ///
-/// Helper function to convert an Expr to an Arc<dyn BatchFilter + Send + Sync>
-/// for use with the read_parquet_with_filter_async function.
-pub fn expr_to_filter(expr: &Expr) -> Arc<dyn BatchFilter + Send + Sync> {
+/// Helper function to convert an Expr to an Arc<dyn `BatchFilter` + Send + Sync>
+/// for use with the `read_parquet_with_filter_async` function.
+#[must_use] pub fn expr_to_filter(expr: &Expr) -> Arc<dyn BatchFilter + Send + Sync> {
     Arc::new(ExpressionFilter::new(expr.clone()))
 }

@@ -37,7 +37,7 @@ async fn test_vnds_registry_manager() -> par_reader::Result<()> {
 
     if !vnds_path.exists()
         || std::fs::read_dir(&vnds_path)
-            .map(|entries| entries.count())
+            .map(std::iter::Iterator::count)
             .unwrap_or(0)
             == 0
     {
@@ -57,7 +57,7 @@ async fn test_vnds_registry_manager() -> par_reader::Result<()> {
     println!("Loaded {} record batches", batches.len());
     println!(
         "Total rows: {}",
-        batches.iter().map(|b| b.num_rows()).sum::<usize>()
+        batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
     );
 
     // Print schema of first batch if available
@@ -74,7 +74,7 @@ async fn test_vnds_parallel_read() -> par_reader::Result<()> {
 
     if !vnds_dir.exists()
         || std::fs::read_dir(&vnds_dir)
-            .map(|entries| entries.count())
+            .map(std::iter::Iterator::count)
             .unwrap_or(0)
             == 0
     {

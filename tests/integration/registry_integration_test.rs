@@ -21,12 +21,12 @@ async fn test_multiple_registry_operations() -> par_reader::Result<()> {
         let path = registry_dir(registry);
         if path.exists()
             && std::fs::read_dir(&path)
-                .map(|entries| entries.count())
+                .map(std::iter::Iterator::count)
                 .unwrap_or(0)
                 > 0
         {
             manager.register(registry, &path)?;
-            println!("Registered {} registry", registry);
+            println!("Registered {registry} registry");
             registered_count += 1;
             available_registries.push(registry);
         }
@@ -37,18 +37,18 @@ async fn test_multiple_registry_operations() -> par_reader::Result<()> {
         return Ok(());
     }
 
-    println!("Registered {} registries successfully", registered_count);
+    println!("Registered {registered_count} registries successfully");
 
     // Test loading all registries
     for &registry in &available_registries {
-        println!("Testing loading of {} registry", registry);
+        println!("Testing loading of {registry} registry");
         match manager.load(registry) {
             Ok(batches) => {
                 println!(
                     "{} registry: {} batches with {} total rows",
                     registry,
                     batches.len(),
-                    batches.iter().map(|b| b.num_rows()).sum::<usize>()
+                    batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
                 );
 
                 // Print schema of first batch if available
@@ -56,7 +56,7 @@ async fn test_multiple_registry_operations() -> par_reader::Result<()> {
                     print_schema_info(first_batch);
                 }
             }
-            Err(e) => println!("Error loading {} registry: {}", registry, e),
+            Err(e) => println!("Error loading {registry} registry: {e}"),
         }
     }
 
@@ -81,11 +81,11 @@ async fn test_multiple_registry_operations() -> par_reader::Result<()> {
                         "  {}: {} batches with {} total rows",
                         registry,
                         batches.len(),
-                        batches.iter().map(|b| b.num_rows()).sum::<usize>()
+                        batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
                     );
                 }
             }
-            Err(e) => println!("Error filtering by PNR: {}", e),
+            Err(e) => println!("Error filtering by PNR: {e}"),
         }
     }
 
@@ -114,7 +114,7 @@ async fn test_parallel_load_all_registries() -> par_reader::Result<()> {
         let path = registry_dir(registry);
         if path.exists()
             && std::fs::read_dir(&path)
-                .map(|entries| entries.count())
+                .map(std::iter::Iterator::count)
                 .unwrap_or(0)
                 > 0
         {
@@ -129,7 +129,7 @@ async fn test_parallel_load_all_registries() -> par_reader::Result<()> {
         return Ok(());
     }
 
-    println!("Registered {} registries successfully", registered_count);
+    println!("Registered {registered_count} registries successfully");
 
     // For each registry, load it separately (in sequence)
     let mut total_batches = 0;
@@ -139,7 +139,7 @@ async fn test_parallel_load_all_registries() -> par_reader::Result<()> {
     for &registry in &available_registries {
         match manager.load(registry) {
             Ok(batches) => {
-                let registry_rows = batches.iter().map(|b| b.num_rows()).sum::<usize>();
+                let registry_rows = batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>();
                 total_batches += batches.len();
                 total_rows += registry_rows;
                 println!(
@@ -149,7 +149,7 @@ async fn test_parallel_load_all_registries() -> par_reader::Result<()> {
                     registry_rows
                 );
             }
-            Err(e) => println!("  Error loading {}: {}", registry, e),
+            Err(e) => println!("  Error loading {registry}: {e}"),
         }
     }
     let elapsed = start.elapsed();
@@ -160,8 +160,8 @@ async fn test_parallel_load_all_registries() -> par_reader::Result<()> {
         available_registries.len(),
         elapsed
     );
-    println!("Total batches: {}", total_batches);
-    println!("Total rows: {}", total_rows);
+    println!("Total batches: {total_batches}");
+    println!("Total rows: {total_rows}");
 
     Ok(())
 }
@@ -222,7 +222,7 @@ async fn test_cross_registry_operations() -> par_reader::Result<()> {
             for i in 0..limit {
                 if !pnr_array.is_null(i) {
                     // Just use dummy values since we can't access array values directly
-                    pnr_filter.insert(format!("{}{}", i, i).to_string());
+                    pnr_filter.insert(format!("{i}{i}").to_string());
                 }
             }
 
@@ -243,11 +243,11 @@ async fn test_cross_registry_operations() -> par_reader::Result<()> {
                         "  {}: {} batches with {} total rows",
                         registry,
                         batches.len(),
-                        batches.iter().map(|b| b.num_rows()).sum::<usize>()
+                        batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
                     );
                 }
             }
-            Err(e) => println!("Error filtering by PNR: {}", e),
+            Err(e) => println!("Error filtering by PNR: {e}"),
         }
     }
 

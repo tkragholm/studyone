@@ -67,7 +67,7 @@ async fn test_bef_registry_manager() -> par_reader::Result<()> {
     println!("Loaded {} record batches", batches.len());
     println!(
         "Total rows: {}",
-        batches.iter().map(|b| b.num_rows()).sum::<usize>()
+        batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
     );
 
     // Print schema of first batch if available
@@ -108,7 +108,7 @@ async fn test_bef_pnr_filter() -> par_reader::Result<()> {
         println!(
             "{registry}: {} batches with {} total rows",
             batches.len(),
-            batches.iter().map(|b| b.num_rows()).sum::<usize>()
+            batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
         );
 
         // Print schema of first batch if available

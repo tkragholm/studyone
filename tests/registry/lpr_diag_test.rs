@@ -52,16 +52,16 @@ async fn test_lpr_diag_filter_by_diagnosis() -> par_reader::Result<()> {
         .find(|&col| first_batch.schema().field_with_name(col).is_ok())
         .ok_or_else(|| anyhow::anyhow!("No suitable diagnosis column found in schema"))?;
     
-    println!("Using diagnosis column: {}", diag_column);
+    println!("Using diagnosis column: {diag_column}");
     
     // Filter for diagnoses that start with C (cancer)
     // Using a comparison since Like operator doesn't exist
-    let filter_expr = Expr::Eq(diag_column.to_string(), LiteralValue::String("C".to_string()));
+    let filter_expr = Expr::Eq((*diag_column).to_string(), LiteralValue::String("C".to_string()));
 
     let result = read_parquet_with_filter_async(&path, expr_to_filter(&filter_expr), None).await?;
     println!("Filtered to {} record batches", result.len());
     println!("Total filtered rows: {}", 
-        result.iter().map(|b| b.num_rows()).sum::<usize>()
+        result.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
     );
 
     // For a more complex filter - diagnoses that are from a specific hospital
@@ -72,11 +72,11 @@ async fn test_lpr_diag_filter_by_diagnosis() -> par_reader::Result<()> {
         .find(|&col| first_batch.schema().field_with_name(col).is_ok());
     
     if let Some(hospital_column) = hospital_column_opt {
-        println!("Using hospital column: {}", hospital_column);
+        println!("Using hospital column: {hospital_column}");
         
         let complex_filter = Expr::And(vec![
-            Expr::Eq(diag_column.to_string(), LiteralValue::String("C".to_string())),
-            Expr::Eq(hospital_column.to_string(), LiteralValue::Int(4001)), // Example hospital code
+            Expr::Eq((*diag_column).to_string(), LiteralValue::String("C".to_string())),
+            Expr::Eq((*hospital_column).to_string(), LiteralValue::Int(4001)), // Example hospital code
         ]);
 
         // Attempt to use the complex filter
@@ -84,10 +84,10 @@ async fn test_lpr_diag_filter_by_diagnosis() -> par_reader::Result<()> {
             Ok(batches) => {
                 println!("Complex filtered to {} record batches", batches.len());
                 println!("Total complex filtered rows: {}", 
-                    batches.iter().map(|b| b.num_rows()).sum::<usize>()
+                    batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
                 );
             }
-            Err(e) => println!("Error in complex filter: {}", e),
+            Err(e) => println!("Error in complex filter: {e}"),
         }
     } else {
         println!("No suitable hospital/institution column found in schema. Skipping complex filter test.");
@@ -116,7 +116,7 @@ async fn test_lpr_diag_registry_manager() -> par_reader::Result<()> {
     println!("Loaded {} record batches", batches.len());
     println!(
         "Total rows: {}",
-        batches.iter().map(|b| b.num_rows()).sum::<usize>()
+        batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
     );
 
     // Print schema of first batch if available

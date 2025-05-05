@@ -59,7 +59,7 @@ async fn test_akm_schema_validation() -> par_reader::Result<()> {
     // Schema validation
     match reader.validate_schemas(&path_refs) {
         Ok(()) => println!("All schemas are compatible"),
-        Err(e) => println!("Schema validation error: {}", e),
+        Err(e) => println!("Schema validation error: {e}"),
     }
 
     // Get detailed schema compatibility report
@@ -71,11 +71,11 @@ async fn test_akm_schema_validation() -> par_reader::Result<()> {
             } else {
                 println!("Issues found:");
                 for issue in report.issues {
-                    println!("  - {:?}", issue);
+                    println!("  - {issue:?}");
                 }
             }
         }
-        Err(e) => println!("Error getting schema report: {}", e),
+        Err(e) => println!("Error getting schema report: {e}"),
     }
 
     Ok(())
@@ -91,7 +91,7 @@ async fn test_akm_filtering() -> par_reader::Result<()> {
 
     let result = read_parquet_with_filter_async(&path, expr_to_filter(&filter_expr), None).await?;
     println!("Filtered to {} record batches", result.len());
-    println!("Total filtered rows: {}", result.iter().map(|batch| batch.num_rows()).sum::<usize>());
+    println!("Total filtered rows: {}", result.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>());
 
     // Complex filter: SOCIO > 200 AND CPRTYPE = 5
     let complex_filter = Expr::And(vec![
@@ -101,7 +101,7 @@ async fn test_akm_filtering() -> par_reader::Result<()> {
 
     let result = read_parquet_with_filter_async(&path, expr_to_filter(&complex_filter), None).await?;
     println!("Complex filtered to {} record batches", result.len());
-    println!("Total complex filtered rows: {}", result.iter().map(|batch| batch.num_rows()).sum::<usize>());
+    println!("Total complex filtered rows: {}", result.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>());
 
     Ok(())
 }
@@ -129,7 +129,7 @@ async fn test_akm_transformation() -> par_reader::Result<()> {
                     // Print a few rows to verify
                     print_sample_rows(&transformed, 3);
                 }
-                Err(e) => println!("Error adding year column: {}", e),
+                Err(e) => println!("Error adding year column: {e}"),
             }
         } else {
             println!("No date column found, skipping transformation");
@@ -156,7 +156,7 @@ async fn test_akm_registry_manager() -> par_reader::Result<()> {
     println!("Loaded {} record batches", batches.len());
     println!(
         "Total rows: {}",
-        batches.iter().map(|b| b.num_rows()).sum::<usize>()
+        batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
     );
 
     // Print schema of first batch if available
