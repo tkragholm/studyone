@@ -22,7 +22,7 @@ pub struct IdanRegister {
 
 impl IdanRegister {
     /// Create a new IDAN registry loader
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         Self {
             schema: idan_schema(),
         }

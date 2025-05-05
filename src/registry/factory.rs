@@ -148,8 +148,7 @@ pub async fn load_multiple_registries_async(
                 Err(e) => {
                     let (name, path) = &registry_paths[i];
                     return Err(ParquetReaderError::IoError(format!(
-                        "Failed to load registry '{}' from path '{}': {}",
-                        name, path, e
+                        "Failed to load registry '{name}' from path '{path}': {e}"
                     ))
                     .into());
                 }
@@ -157,8 +156,7 @@ pub async fn load_multiple_registries_async(
             Err(e) => {
                 let (name, path) = &registry_paths[i];
                 return Err(ParquetReaderError::IoError(format!(
-                    "Task error loading registry '{}' from path '{}': {}",
-                    name, path, e
+                    "Task error loading registry '{name}' from path '{path}': {e}"
                 ))
                 .into());
             }

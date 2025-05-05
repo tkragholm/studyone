@@ -1,5 +1,5 @@
 //! Async Parquet batch reading operations
-//! Provides functionality for reading Parquet files as Arrow RecordBatches
+//! Provides functionality for reading Parquet files as Arrow `RecordBatches`
 
 use std::path::Path;
 

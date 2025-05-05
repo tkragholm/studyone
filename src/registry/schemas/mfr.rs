@@ -6,7 +6,7 @@ use std::sync::Arc;
 /// Get the Arrow schema for MFR data
 ///
 /// The MFR (Medical Birth Registry) contains birth information.
-pub fn mfr_schema() -> Arc<Schema> {
+#[must_use] pub fn mfr_schema() -> Arc<Schema> {
     Arc::new(Schema::new(vec![
         Field::new("PNR", DataType::Utf8, false),      // Child's PNR
         Field::new("MOR_PNR", DataType::Utf8, true),   // Mother's PNR

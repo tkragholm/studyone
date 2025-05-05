@@ -201,20 +201,17 @@ pub fn filter_out_missing_values(
 
         // Create a mask where true means non-null values
         let null_bitmap = column.nulls();
-        let is_valid_array = match null_bitmap {
-            Some(_bitmap) => {
-                // If we have a null bitmap, create a boolean array from validity
-                let mut builder = arrow::array::BooleanBuilder::new();
-                for i in 0..column.len() {
-                    builder.append_value(!column.is_null(i));
-                }
-                builder.finish()
-            },
-            None => {
-                // If there are no nulls, all values are valid
-                let values = vec![true; column.len()];
-                arrow::array::BooleanArray::from(values)
+        let is_valid_array = if let Some(_bitmap) = null_bitmap {
+            // If we have a null bitmap, create a boolean array from validity
+            let mut builder = arrow::array::BooleanBuilder::new();
+            for i in 0..column.len() {
+                builder.append_value(!column.is_null(i));
             }
+            builder.finish()
+        } else {
+            // If there are no nulls, all values are valid
+            let values = vec![true; column.len()];
+            arrow::array::BooleanArray::from(values)
         };
         
         // Update the overall mask to include only rows where all required fields are non-null
@@ -245,7 +242,7 @@ pub fn map_categorical_values(
     let col_idx = batch
         .schema()
         .index_of(column)
-        .with_context(|| format!("Column '{}' not found", column))?;
+        .with_context(|| format!("Column '{column}' not found"))?;
 
     // Get the column and ensure it's a string column
     let string_array = batch.column(col_idx);
@@ -296,7 +293,7 @@ pub fn scale_numeric_values(
     let col_idx = batch
         .schema()
         .index_of(column)
-        .with_context(|| format!("Column '{}' not found", column))?;
+        .with_context(|| format!("Column '{column}' not found"))?;
 
     // Get the column
     let numeric_array = batch.column(col_idx);

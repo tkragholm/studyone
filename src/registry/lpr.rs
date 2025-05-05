@@ -30,8 +30,8 @@ pub struct LprAdmRegister {
 }
 
 impl LprAdmRegister {
-    /// Create a new LPR_ADM registry loader
-    pub fn new() -> Self {
+    /// Create a new `LPR_ADM` registry loader
+    #[must_use] pub fn new() -> Self {
         Self {
             schema: lpr_adm_schema(),
         }
@@ -102,8 +102,8 @@ pub struct LprDiagRegister {
 }
 
 impl LprDiagRegister {
-    /// Create a new LPR_DIAG registry loader
-    pub fn new() -> Self {
+    /// Create a new `LPR_DIAG` registry loader
+    #[must_use] pub fn new() -> Self {
         Self {
             schema: lpr_diag_schema(),
         }
@@ -183,8 +183,8 @@ pub struct LprBesRegister {
 }
 
 impl LprBesRegister {
-    /// Create a new LPR_BES registry loader
-    pub fn new() -> Self {
+    /// Create a new `LPR_BES` registry loader
+    #[must_use] pub fn new() -> Self {
         Self {
             schema: lpr_bes_schema(),
         }
@@ -264,8 +264,8 @@ pub struct Lpr3KontakterRegister {
 }
 
 impl Lpr3KontakterRegister {
-    /// Create a new LPR3_KONTAKTER registry loader
-    pub fn new() -> Self {
+    /// Create a new `LPR3_KONTAKTER` registry loader
+    #[must_use] pub fn new() -> Self {
         Self {
             schema: lpr3_kontakter_schema(),
         }
@@ -336,8 +336,8 @@ pub struct Lpr3DiagnoserRegister {
 }
 
 impl Lpr3DiagnoserRegister {
-    /// Create a new LPR3_DIAGNOSER registry loader
-    pub fn new() -> Self {
+    /// Create a new `LPR3_DIAGNOSER` registry loader
+    #[must_use] pub fn new() -> Self {
         Self {
             schema: lpr3_diagnoser_schema(),
         }
@@ -478,9 +478,9 @@ fn visit_dirs(dir: &Path, paths: &mut LprPaths) -> Result<()> {
         let entries: Vec<_> = match std::fs::read_dir(dir) {
             Ok(entries) => entries
                 .collect::<std::io::Result<Vec<_>>>()
-                .map_err(|e| Error::IoError(format!("Failed to read directory: {}", e)))?,
+                .map_err(|e| Error::IoError(format!("Failed to read directory: {e}")))?,
             Err(e) => {
-                return Err(Error::IoError(format!("Failed to read directory: {}", e)).into());
+                return Err(Error::IoError(format!("Failed to read directory: {e}")).into());
             }
         };
 

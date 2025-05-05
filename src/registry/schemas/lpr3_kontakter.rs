@@ -1,12 +1,12 @@
-//! LPR3_KONTAKTER schema definitions
+//! `LPR3_KONTAKTER` schema definitions
 
 use arrow::datatypes::{DataType, Field, Schema};
 use std::sync::Arc;
 
-/// Get the Arrow schema for LPR3_KONTAKTER data
+/// Get the Arrow schema for `LPR3_KONTAKTER` data
 ///
-/// The LPR3_KONTAKTER registry contains contact records from the Danish National Patient Registry version 3.
-pub fn lpr3_kontakter_schema() -> Arc<Schema> {
+/// The `LPR3_KONTAKTER` registry contains contact records from the Danish National Patient Registry version 3.
+#[must_use] pub fn lpr3_kontakter_schema() -> Arc<Schema> {
     Arc::new(Schema::new(vec![
         Field::new("PNR", DataType::Utf8, false),
         Field::new("DW_EK_KONTAKT", DataType::Utf8, false), // Used to join with LPR3_DIAGNOSER

@@ -113,14 +113,14 @@ fn create_pnr_mask(pnr_array: &StringArray, pnr_filter: &HashSet<String>) -> Res
 /// that needs to be filtered by PNR but doesn't contain PNR directly.
 ///
 /// # Arguments
-/// * `pnr_batch` - Batch containing PNR column (e.g., LPR_ADM)
-/// * `pnr_column` - Name of the PNR column in pnr_batch
-/// * `join_batch` - Batch to join with (e.g., LPR_DIAG)
+/// * `pnr_batch` - Batch containing PNR column (e.g., `LPR_ADM`)
+/// * `pnr_column` - Name of the PNR column in `pnr_batch`
+/// * `join_batch` - Batch to join with (e.g., `LPR_DIAG`)
 /// * `join_column` - Name of the join column in both batches (e.g., "RECNUM")
 /// * `pnr_filter` - Optional set of PNR values to filter by
 ///
 /// # Returns
-/// * `Result<RecordBatch>` - Joined record batch with rows from join_batch that match pnr_filter
+/// * `Result<RecordBatch>` - Joined record batch with rows from `join_batch` that match `pnr_filter`
 pub fn join_and_filter_by_pnr(
     pnr_batch: &RecordBatch,
     pnr_column: &str,
@@ -231,7 +231,7 @@ pub fn join_and_filter_by_pnr(
 ///
 /// # Returns
 /// * `FilterPlan` - A plan for efficiently filtering the registries
-pub fn build_filter_plan(
+#[must_use] pub fn build_filter_plan(
     schemas: &HashMap<String, SchemaRef>,
     joins: &HashMap<String, (String, String)>, // (registry, join_from, join_to)
     pnr_columns: &HashMap<String, String>,
@@ -284,7 +284,7 @@ impl Default for FilterPlan {
 
 impl FilterPlan {
     /// Create a new filter plan
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         Self {
             direct_filters: HashMap::new(),
             join_filters: HashMap::new(),
@@ -308,22 +308,22 @@ impl FilterPlan {
     }
 
     /// Check if a registry is included in the plan
-    pub fn has_registry(&self, registry: &str) -> bool {
+    #[must_use] pub fn has_registry(&self, registry: &str) -> bool {
         self.direct_filters.contains_key(registry) || self.join_filters.contains_key(registry)
     }
 
     /// Check if a registry can be filtered directly by PNR
-    pub fn is_direct_filter(&self, registry: &str) -> bool {
+    #[must_use] pub fn is_direct_filter(&self, registry: &str) -> bool {
         self.direct_filters.contains_key(registry)
     }
 
     /// Get the PNR column for a registry
-    pub fn get_pnr_column(&self, registry: &str) -> Option<&String> {
+    #[must_use] pub fn get_pnr_column(&self, registry: &str) -> Option<&String> {
         self.direct_filters.get(registry)
     }
 
     /// Get the join information for a registry
-    pub fn get_join_info(&self, registry: &str) -> Option<&(String, String)> {
+    #[must_use] pub fn get_join_info(&self, registry: &str) -> Option<&(String, String)> {
         self.join_filters.get(registry)
     }
 }

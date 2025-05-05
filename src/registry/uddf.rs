@@ -22,7 +22,7 @@ pub struct UddfRegister {
 
 impl UddfRegister {
     /// Create a new UDDF registry loader
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         Self {
             schema: uddf_schema(),
         }

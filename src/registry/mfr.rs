@@ -22,7 +22,7 @@ pub struct MfrRegister {
 
 impl MfrRegister {
     /// Create a new MFR registry loader
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         Self {
             schema: mfr_schema(),
         }

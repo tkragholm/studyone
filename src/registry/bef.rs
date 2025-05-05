@@ -22,7 +22,7 @@ pub struct BefRegister {
 
 impl BefRegister {
     /// Create a new BEF registry loader
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         Self {
             schema: bef_schema(),
         }

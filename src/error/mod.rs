@@ -11,7 +11,7 @@ use arrow::error::ArrowError;
 use parquet::errors::ParquetError;
 use thiserror::Error;
 
-/// Main error enum for the ParquetReader library
+/// Main error enum for the `ParquetReader` library
 ///
 /// This is kept for backward compatibility and type checking.
 #[derive(Error, Debug)]
@@ -98,35 +98,35 @@ pub fn validation_err<T>(message: impl AsRef<str>) -> Result<T> {
 // io::Error to ParquetReaderError
 impl From<io::Error> for ParquetReaderError {
     fn from(e: io::Error) -> Self {
-        ParquetReaderError::IoError(e.to_string())
+        Self::IoError(e.to_string())
     }
 }
 
 // ParquetError to ParquetReaderError
 impl From<ParquetError> for ParquetReaderError {
     fn from(e: ParquetError) -> Self {
-        ParquetReaderError::ParquetError(e.to_string())
+        Self::ParquetError(e.to_string())
     }
 }
 
 // ArrowError to ParquetReaderError
 impl From<ArrowError> for ParquetReaderError {
     fn from(e: ArrowError) -> Self {
-        ParquetReaderError::ArrowError(e.to_string())
+        Self::ArrowError(e.to_string())
     }
 }
 
 // String to ParquetReaderError
 impl From<String> for ParquetReaderError {
     fn from(e: String) -> Self {
-        ParquetReaderError::Other(e)
+        Self::Other(e)
     }
 }
 
 // &str to ParquetReaderError
 impl From<&str> for ParquetReaderError {
     fn from(e: &str) -> Self {
-        ParquetReaderError::Other(e.to_string())
+        Self::Other(e.to_string())
     }
 }
 
@@ -136,7 +136,7 @@ impl From<&str> for ParquetReaderError {
 // Add anyhow::Error -> ParquetReaderError conversion for compatibility
 impl From<anyhow::Error> for ParquetReaderError {
     fn from(e: anyhow::Error) -> Self {
-        ParquetReaderError::Other(e.to_string())
+        Self::Other(e.to_string())
     }
 }
 
@@ -226,22 +226,22 @@ impl ParquetReaderError {
     pub fn with_path<P: Into<PathBuf>>(self, path: P) -> Self {
         let path_str = path.into().display().to_string();
         match self {
-            Self::IoError(msg) => Self::IoError(format!("{} (path: {})", msg, path_str)),
-            Self::ParquetError(msg) => Self::ParquetError(format!("{} (path: {})", msg, path_str)),
-            Self::SchemaError(msg) => Self::SchemaError(format!("{} (path: {})", msg, path_str)),
+            Self::IoError(msg) => Self::IoError(format!("{msg} (path: {path_str})")),
+            Self::ParquetError(msg) => Self::ParquetError(format!("{msg} (path: {path_str})")),
+            Self::SchemaError(msg) => Self::SchemaError(format!("{msg} (path: {path_str})")),
             Self::MetadataError(msg) => {
-                Self::MetadataError(format!("{} (path: {})", msg, path_str))
+                Self::MetadataError(format!("{msg} (path: {path_str})"))
             }
-            Self::FilterError(msg) => Self::FilterError(format!("{} (path: {})", msg, path_str)),
-            Self::AsyncError(msg) => Self::AsyncError(format!("{} (path: {})", msg, path_str)),
+            Self::FilterError(msg) => Self::FilterError(format!("{msg} (path: {path_str})")),
+            Self::AsyncError(msg) => Self::AsyncError(format!("{msg} (path: {path_str})")),
             Self::ValidationError(msg) => {
-                Self::ValidationError(format!("{} (path: {})", msg, path_str))
+                Self::ValidationError(format!("{msg} (path: {path_str})"))
             }
             Self::InvalidOperation(msg) => {
-                Self::InvalidOperation(format!("{} (path: {})", msg, path_str))
+                Self::InvalidOperation(format!("{msg} (path: {path_str})"))
             }
-            Self::ArrowError(msg) => Self::ArrowError(format!("{} (path: {})", msg, path_str)),
-            Self::Other(msg) => Self::Other(format!("{} (path: {})", msg, path_str)),
+            Self::ArrowError(msg) => Self::ArrowError(format!("{msg} (path: {path_str})")),
+            Self::Other(msg) => Self::Other(format!("{msg} (path: {path_str})")),
         }
     }
 
@@ -249,16 +249,16 @@ impl ParquetReaderError {
     pub fn context<S: Into<String>>(self, context: S) -> Self {
         let ctx = context.into();
         match self {
-            Self::IoError(msg) => Self::IoError(format!("{}: {}", ctx, msg)),
-            Self::ParquetError(msg) => Self::ParquetError(format!("{}: {}", ctx, msg)),
-            Self::ArrowError(msg) => Self::ArrowError(format!("{}: {}", ctx, msg)),
-            Self::SchemaError(msg) => Self::SchemaError(format!("{}: {}", ctx, msg)),
-            Self::MetadataError(msg) => Self::MetadataError(format!("{}: {}", ctx, msg)),
-            Self::FilterError(msg) => Self::FilterError(format!("{}: {}", ctx, msg)),
-            Self::AsyncError(msg) => Self::AsyncError(format!("{}: {}", ctx, msg)),
-            Self::ValidationError(msg) => Self::ValidationError(format!("{}: {}", ctx, msg)),
-            Self::InvalidOperation(msg) => Self::InvalidOperation(format!("{}: {}", ctx, msg)),
-            Self::Other(msg) => Self::Other(format!("{}: {}", ctx, msg)),
+            Self::IoError(msg) => Self::IoError(format!("{ctx}: {msg}")),
+            Self::ParquetError(msg) => Self::ParquetError(format!("{ctx}: {msg}")),
+            Self::ArrowError(msg) => Self::ArrowError(format!("{ctx}: {msg}")),
+            Self::SchemaError(msg) => Self::SchemaError(format!("{ctx}: {msg}")),
+            Self::MetadataError(msg) => Self::MetadataError(format!("{ctx}: {msg}")),
+            Self::FilterError(msg) => Self::FilterError(format!("{ctx}: {msg}")),
+            Self::AsyncError(msg) => Self::AsyncError(format!("{ctx}: {msg}")),
+            Self::ValidationError(msg) => Self::ValidationError(format!("{ctx}: {msg}")),
+            Self::InvalidOperation(msg) => Self::InvalidOperation(format!("{ctx}: {msg}")),
+            Self::Other(msg) => Self::Other(format!("{ctx}: {msg}")),
         }
     }
 }

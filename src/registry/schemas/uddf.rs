@@ -6,7 +6,7 @@ use std::sync::Arc;
 /// Get the Arrow schema for UDDF data
 ///
 /// The UDDF (Uddannelse) registry contains educational information.
-pub fn uddf_schema() -> Arc<Schema> {
+#[must_use] pub fn uddf_schema() -> Arc<Schema> {
     Arc::new(Schema::new(vec![
         Field::new("PNR", DataType::Utf8, false),
         Field::new("HFAUDD", DataType::Utf8, true),    // Highest completed education

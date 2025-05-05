@@ -1,12 +1,12 @@
-//! LPR_ADM schema definitions
+//! `LPR_ADM` schema definitions
 
 use arrow::datatypes::{DataType, Field, Schema};
 use std::sync::Arc;
 
-/// Get the Arrow schema for LPR_ADM data
+/// Get the Arrow schema for `LPR_ADM` data
 ///
-/// The LPR_ADM registry contains admission records from the Danish National Patient Registry.
-pub fn lpr_adm_schema() -> Arc<Schema> {
+/// The `LPR_ADM` registry contains admission records from the Danish National Patient Registry.
+#[must_use] pub fn lpr_adm_schema() -> Arc<Schema> {
     Arc::new(Schema::new(vec![
         Field::new("PNR", DataType::Utf8, false),
         Field::new("RECNUM", DataType::Utf8, false), // Used to join with LPR_DIAG and LPR_BES

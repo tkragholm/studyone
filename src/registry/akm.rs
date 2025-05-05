@@ -21,7 +21,7 @@ pub struct AkmRegister {
 
 impl AkmRegister {
     /// Create a new AKM registry loader
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         Self {
             schema: akm_schema(),
         }

@@ -6,7 +6,7 @@ use std::sync::Arc;
 /// Get the Arrow schema for IND data
 ///
 /// The IND (Indkomst) registry contains income and tax information.
-pub fn ind_schema() -> Arc<Schema> {
+#[must_use] pub fn ind_schema() -> Arc<Schema> {
     Arc::new(Schema::new(vec![
         Field::new("PNR", DataType::Utf8, false),
         Field::new("PERSONINDK", DataType::Float64, true), // Personal income

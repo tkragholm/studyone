@@ -22,7 +22,7 @@ pub struct VndsRegister {
 
 impl VndsRegister {
     /// Create a new VNDS registry loader
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         Self {
             schema: vnds_schema(),
         }

@@ -22,7 +22,7 @@ pub struct DodsaarsagRegister {
 
 impl DodsaarsagRegister {
     /// Create a new DODSAARSAG registry loader
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         Self {
             schema: dodsaarsag_schema(),
         }

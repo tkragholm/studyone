@@ -6,7 +6,7 @@ use std::sync::Arc;
 /// Get the Arrow schema for DODSAARSAG data
 ///
 /// The DODSAARSAG registry contains cause of death records.
-pub fn dodsaarsag_schema() -> Arc<Schema> {
+#[must_use] pub fn dodsaarsag_schema() -> Arc<Schema> {
     Arc::new(Schema::new(vec![
         Field::new("PNR", DataType::Utf8, false),
         Field::new("C_AARSAG", DataType::Utf8, true), // Primary cause of death

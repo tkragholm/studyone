@@ -6,7 +6,7 @@ use std::sync::Arc;
 /// Get the Arrow schema for BEF data
 ///
 /// The BEF (Befolkning) registry contains population demographic information.
-pub fn bef_schema() -> Arc<Schema> {
+#[must_use] pub fn bef_schema() -> Arc<Schema> {
     Arc::new(Schema::new(vec![
         Field::new("PNR", DataType::Utf8, false),
         Field::new("KOEN", DataType::Utf8, true),

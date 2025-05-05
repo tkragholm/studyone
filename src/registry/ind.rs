@@ -22,7 +22,7 @@ pub struct IndRegister {
 
 impl IndRegister {
     /// Create a new IND registry loader
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         Self {
             schema: ind_schema(),
         }

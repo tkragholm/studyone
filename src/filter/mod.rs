@@ -463,11 +463,11 @@ pub fn read_parquet_with_filter(
     for (i, batch) in batches.iter().enumerate() {
         // Evaluate the filter expression
         let mask = evaluate_expr(batch, expr)
-            .map_err(|e| e.context(format!("Failed to evaluate filter on batch {}", i)))?;
+            .map_err(|e| e.context(format!("Failed to evaluate filter on batch {i}")))?;
 
         // Apply the filter to the batch
         let filtered_batch = filter_record_batch(batch, &mask)
-            .map_err(|e| e.context(format!("Failed to apply filter to batch {}", i)))?;
+            .map_err(|e| e.context(format!("Failed to apply filter to batch {i}")))?;
 
         // Only add non-empty batches
         if filtered_batch.num_rows() > 0 {
@@ -485,7 +485,7 @@ pub fn read_parquet_with_filter(
             "Applied filter to file {}: filtered {} batches with {} total rows",
             path.display(),
             filtered_batches.len(),
-            filtered_batches.iter().map(|b| b.num_rows()).sum::<usize>()
+            filtered_batches.iter().map(arrow::array::RecordBatch::num_rows).sum::<usize>()
         );
     }
 

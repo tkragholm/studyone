@@ -6,7 +6,7 @@ use std::sync::Arc;
 /// Get the Arrow schema for VNDS data
 ///
 /// The VNDS (Vandringer/Migration) registry contains migration information.
-pub fn vnds_schema() -> Arc<Schema> {
+#[must_use] pub fn vnds_schema() -> Arc<Schema> {
     Arc::new(Schema::new(vec![
         Field::new("PNR", DataType::Utf8, false),
         Field::new("INDV_DAG", DataType::Date32, true), // Immigration date

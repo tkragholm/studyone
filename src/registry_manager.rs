@@ -41,7 +41,7 @@ pub struct RegistryManager {
 
 impl RegistryManager {
     /// Create a new registry manager
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         Self {
             loaders: RwLock::new(HashMap::new()),
             paths: RwLock::new(HashMap::new()),
@@ -53,7 +53,7 @@ impl RegistryManager {
     }
 
     /// Create a new registry manager with specified joins
-    pub fn with_joins(joins: HashMap<String, (String, String, String)>) -> Self {
+    #[must_use] pub fn with_joins(joins: HashMap<String, (String, String, String)>) -> Self {
         Self {
             loaders: RwLock::new(HashMap::new()),
             paths: RwLock::new(HashMap::new()),
@@ -410,7 +410,7 @@ impl RegistryManager {
     }
 
     /// Set the cache size limit
-    pub fn set_cache_size(&mut self, size: usize) {
+    pub const fn set_cache_size(&mut self, size: usize) {
         self.max_cache_entries = size;
     }
 

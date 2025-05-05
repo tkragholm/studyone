@@ -22,7 +22,7 @@ pub struct DodRegister {
 
 impl DodRegister {
     /// Create a new DOD registry loader
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         Self {
             schema: dod_schema(),
         }
