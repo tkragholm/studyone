@@ -4,6 +4,7 @@
 use std::collections::HashSet;
 use std::path::Path;
 
+use arrow::array::Array;
 use arrow::record_batch::RecordBatch;
 use futures::StreamExt;
 
@@ -177,4 +178,27 @@ pub async fn read_parquet_with_filter_async(
     );
 
     Ok(results)
+}
+
+/// Read a single Parquet file asynchronously with optional PNR filtering
+///
+/// # Arguments
+/// * `path` - Path to the Parquet file
+/// * `schema` - Optional Arrow Schema for projecting specific columns
+/// * `pnr_filter` - Optional set of PNRs to filter the data by
+///
+/// # Returns
+/// A vector of filtered `RecordBatch` objects
+///
+/// # Errors
+/// Returns an error if file reading or filtering fails
+pub async fn read_parquet_with_optional_pnr_filter_async(
+    path: &Path,
+    schema: Option<&arrow::datatypes::Schema>,
+    pnr_filter: Option<&HashSet<String>>,
+) -> Result<Vec<RecordBatch>> {
+    match pnr_filter {
+        Some(filter) => read_parquet_with_pnr_filter_async(path, schema, filter, None).await,
+        None => read_parquet_async(path, schema, None).await,
+    }
 }

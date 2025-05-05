@@ -7,7 +7,7 @@ use super::schemas::mfr::mfr_schema;
 use crate::RecordBatch;
 use crate::Result;
 use crate::load_parquet_files_parallel;
-use crate::load_parquet_files_parallel_async;
+use crate::async_io::parallel_ops::load_parquet_files_parallel_with_pnr_filter_async;
 use arrow::datatypes::SchemaRef;
 use std::collections::HashSet;
 use std::future::Future;
@@ -82,7 +82,7 @@ impl RegisterLoader for MfrRegister {
             // Use optimized async parallel loading for MFR data
             let pnr_filter_arc = pnr_filter.map(|f| std::sync::Arc::new(f.clone()));
             let pnr_filter_ref = pnr_filter_arc.as_ref().map(std::convert::AsRef::as_ref);
-            load_parquet_files_parallel_async(base_path, Some(self.schema.as_ref()), pnr_filter_ref)
+            load_parquet_files_parallel_with_pnr_filter_async(base_path, Some(self.schema.as_ref()), pnr_filter_ref)
                 .await
         })
     }

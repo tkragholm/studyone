@@ -16,14 +16,12 @@ use par_reader::{
     read_parquet_with_filter_async,
     // Registry functionality
     RegistryManager,
-    AkmRegister,
-    BefRegister,
-    filter_by_date_range,
+    // Registry types removed as they're unused
     add_year_column,
 };
 
 use parquet::file::metadata::ParquetMetaDataReader;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::fs::File;
 use std::path::Path;
 use std::time::Instant;
@@ -65,7 +63,7 @@ async fn main() -> Result<()> {
     let mut reader = ParquetReader::new();
 
     // Use string slices directly
-    let path_refs: Vec<&str> = paths.iter().map(|s| s.as_str()).collect();
+    let path_refs: Vec<&str> = paths.iter().map(|s| &**s).collect();
 
     // Preload all files to cache their metadata
     println!("Preloading files to cache metadata...");
@@ -313,23 +311,21 @@ async fn main() -> Result<()> {
                 println!("\n  Applying date transformation (add year column):");
                 
                 // Only perform if there's a date column
-                let date_col = if first_batch.schema().field_with_name("INDM_DAG").is_ok() {
-                    "INDM_DAG"
-                } else {
-                    // Example fallback
-                    println!("  No date column found, skipping transformation");
-                    continue;
-                };
-                
-                match add_year_column(first_batch, date_col) {
-                    Ok(transformed) => {
-                        println!("  Added year column successfully");
-                        println!("  Transformed schema:");
-                        for field in transformed.schema().fields() {
-                            println!("    - {} ({})", field.name(), field.data_type());
+                if first_batch.schema().field_with_name("INDM_DAG").is_ok() {
+                    let date_col = "INDM_DAG";
+                    
+                    match add_year_column(first_batch, date_col) {
+                        Ok(transformed) => {
+                            println!("  Added year column successfully");
+                            println!("  Transformed schema:");
+                            for field in transformed.schema().fields() {
+                                println!("    - {} ({})", field.name(), field.data_type());
+                            }
                         }
+                        Err(e) => println!("  Error adding year column: {e}"),
                     }
-                    Err(e) => println!("  Error adding year column: {e}"),
+                } else {
+                    println!("  No date column found, skipping transformation");
                 }
             }
         }

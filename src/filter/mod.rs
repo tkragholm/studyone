@@ -455,10 +455,8 @@ pub fn read_parquet_with_filter(
     }
 
     // Read the file with schema projection containing required columns
-    let batches = utils::read_parquet(path, None, None).map_err(|e| {
-        e.with_path(path)
-            .context(format!("Failed to read Parquet file for filtering"))
-    })?;
+    let batches = utils::read_parquet(path, None, None)
+        .with_context(|| format!("Failed to read Parquet file for filtering (path: {})", path.display()))?;
 
     // Filter each batch
     let mut filtered_batches = Vec::new();

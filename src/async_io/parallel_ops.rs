@@ -1,6 +1,7 @@
 //! Async parallel operations for Parquet files
 //! Provides functionality for processing multiple Parquet files in parallel
 
+use std::collections::HashSet;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -13,7 +14,7 @@ use crate::error::Result;
 use crate::filter::Expr;
 use super::batch_ops::read_parquet_async;
 use super::file_ops::find_parquet_files_async;
-use super::filter_ops::read_parquet_with_filter_async;
+use super::filter_ops::{read_parquet_with_filter_async, read_parquet_with_pnr_filter_async};
 
 /// Load Parquet files from a directory in parallel using async IO
 ///
@@ -148,6 +149,88 @@ pub async fn load_parquet_files_parallel_with_filter_async(
 
     log::info!(
         "Successfully loaded and filtered {} batches from {} Parquet files",
+        combined_batches.len(),
+        parquet_files.len()
+    );
+
+    Ok(combined_batches)
+}
+
+/// Load Parquet files from a directory in parallel with PNR filtering
+///
+/// # Arguments
+/// * `dir` - Directory containing Parquet files
+/// * `schema` - Optional Arrow Schema for projecting specific columns
+/// * `pnr_filter` - Optional set of PNRs to filter by
+///
+/// # Returns
+/// A vector of filtered `RecordBatch` objects from all files
+///
+/// # Errors
+/// Returns an error if directory reading, file reading, or filtering fails
+pub async fn load_parquet_files_parallel_with_pnr_filter_async(
+    dir: &Path,
+    schema: Option<&Schema>,
+    pnr_filter: Option<&HashSet<String>>,
+) -> Result<Vec<RecordBatch>> {
+    log::info!(
+        "Loading Parquet files with PNR filter from directory asynchronously: {}",
+        dir.display()
+    );
+
+    // Find all parquet files in the directory
+    let parquet_files = find_parquet_files_async(dir).await?;
+
+    // If no files found, return empty result
+    if parquet_files.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    // If no PNR filter provided, use regular loading
+    if pnr_filter.is_none() {
+        return load_parquet_files_parallel_async(dir, schema, None).await;
+    }
+
+    // Determine optimal parallelism based on CPU count
+    let num_cpus = num_cpus::get();
+    let schema_arc = schema.map(|s| Arc::new(s.clone()));
+    let pnr_filter_arc = pnr_filter.map(|f| Arc::new(f.clone()));
+
+    // Process files in optimal batches
+    let results = stream::iter(parquet_files.clone())
+        .map(|path| {
+            let schema_clone = schema_arc.clone();
+            let filter_clone = pnr_filter_arc.clone();
+            
+            async move {
+                if let Some(filter) = filter_clone.as_deref() {
+                    read_parquet_with_pnr_filter_async(&path, schema_clone.as_deref(), filter, None).await
+                } else {
+                    read_parquet_async(&path, schema_clone.as_deref(), None).await
+                }
+            }
+        })
+        .buffer_unordered(num_cpus)
+        .collect::<Vec<_>>()
+        .await;
+
+    // Combine all the batches
+    let combined_batches = results
+        .into_iter()
+        .map(|result| match result {
+            Ok(batches) => Ok(batches),
+            Err(e) => {
+                log::error!("Error loading parquet file with PNR filter: {e}");
+                Err(e)
+            }
+        })
+        .collect::<Result<Vec<Vec<RecordBatch>>>>()?
+        .into_iter()
+        .flatten()
+        .collect_vec();
+
+    log::info!(
+        "Successfully loaded {} batches from {} Parquet files with PNR filter",
         combined_batches.len(),
         parquet_files.len()
     );

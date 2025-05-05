@@ -13,11 +13,11 @@ use crate::RecordBatch;
 use crate::Result;
 
 use crate::load_parquet_files_parallel;
-use crate::load_parquet_files_parallel_async;
+use crate::async_io::parallel_ops::load_parquet_files_parallel_with_pnr_filter_async;
 use crate::read_parquet;
-use crate::read_parquet_async;
+use crate::async_io::filter_ops::read_parquet_with_optional_pnr_filter_async;
 use arrow::datatypes::SchemaRef;
-use rayon::prelude::*;
+// rayon prelude removed as it's no longer needed
 use std::collections::HashSet;
 use std::future::Future;
 use std::path::{Path, PathBuf};
@@ -81,15 +81,15 @@ impl RegisterLoader for LprAdmRegister {
 
             if base_path.is_dir() {
                 // Try to load all parquet files in the directory
-                load_parquet_files_parallel_async(
+                load_parquet_files_parallel_with_pnr_filter_async(
                     base_path,
                     Some(self.schema.as_ref()),
-                    pnr_filter_ref,
+                    pnr_filter_ref
                 )
                 .await
             } else {
                 // Try to load a single file
-                read_parquet_async(base_path, Some(self.schema.as_ref()), pnr_filter_ref).await
+                read_parquet_with_optional_pnr_filter_async(base_path, Some(self.schema.as_ref()), pnr_filter_ref).await
             }
         })
     }
@@ -151,13 +151,13 @@ impl RegisterLoader for LprDiagRegister {
             if base_path.is_dir() {
                 // Try to load all parquet files in the directory without PNR filtering
                 let batches =
-                    load_parquet_files_parallel_async(base_path, Some(self.schema.as_ref()), None)
+                    load_parquet_files_parallel_with_pnr_filter_async(base_path, Some(self.schema.as_ref()), None)
                         .await?;
                 Ok(batches)
             } else {
                 // Try to load a single file
                 let batches =
-                    read_parquet_async(base_path, Some(self.schema.as_ref()), None).await?;
+                    read_parquet_with_optional_pnr_filter_async(base_path, Some(self.schema.as_ref()), None).await?;
                 Ok(batches)
             }
         })
@@ -232,13 +232,13 @@ impl RegisterLoader for LprBesRegister {
             if base_path.is_dir() {
                 // Try to load all parquet files in the directory without PNR filtering
                 let batches =
-                    load_parquet_files_parallel_async(base_path, Some(self.schema.as_ref()), None)
+                    load_parquet_files_parallel_with_pnr_filter_async(base_path, Some(self.schema.as_ref()), None)
                         .await?;
                 Ok(batches)
             } else {
                 // Try to load a single file
                 let batches =
-                    read_parquet_async(base_path, Some(self.schema.as_ref()), None).await?;
+                    read_parquet_with_optional_pnr_filter_async(base_path, Some(self.schema.as_ref()), None).await?;
                 Ok(batches)
             }
         })
@@ -315,15 +315,15 @@ impl RegisterLoader for Lpr3KontakterRegister {
 
             if base_path.is_dir() {
                 // Try to load all parquet files in the directory
-                load_parquet_files_parallel_async(
+                load_parquet_files_parallel_with_pnr_filter_async(
                     base_path,
                     Some(self.schema.as_ref()),
-                    pnr_filter_ref,
+                    pnr_filter_ref
                 )
                 .await
             } else {
                 // Try to load a single file
-                read_parquet_async(base_path, Some(self.schema.as_ref()), pnr_filter_ref).await
+                read_parquet_with_optional_pnr_filter_async(base_path, Some(self.schema.as_ref()), pnr_filter_ref).await
             }
         })
     }
@@ -385,13 +385,13 @@ impl RegisterLoader for Lpr3DiagnoserRegister {
             if base_path.is_dir() {
                 // Try to load all parquet files in the directory without PNR filtering
                 let batches =
-                    load_parquet_files_parallel_async(base_path, Some(self.schema.as_ref()), None)
+                    load_parquet_files_parallel_with_pnr_filter_async(base_path, Some(self.schema.as_ref()), None)
                         .await?;
                 Ok(batches)
             } else {
                 // Try to load a single file
                 let batches =
-                    read_parquet_async(base_path, Some(self.schema.as_ref()), None).await?;
+                    read_parquet_with_optional_pnr_filter_async(base_path, Some(self.schema.as_ref()), None).await?;
                 Ok(batches)
             }
         })
@@ -454,78 +454,67 @@ pub fn find_lpr_files(base_dir: &Path) -> Result<LprPaths> {
 
 // Helper function to recursively visit directories and find LPR files
 fn visit_dirs(dir: &Path, paths: &mut LprPaths) -> Result<()> {
-    if dir.is_dir() {
-        // Check if this directory contains LPR files
-        let dir_name = dir.file_name().and_then(|n| n.to_str()).unwrap_or("");
+    if !dir.is_dir() {
+        return Ok(());
+    }
 
-        let dir_name_lower = dir_name.to_lowercase();
+    // Check if this directory contains LPR files
+    let dir_name = dir.file_name().and_then(|n| n.to_str()).unwrap_or("");
+    let dir_name_lower = dir_name.to_lowercase();
 
-        // Check if directory name matches LPR patterns
-        if dir_name_lower.contains("lpr_adm") {
-            paths.lpr_adm = Some(dir.to_path_buf());
-        } else if dir_name_lower.contains("lpr_diag") {
-            paths.lpr_diag = Some(dir.to_path_buf());
-        } else if dir_name_lower.contains("lpr_bes") {
-            paths.lpr_bes = Some(dir.to_path_buf());
-        } else if dir_name_lower.contains("lpr3_kontakter") {
-            paths.lpr3_kontakter = Some(dir.to_path_buf());
-        } else if dir_name_lower.contains("lpr3_diagnoser") {
-            paths.lpr3_diagnoser = Some(dir.to_path_buf());
-        } else {
-            // Use rayon for parallel directory traversal
-            let entries: Vec<_> = match std::fs::read_dir(dir) {
-                Ok(entries) => entries
-                    .collect::<std::io::Result<Vec<_>>>()
-                    .map_err(|e| Error::IoError(format!("Failed to read directory: {}", e)))?,
-                Err(e) => {
-                    return Err(Error::IoError(format!("Failed to read directory: {}", e)).into());
-                }
-            };
+    // Check if directory name matches LPR patterns
+    if dir_name_lower.contains("lpr_adm") {
+        paths.lpr_adm = Some(dir.to_path_buf());
+    } else if dir_name_lower.contains("lpr_diag") {
+        paths.lpr_diag = Some(dir.to_path_buf());
+    } else if dir_name_lower.contains("lpr_bes") {
+        paths.lpr_bes = Some(dir.to_path_buf());
+    } else if dir_name_lower.contains("lpr3_kontakter") {
+        paths.lpr3_kontakter = Some(dir.to_path_buf());
+    } else if dir_name_lower.contains("lpr3_diagnoser") {
+        paths.lpr3_diagnoser = Some(dir.to_path_buf());
+    } else {
+        // Read directory contents
+        let entries: Vec<_> = match std::fs::read_dir(dir) {
+            Ok(entries) => entries
+                .collect::<std::io::Result<Vec<_>>>()
+                .map_err(|e| Error::IoError(format!("Failed to read directory: {}", e)))?,
+            Err(e) => {
+                return Err(Error::IoError(format!("Failed to read directory: {}", e)).into());
+            }
+        };
 
-            entries.par_iter().try_for_each(|entry| {
-                let path = entry.path();
+        // Process each entry sequentially to avoid Fn closure issues
+        for entry in entries {
+            let path = entry.path();
 
-                if path.is_dir() {
-                    // Recursively check subdirectories
-                    visit_dirs(&path, paths)
-                } else if path.is_file() {
-                    // Check if file name matches LPR patterns
-                    let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+            // Process directories recursively
+            if path.is_dir() {
+                visit_dirs(&path, paths)?;
+                continue;
+            }
 
-                    let file_name_lower = file_name.to_lowercase();
+            // Process files for LPR patterns
+            if !path.is_file() {
+                continue;
+            }
 
-                    if file_name_lower.contains("lpr_adm")
-                        && path.extension().is_some_and(|ext| ext == "parquet")
-                    {
-                        paths.lpr_adm = Some(path.parent().unwrap_or(dir).to_path_buf());
-                        Ok(())
-                    } else if file_name_lower.contains("lpr_diag")
-                        && path.extension().is_some_and(|ext| ext == "parquet")
-                    {
-                        paths.lpr_diag = Some(path.parent().unwrap_or(dir).to_path_buf());
-                        Ok(())
-                    } else if file_name_lower.contains("lpr_bes")
-                        && path.extension().is_some_and(|ext| ext == "parquet")
-                    {
-                        paths.lpr_bes = Some(path.parent().unwrap_or(dir).to_path_buf());
-                        Ok(())
-                    } else if file_name_lower.contains("lpr3_kontakter")
-                        && path.extension().is_some_and(|ext| ext == "parquet")
-                    {
-                        paths.lpr3_kontakter = Some(path.parent().unwrap_or(dir).to_path_buf());
-                        Ok(())
-                    } else if file_name_lower.contains("lpr3_diagnoser")
-                        && path.extension().is_some_and(|ext| ext == "parquet")
-                    {
-                        paths.lpr3_diagnoser = Some(path.parent().unwrap_or(dir).to_path_buf());
-                        Ok(())
-                    } else {
-                        Ok(())
-                    }
-                } else {
-                    Ok(())
-                }
-            })?;
+            let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+            let file_name_lower = file_name.to_lowercase();
+            let parent_path = path.parent().unwrap_or(dir).to_path_buf();
+
+            // Check for LPR patterns
+            if file_name_lower.contains("lpr_adm") && path.extension().is_some_and(|ext| ext == "parquet") {
+                paths.lpr_adm = Some(parent_path);
+            } else if file_name_lower.contains("lpr_diag") && path.extension().is_some_and(|ext| ext == "parquet") {
+                paths.lpr_diag = Some(parent_path);
+            } else if file_name_lower.contains("lpr_bes") && path.extension().is_some_and(|ext| ext == "parquet") {
+                paths.lpr_bes = Some(parent_path);
+            } else if file_name_lower.contains("lpr3_kontakter") && path.extension().is_some_and(|ext| ext == "parquet") {
+                paths.lpr3_kontakter = Some(parent_path);
+            } else if file_name_lower.contains("lpr3_diagnoser") && path.extension().is_some_and(|ext| ext == "parquet") {
+                paths.lpr3_diagnoser = Some(parent_path);
+            }
         }
     }
 

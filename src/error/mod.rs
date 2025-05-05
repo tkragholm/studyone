@@ -266,18 +266,21 @@ impl ParquetReaderError {
 /// Extension traits for easy context addition to Results
 pub trait ResultExt<T> {
     /// Add context to a Result
-    fn with_msg(self, msg: &str) -> Result<T>;
+    fn with_msg<S: AsRef<str>>(self, msg: S) -> Result<T>;
 
     /// Add context and path to a Result
-    fn with_path_context<P: AsRef<Path>>(self, msg: &str, path: P) -> Result<T>;
+    fn with_path_context<S: AsRef<str>, P: AsRef<Path>>(self, msg: S, path: P) -> Result<T>;
 }
 
 impl<T, E: std::error::Error + Send + Sync + 'static> ResultExt<T> for std::result::Result<T, E> {
-    fn with_msg(self, msg: &str) -> Result<T> {
-        self.context(msg)
+    fn with_msg<S: AsRef<str>>(self, msg: S) -> Result<T> {
+        let msg_owned = msg.as_ref().to_owned();
+        self.context(msg_owned)
     }
 
-    fn with_path_context<P: AsRef<Path>>(self, msg: &str, path: P) -> Result<T> {
-        self.with_context(|| format!("{} (path: {})", msg, path.as_ref().display()))
+    fn with_path_context<S: AsRef<str>, P: AsRef<Path>>(self, msg: S, path: P) -> Result<T> {
+        let msg_str = msg.as_ref();
+        let path_ref = path.as_ref();
+        self.with_context(move || format!("{} (path: {})", msg_str, path_ref.display()))
     }
 }

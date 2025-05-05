@@ -505,7 +505,7 @@ impl RegistryManager {
         let mut joins = HashMap::new();
 
         for &name in names {
-            if let Some((parent, parent_col, child_col)) = self.joins.get(name) {
+            if let Some((parent, parent_col, _child_col)) = self.joins.get(name) {
                 if names.contains(&parent.as_str()) {
                     joins.insert(
                         name.to_string(),

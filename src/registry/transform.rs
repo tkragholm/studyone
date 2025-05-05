@@ -75,11 +75,11 @@ pub fn filter_by_date_range(
 
         // Vectorized comparison: date >= start_date
         let ge_result =
-            cmp::gt_eq(date_array, &start_date_array).context("Failed to compare dates")?;
+            cmp::gt_eq(date_array, &start_date_array).with_context(|| "Failed to compare dates")?;
 
         // Combine with existing mask
         in_range = kernels::boolean::and(&in_range, &ge_result)
-            .with_context("Failed to combine date filters")?;
+            .with_context(|| "Failed to combine date filters")?;
     }
 
     // Apply end date filter if specified
@@ -91,19 +91,23 @@ pub fn filter_by_date_range(
 
         // Vectorized comparison: date <= end_date
         let le_result =
-            cmp::lt_eq(date_array, &end_date_array).context("Failed to compare dates")?;
+            cmp::lt_eq(date_array, &end_date_array).with_context(|| "Failed to compare dates")?;
 
         // Combine with existing mask
         in_range = kernels::boolean::and(&in_range, &le_result)
-            .context("Failed to combine date filters")?;
+            .with_context(|| "Failed to combine date filters")?;
     }
 
     // Handle nulls in the date column - exclude rows with null dates
-    let null_mask =
-        kernels::boolean::not(&date_array.is_null()).context("Failed to create null mask")?;
+    // Create a boolean array where true means the date is not null
+    let mut not_null_values = Vec::with_capacity(date_array.len());
+    for i in 0..date_array.len() {
+        not_null_values.push(!date_array.is_null(i));
+    }
+    let null_mask = arrow::array::BooleanArray::from(not_null_values);
 
     // Combine with date range mask
-    let mask = kernels::boolean::and(&in_range, &null_mask).context("Failed to combine masks")?;
+    let mask = kernels::boolean::and(&in_range, &null_mask).with_context(|| "Failed to combine masks")?;
 
     // Apply the filter to all columns
     let filtered_columns: Vec<ArrayRef> = batch
@@ -111,11 +115,11 @@ pub fn filter_by_date_range(
         .iter()
         .map(|col| filter_batch(col, &mask))
         .collect::<arrow::error::Result<_>>()
-        .context("Failed to filter batch by date range")?;
+        .with_context(|| "Failed to filter batch by date range")?;
 
     // Create a new record batch with filtered data
     RecordBatch::try_new(batch.schema(), filtered_columns)
-        .context("Failed to create filtered batch")
+        .with_context(|| "Failed to create filtered batch")
 }
 
 /// Extract year from date column and add it as a new column
@@ -196,12 +200,26 @@ pub fn filter_out_missing_values(
         let column = batch.column(col_idx);
 
         // Create a mask where true means non-null values
-        let non_null_mask =
-            kernels::boolean::not(&column.is_null()).context("Failed to create null mask")?;
-
+        let null_bitmap = column.nulls();
+        let is_valid_array = match null_bitmap {
+            Some(_bitmap) => {
+                // If we have a null bitmap, create a boolean array from validity
+                let mut builder = arrow::array::BooleanBuilder::new();
+                for i in 0..column.len() {
+                    builder.append_value(!column.is_null(i));
+                }
+                builder.finish()
+            },
+            None => {
+                // If there are no nulls, all values are valid
+                let values = vec![true; column.len()];
+                arrow::array::BooleanArray::from(values)
+            }
+        };
+        
         // Update the overall mask to include only rows where all required fields are non-null
         mask =
-            kernels::boolean::and(&mask, &non_null_mask).context("Failed to combine null masks")?;
+            kernels::boolean::and(&mask, &is_valid_array).with_context(|| "Failed to combine null masks")?;
     }
 
     // Apply the filter to all columns
@@ -210,11 +228,11 @@ pub fn filter_out_missing_values(
         .iter()
         .map(|col| filter_batch(col, &mask))
         .collect::<arrow::error::Result<_>>()
-        .context("Failed to filter missing values")?;
+        .with_context(|| "Failed to filter missing values")?;
 
     // Create a new record batch with filtered data
     RecordBatch::try_new(batch.schema(), filtered_columns)
-        .context("Failed to create filtered batch")
+        .with_context(|| "Failed to create filtered batch")
 }
 
 /// Map categorical values in a string column based on a provided mapping
@@ -227,7 +245,7 @@ pub fn map_categorical_values(
     let col_idx = batch
         .schema()
         .index_of(column)
-        .context("Column '{column}' not found")?;
+        .with_context(|| format!("Column '{}' not found", column))?;
 
     // Get the column and ensure it's a string column
     let string_array = batch.column(col_idx);
@@ -265,7 +283,7 @@ pub fn map_categorical_values(
     let mut columns = batch.columns().to_vec();
     columns[col_idx] = Arc::new(mapped_array);
 
-    RecordBatch::try_new(new_schema, columns).context("Failed to create batch with mapped values")
+    RecordBatch::try_new(new_schema, columns).with_context(|| "Failed to create batch with mapped values")
 }
 
 /// Scale numeric values in a column by a scaling factor
@@ -278,7 +296,7 @@ pub fn scale_numeric_values(
     let col_idx = batch
         .schema()
         .index_of(column)
-        .context("Column '{column}' not found")?;
+        .with_context(|| format!("Column '{}' not found", column))?;
 
     // Get the column
     let numeric_array = batch.column(col_idx);
@@ -288,7 +306,7 @@ pub fn scale_numeric_values(
         if let Some(int_array) = numeric_array.as_any().downcast_ref::<Int32Array>() {
             // Convert Int32 to Float64 first
             let float_array = kernels::cast::cast(int_array, &DataType::Float64)
-                .context("Failed to cast Int32 to Float64")?;
+                .with_context(|| "Failed to cast Int32 to Float64")?;
 
             // Now multiply by scale factor - use kernel if available or implement efficiently
             let float_array = float_array.as_any().downcast_ref::<Float64Array>().unwrap();
@@ -389,7 +407,7 @@ pub fn add_postal_code_region(
     let mut columns = batch.columns().to_vec();
     columns.push(Arc::new(region_array));
 
-    RecordBatch::try_new(new_schema, columns).context("Failed to create batch with region column")
+    RecordBatch::try_new(new_schema, columns).with_context(|| "Failed to create batch with region column")
 }
 
 /// Determine Danish region from postal code
