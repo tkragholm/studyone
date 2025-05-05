@@ -1,6 +1,6 @@
 //! `LPR3_KONTAKTER` schema definitions
 
-use arrow::datatypes::{DataType, Field, Schema};
+use arrow::datatypes::{DataType, Field, Schema, TimeUnit};
 use std::sync::Arc;
 
 /// Get the Arrow schema for `LPR3_KONTAKTER` data
@@ -8,16 +8,25 @@ use std::sync::Arc;
 /// The `LPR3_KONTAKTER` registry contains contact records from the Danish National Patient Registry version 3.
 #[must_use] pub fn lpr3_kontakter_schema() -> Arc<Schema> {
     Arc::new(Schema::new(vec![
-        Field::new("PNR", DataType::Utf8, false),
-        Field::new("DW_EK_KONTAKT", DataType::Utf8, false), // Used to join with LPR3_DIAGNOSER
-        Field::new("KONTAKT_TYPE", DataType::Utf8, true),
-        Field::new("KONTAKT_AARSAG", DataType::Utf8, true),
-        Field::new("HENVISNINGSAARSAG", DataType::Utf8, true),
-        Field::new("STARTDATO", DataType::Date32, true),
-        Field::new("SLUTDATO", DataType::Date32, true),
-        Field::new("SYGEHUS", DataType::Utf8, true),
-        Field::new("AFDELING", DataType::Utf8, true),
-        Field::new("PRIORITET", DataType::Utf8, true),
-        Field::new("YEAR", DataType::Int16, true),
+        Field::new("SORENHED_IND", DataType::Utf8, true),
+        Field::new("SORENHED_HEN", DataType::Utf8, true),
+        Field::new("SORENHED_ANS", DataType::Utf8, true),
+        Field::new("DW_EK_KONTAKT", DataType::Utf8, true),
+        Field::new("DW_EK_FORLOEB", DataType::Utf8, true),
+        Field::new("CPR", DataType::Utf8, false),
+        Field::new("dato_start", DataType::Date32, true),
+        Field::new("tidspunkt_start", DataType::Time32(TimeUnit::Second), true),
+        Field::new("dato_slut", DataType::Date32, true),
+        Field::new("tidspunkt_slut", DataType::Time32(TimeUnit::Second), true),
+        Field::new("aktionsdiagnose", DataType::Utf8, true),
+        Field::new("kontaktaarsag", DataType::Utf8, true),
+        Field::new("prioritet", DataType::Utf8, true),
+        Field::new("kontakttype", DataType::Utf8, true),
+        Field::new("henvisningsaarsag", DataType::Utf8, true),
+        Field::new("henvisningsmaade", DataType::Utf8, true),
+        Field::new("dato_behandling_start", DataType::Date32, true),
+        Field::new("tidspunkt_behandling_start", DataType::Time32(TimeUnit::Second), true),
+        Field::new("dato_indberetning", DataType::Date32, true),
+        Field::new("lprindberetningssytem", DataType::Utf8, true),
     ]))
 }

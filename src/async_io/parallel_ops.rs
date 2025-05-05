@@ -194,7 +194,7 @@ pub async fn load_parquet_files_parallel_with_pnr_filter_async<S: ::std::hash::B
     // Determine optimal parallelism based on CPU count
     let num_cpus = num_cpus::get();
     let schema_arc = schema.map(|s| Arc::new(s.clone()));
-    let pnr_filter_arc = pnr_filter.map(|f| Arc::new(f));
+    let pnr_filter_arc = pnr_filter.map(Arc::new);
 
     // Process files in optimal batches
     let results = stream::iter(parquet_files.clone())

@@ -31,7 +31,7 @@ pub fn filter_batch_by_pnr<S: ::std::hash::BuildHasher>(
     let pnr_idx = batch
         .schema()
         .index_of(pnr_column)
-        .with_context(|| format!("PNR column '{}' not found", pnr_column))?;
+        .with_context(|| format!("PNR column '{pnr_column}' not found"))?;
 
     let pnr_array = batch.column(pnr_idx);
     let pnr_array = pnr_array
@@ -132,7 +132,7 @@ pub fn join_and_filter_by_pnr(
     let pnr_idx = pnr_batch
         .schema()
         .index_of(pnr_column)
-        .with_context(|| format!("PNR column '{}' not found", pnr_column))?;
+        .with_context(|| format!("PNR column '{pnr_column}' not found"))?;
 
     let join_idx_pnr = pnr_batch.schema().index_of(join_column).map_err(|e| {
         ParquetReaderError::MetadataError(format!(

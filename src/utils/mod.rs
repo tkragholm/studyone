@@ -400,7 +400,7 @@ pub fn load_parquet_files_parallel<S: ::std::hash::BuildHasher + std::marker::Sy
 
     // Clone schema and pnr_filter for sharing across threads
     let schema_arc = schema.map(|s| std::sync::Arc::new(s.clone()));
-    let pnr_filter_arc = pnr_filter.map(|f| std::sync::Arc::new(f));
+    let pnr_filter_arc = pnr_filter.map(std::sync::Arc::new);
 
     // Process files in parallel using rayon
     let all_batches: Vec<Result<Vec<RecordBatch>>> = parquet_files
@@ -408,7 +408,7 @@ pub fn load_parquet_files_parallel<S: ::std::hash::BuildHasher + std::marker::Sy
         .map(|path| {
             // Use clone of schema and pnr_filter
             let schema_ref = schema_arc.as_ref().map(std::convert::AsRef::as_ref);
-            let pnr_filter_ref = pnr_filter_arc.as_ref().map(|v| &**v);
+            let pnr_filter_ref = pnr_filter_arc.as_deref();
 
             read_parquet::<S>(path, schema_ref, pnr_filter_ref.map(|v| &**v))
         })

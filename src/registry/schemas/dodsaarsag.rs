@@ -9,12 +9,17 @@ use std::sync::Arc;
 #[must_use] pub fn dodsaarsag_schema() -> Arc<Schema> {
     Arc::new(Schema::new(vec![
         Field::new("PNR", DataType::Utf8, false),
-        Field::new("C_AARSAG", DataType::Utf8, true), // Primary cause of death
-        Field::new("D_AARSAG1", DataType::Utf8, true), // Contributing cause of death 1
-        Field::new("D_AARSAG2", DataType::Utf8, true), // Contributing cause of death 2
-        Field::new("D_AARSAG3", DataType::Utf8, true), // Contributing cause of death 3
-        Field::new("D_AARSAG4", DataType::Utf8, true), // Contributing cause of death 4
-        Field::new("DOD_DAG", DataType::Date32, true),
-        Field::new("YEAR", DataType::Int16, true),
+        Field::new("C_AARSAG", DataType::Utf8, true),  // Cause of death code (ICD-10)
+        Field::new("C_TILSTAND", DataType::Utf8, true),  // Condition code
+    ]))
+}
+
+/// Create schema for standardized version of DODSAARSAG register data
+#[must_use] pub fn dodsaarsag_standardized_schema() -> Arc<Schema> {
+    Arc::new(Schema::new(vec![
+        Field::new("PNR", DataType::Utf8, false),
+        Field::new("DEATH_CAUSE", DataType::Utf8, true),  // Normalized cause code
+        Field::new("DEATH_CONDITION", DataType::Utf8, true),  // Normalized condition code
+        Field::new("DEATH_CAUSE_CHAPTER", DataType::Utf8, true),  // ICD-10 chapter of death cause
     ]))
 }

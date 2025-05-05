@@ -8,12 +8,12 @@ use std::sync::Arc;
 /// The `LPR3_DIAGNOSER` registry contains diagnosis records from the Danish National Patient Registry version 3.
 #[must_use] pub fn lpr3_diagnoser_schema() -> Arc<Schema> {
     Arc::new(Schema::new(vec![
-        Field::new("DW_EK_KONTAKT", DataType::Utf8, false), // Used to join with LPR3_KONTAKTER
-        Field::new("ART", DataType::Utf8, true),
-        Field::new("KODE", DataType::Utf8, true),
-        Field::new("DIAGNOSE", DataType::Utf8, true),
-        Field::new("SIDEANGIVELSE", DataType::Utf8, true),
-        Field::new("DIAGNOSEDATO", DataType::Date32, true),
-        Field::new("YEAR", DataType::Int16, true),
+        Field::new("DW_EK_KONTAKT", DataType::Utf8, true),
+        Field::new("diagnosekode", DataType::Utf8, true),
+        Field::new("diagnosetype", DataType::Utf8, true),
+        Field::new("senere_afkraeftet", DataType::Utf8, true),
+        Field::new("diagnosekode_parent", DataType::Utf8, true),
+        Field::new("diagnosetype_parent", DataType::Utf8, true),
+        Field::new("lprindberetningssystem", DataType::Utf8, true),
     ]))
 }

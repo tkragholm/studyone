@@ -396,7 +396,7 @@ impl RegistryManager {
 
         // Not cached, load and filter the data asynchronously
         // Use string slices as the names to pass to load_multiple_async
-        let name_refs: Vec<&str> = names_vec.iter().map(|s| s.as_str()).collect();
+        let name_refs: Vec<&str> = names_vec.iter().map(std::string::String::as_str).collect();
         let data = self.load_multiple_async(&name_refs).await?;
 
         // Apply the filter plan

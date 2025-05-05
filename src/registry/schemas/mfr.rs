@@ -8,15 +8,9 @@ use std::sync::Arc;
 /// The MFR (Medical Birth Registry) contains birth information.
 #[must_use] pub fn mfr_schema() -> Arc<Schema> {
     Arc::new(Schema::new(vec![
-        Field::new("PNR", DataType::Utf8, false),      // Child's PNR
-        Field::new("MOR_PNR", DataType::Utf8, true),   // Mother's PNR
-        Field::new("FAR_PNR", DataType::Utf8, true),   // Father's PNR
-        Field::new("FOED_DAG", DataType::Date32, true), // Birth date
-        Field::new("FLERFOLD", DataType::Int8, true),  // Multiple births
-        Field::new("BARSELDAGE", DataType::Int16, true), // Maternity days
-        Field::new("FOEDSELSVGT", DataType::Int16, true), // Birth weight
-        Field::new("GESTATIONSALDER", DataType::Int16, true), // Gestational age
-        Field::new("APGARSCORE", DataType::Int8, true), // Apgar score
-        Field::new("YEAR", DataType::Int16, true),
+        Field::new("CPR_BARN", DataType::Utf8, false),       // Child's CPR number (maps to PNR)
+        Field::new("FOEDSELSDATO", DataType::Date32, true),  // Birth date (maps to FOED_DAG)
+        Field::new("CPR_MODER", DataType::Utf8, true),       // Mother's CPR number (maps to MOR_ID)
+        Field::new("CPR_FADER", DataType::Utf8, true),       // Father's CPR number (maps to FAR_ID)
     ]))
 }

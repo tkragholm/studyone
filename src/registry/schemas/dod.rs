@@ -9,9 +9,14 @@ use std::sync::Arc;
 #[must_use] pub fn dod_schema() -> Arc<Schema> {
     Arc::new(Schema::new(vec![
         Field::new("PNR", DataType::Utf8, false),
-        Field::new("DOD_DAG", DataType::Date32, true),
-        Field::new("DOD_KODE", DataType::Utf8, true),
-        Field::new("DOD_STED", DataType::Utf8, true),
-        Field::new("YEAR", DataType::Int16, true),
+        Field::new("DODDATO", DataType::Utf8, true),
+    ]))
+}
+
+/// Create schema for standardized version of DOD register data
+#[must_use] pub fn dod_standardized_schema() -> Arc<Schema> {
+    Arc::new(Schema::new(vec![
+        Field::new("PNR", DataType::Utf8, false),
+        Field::new("DEATH_DATE", DataType::Date32, true),
     ]))
 }

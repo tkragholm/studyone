@@ -9,12 +9,13 @@ use std::sync::Arc;
 #[must_use] pub fn uddf_schema() -> Arc<Schema> {
     Arc::new(Schema::new(vec![
         Field::new("PNR", DataType::Utf8, false),
-        Field::new("HFAUDD", DataType::Utf8, true),    // Highest completed education
-        Field::new("HFAUDD_NIVEAU", DataType::Utf8, true), // Education level
-        Field::new("HFAUDD_DATO", DataType::Date32, true), // Completion date
-        Field::new("IGANGV_UDD", DataType::Utf8, true), // Ongoing education
-        Field::new("IGANGV_NIVEAU", DataType::Utf8, true), // Ongoing education level
-        Field::new("IGANGV_START", DataType::Date32, true), // Start date
-        Field::new("YEAR", DataType::Int16, true),
+        Field::new("CPRTJEK", DataType::Utf8, true),
+        Field::new("CPRTYPE", DataType::Utf8, true),
+        Field::new("HFAUDD", DataType::Utf8, true),
+        Field::new("HF_KILDE", DataType::Utf8, true),
+        Field::new("HF_VFRA", DataType::Utf8, true),
+        Field::new("HF_VTIL", DataType::Utf8, true),
+        Field::new("INSTNR", DataType::Int8, true),
+        Field::new("VERSION", DataType::Utf8, true),
     ]))
 }

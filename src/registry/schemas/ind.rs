@@ -8,13 +8,13 @@ use std::sync::Arc;
 /// The IND (Indkomst) registry contains income and tax information.
 #[must_use] pub fn ind_schema() -> Arc<Schema> {
     Arc::new(Schema::new(vec![
+        Field::new("BESKST13", DataType::Int8, true),
+        Field::new("CPRTJEK", DataType::Utf8, true),
+        Field::new("CPRTYPE", DataType::Utf8, true),
+        Field::new("LOENMV_13", DataType::Float64, true),
+        Field::new("PERINDKIALT_13", DataType::Float64, true),
         Field::new("PNR", DataType::Utf8, false),
-        Field::new("PERSONINDK", DataType::Float64, true), // Personal income
-        Field::new("LOENMV", DataType::Float64, true),     // Wage income
-        Field::new("NETKAPINDMV", DataType::Float64, true), // Net capital income
-        Field::new("PENSINDMP", DataType::Float64, true),  // Pension income
-        Field::new("OVERFORSKAT", DataType::Float64, true), // Transfers to be taxed
-        Field::new("SKAT", DataType::Float64, true),       // Tax
-        Field::new("YEAR", DataType::Int16, true),
+        Field::new("PRE_SOCIO", DataType::Int8, true),
+        Field::new("VERSION", DataType::Utf8, true),
     ]))
 }
