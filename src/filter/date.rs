@@ -41,7 +41,7 @@ impl DateRangeFilter {
     /// # Returns
     /// A new date range filter
     #[must_use]
-    pub fn new(
+    pub const fn new(
         date_column: String,
         start_date: Option<NaiveDate>,
         end_date: Option<NaiveDate>,

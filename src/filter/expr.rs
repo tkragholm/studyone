@@ -147,7 +147,7 @@ pub struct ExpressionFilter {
 impl ExpressionFilter {
     /// Create a new expression filter
     #[must_use]
-    pub fn new(expr: Expr) -> Self {
+    pub const fn new(expr: Expr) -> Self {
         Self { expr }
     }
 
