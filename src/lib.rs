@@ -31,7 +31,7 @@ pub use arrow::record_batch::RecordBatch;
 
 // Filtering capabilities
 pub use filter::{Expr, LiteralValue};
-pub use filter::{evaluate_expr, filter_record_batch, read_parquet_with_filter};
+pub use filter::{filter_record_batch, read_parquet_with_filter};
 
 // Utility functions
 pub use utils::{DEFAULT_BATCH_SIZE, load_parquet_files_parallel, read_parquet};
@@ -39,8 +39,9 @@ pub use utils::{DEFAULT_BATCH_SIZE, load_parquet_files_parallel, read_parquet};
 // Async functionality
 pub use async_io::{
     load_parquet_files_parallel_async, load_parquet_files_parallel_with_filter_async,
-    read_parquet_async, read_parquet_with_filter_async, read_parquet_with_pnr_filter_async,
+    read_parquet_async, read_parquet_with_filter_async,
 };
+pub use filter::async_filtering::read_parquet_with_pnr_filter_async;
 
 // Registry functionality
 pub use registry::{

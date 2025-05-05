@@ -15,7 +15,7 @@ use crate::Result;
 use crate::load_parquet_files_parallel;
 use crate::async_io::parallel_ops::load_parquet_files_parallel_with_pnr_filter_async;
 use crate::read_parquet;
-use crate::async_io::filter_ops::read_parquet_with_optional_pnr_filter_async;
+use crate::filter::async_filtering::read_parquet_with_optional_pnr_filter_async;
 use arrow::datatypes::SchemaRef;
 // rayon prelude removed as it's no longer needed
 use std::collections::HashSet;

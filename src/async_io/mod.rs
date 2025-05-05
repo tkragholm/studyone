@@ -2,8 +2,8 @@
 //! Provides optimized asynchronous reading of Parquet files using Arrow
 
 // Declare submodules
-mod batch_ops;
-mod file_ops;
+pub mod batch_ops;
+pub mod file_ops;
 pub mod filter_ops;
 pub mod parallel_ops;
 

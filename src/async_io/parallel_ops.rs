@@ -10,11 +10,12 @@ use arrow::record_batch::RecordBatch;
 use futures::stream::{self, StreamExt};
 use itertools::Itertools;
 
-use crate::error::Result;
-use crate::filter::Expr;
 use super::batch_ops::read_parquet_async;
 use super::file_ops::find_parquet_files_async;
-use super::filter_ops::{read_parquet_with_filter_async, read_parquet_with_pnr_filter_async};
+use super::filter_ops::read_parquet_with_filter_async;
+use crate::filter::async_filtering::read_parquet_with_pnr_filter_async;
+use crate::error::Result;
+use crate::filter::Expr;
 
 /// Load Parquet files from a directory in parallel using async IO
 ///
@@ -125,10 +126,12 @@ pub async fn load_parquet_files_parallel_with_filter_async(
     let futures = parquet_files.iter().map(|path| {
         let path = path.clone();
         let expr = expr_arc.clone();
-        let cols_clone = column_vec.clone();
+        let _cols_clone = column_vec.clone();
 
         async move {
-            read_parquet_with_filter_async(&path, &expr, cols_clone.as_deref(), batch_size).await
+            let filter = crate::filter::expr::ExpressionFilter::new((*expr).clone());
+            let filter_arc = Arc::new(filter);
+            read_parquet_with_filter_async(&path, filter_arc, batch_size).await
         }
     });
 
@@ -168,7 +171,9 @@ pub async fn load_parquet_files_parallel_with_filter_async(
 ///
 /// # Errors
 /// Returns an error if directory reading, file reading, or filtering fails
-pub async fn load_parquet_files_parallel_with_pnr_filter_async<S: ::std::hash::BuildHasher + Sync>(
+pub async fn load_parquet_files_parallel_with_pnr_filter_async<
+    S: ::std::hash::BuildHasher + Sync,
+>(
     dir: &Path,
     schema: Option<&Schema>,
     pnr_filter: Option<&HashSet<String, S>>,
@@ -201,10 +206,11 @@ pub async fn load_parquet_files_parallel_with_pnr_filter_async<S: ::std::hash::B
         .map(|path| {
             let schema_clone = schema_arc.clone();
             let filter_clone = pnr_filter_arc.clone();
-            
+
             async move {
                 if let Some(filter) = filter_clone.as_deref() {
-                    read_parquet_with_pnr_filter_async(&path, schema_clone.as_deref(), filter, None).await
+                    read_parquet_with_pnr_filter_async(&path, schema_clone.as_deref(), filter, None)
+                        .await
                 } else {
                     read_parquet_async(&path, schema_clone.as_deref(), None).await
                 }

@@ -103,10 +103,10 @@ pub fn get_available_year_files(registry: &str) -> Vec<PathBuf> {
                 .filter(|entry| {
                     let path = entry.path();
                     path.is_file()
-                        && path.extension().map_or(false, |ext| ext == "parquet")
+                        && path.extension().is_some_and(|ext| ext == "parquet")
                         && path
                             .file_stem()
-                            .map_or(false, |name| name.to_string_lossy().parse::<u32>().is_ok())
+                            .is_some_and(|name| name.to_string_lossy().parse::<u32>().is_ok())
                 })
                 .map(|entry| entry.path())
                 .collect()

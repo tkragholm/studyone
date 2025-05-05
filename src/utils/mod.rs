@@ -5,13 +5,13 @@ use std::fs::File;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
-use arrow::array::{Array, BooleanArray, StringArray};
+use crate::filter::core::BatchFilter;
 use arrow::datatypes::Schema;
 use arrow::record_batch::RecordBatch;
 use parquet::arrow::{ProjectionMask, arrow_reader::ParquetRecordBatchReaderBuilder};
 use rayon::prelude::*;
 
-use crate::error::{ParquetReaderError, Result};
+use crate::error::Result;
 
 /// Validates that a directory exists and is a directory
 ///
@@ -44,22 +44,8 @@ pub fn validate_directory(dir: &Path) -> Result<()> {
 /// # Errors
 /// Returns an error if PNR column cannot be found or accessed
 pub fn find_pnr_column(batch: &RecordBatch) -> Result<(String, usize)> {
-    // Try to find the PNR column with either uppercase or lowercase
-    let pnr_col_name = match batch.schema().field_with_name("PNR") {
-        Ok(_) => "PNR",
-        Err(_) => match batch.schema().field_with_name("pnr") {
-            Ok(_) => "pnr",
-            Err(_) => {
-                return Err(anyhow::anyhow!("PNR column not found in record batch"));
-            }
-        },
-    };
-
-    let pnr_idx = batch.schema().index_of(pnr_col_name).map_err(|e| {
-        ParquetReaderError::MetadataError(format!("PNR column not found in record batch: {e}"))
-    })?;
-
-    Ok((pnr_col_name.to_string(), pnr_idx))
+    // Use the centralized implementation from the pnr module
+    crate::filter::pnr::PnrFilter::find_pnr_column(batch)
 }
 
 /// Default batch size for Parquet reading
@@ -160,7 +146,7 @@ pub fn create_projection(
                     );
                     None
                 },
-                Some
+                Some,
             )
         })
         .collect_vec();
@@ -292,30 +278,14 @@ pub fn read_parquet<S: ::std::hash::BuildHasher + std::marker::Sync>(
 ///
 /// # Errors
 /// Returns an error if the PNR column cannot be found or filtered
-fn filter_batch_by_pnr<S: ::std::hash::BuildHasher + std::marker::Sync>(batch: &RecordBatch, pnr_filter: &HashSet<String, S>) -> Result<RecordBatch> {
-    use itertools::Itertools;
+fn filter_batch_by_pnr<S: ::std::hash::BuildHasher + std::marker::Sync>(
+    batch: &RecordBatch,
+    pnr_filter: &HashSet<String, S>,
+) -> Result<RecordBatch> {
+    // Use the centralized PnrFilter from our new filter module
+    let pnr_filter_obj = crate::filter::pnr::PnrFilter::new(pnr_filter, None);
 
-    // Find the PNR column
-    let (_, pnr_idx) = find_pnr_column(batch)?;
-    let pnr_array = batch.column(pnr_idx);
-
-    let str_array = pnr_array
-        .as_any()
-        .downcast_ref::<StringArray>()
-        .ok_or_else(|| {
-            ParquetReaderError::MetadataError("PNR column is not a string array".to_string())
-        })?;
-
-    // Create filter mask efficiently using itertools
-    // This avoids manual looping and creates the boolean array in one pass
-    let filter_values = (0..str_array.len())
-        .map(|i| !str_array.is_null(i) && pnr_filter.contains(str_array.value(i)))
-        .collect_vec();
-
-    let filter_mask = BooleanArray::from(filter_values);
-
-    // Use the common filter function from the filter module
-    crate::filter::filter_record_batch(batch, &filter_mask)
+    pnr_filter_obj.filter(batch)
 }
 
 /// Find all Parquet files in a directory

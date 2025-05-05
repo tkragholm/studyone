@@ -3,15 +3,14 @@
 //! This module provides functionality for filtering and transforming Arrow record batches.
 
 use crate::error::ResultExt;
+use crate::filter::core::BatchFilter;
 use anyhow::Context;
-use arrow::array::{
-    Array, ArrayRef, BooleanArray, Date32Array, Float64Array, Int32Array, StringArray,
-};
-use arrow::compute::kernels::cmp;
+use arrow::array::{Array, ArrayRef, BooleanArray, Float64Array, Int32Array, StringArray};
+
 use arrow::compute::{filter as filter_batch, kernels};
 use arrow::datatypes::{DataType, Field, Schema};
 use arrow::record_batch::RecordBatch;
-use chrono::{Datelike, NaiveDate};
+use chrono::NaiveDate;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -25,10 +24,7 @@ pub fn transform_records(
     use rayon::prelude::*;
 
     // Use parallel processing for transformation
-    let results: Vec<Result<RecordBatch>> = batches
-        .par_iter()
-        .map(transformation)
-        .collect();
+    let results: Vec<Result<RecordBatch>> = batches.par_iter().map(transformation).collect();
 
     // Filter out empty batches and collect results
     let mut transformed_batches = Vec::with_capacity(batches.len());
@@ -50,131 +46,17 @@ pub fn filter_by_date_range(
     start_date: Option<NaiveDate>,
     end_date: Option<NaiveDate>,
 ) -> Result<RecordBatch> {
-    // Find the date column
-    let date_idx = batch.schema().index_of(date_column).map_err(|e| {
-        Error::ValidationError(format!("Date column '{date_column}' not found: {e}"))
-    })?;
+    // Use the centralized DateRangeFilter from our new filter module
+    let date_filter =
+        crate::filter::date::DateRangeFilter::new(date_column.to_string(), start_date, end_date);
 
-    let date_array = batch.column(date_idx);
-    let date_array = date_array
-        .as_any()
-        .downcast_ref::<Date32Array>()
-        .ok_or_else(|| {
-            Error::ValidationError(format!("Column '{date_column}' is not a Date32 array"))
-        })?;
-
-    // Use Arrow's compute functions for vectorized comparison
-    let mut in_range = BooleanArray::from(vec![true; batch.num_rows()]);
-
-    // Apply start date filter if specified
-    if let Some(start) = start_date {
-        let start_days = start.num_days_from_ce() - 719_163;
-
-        // Create array of the start date for vectorized comparison
-        let start_date_array = Date32Array::from(vec![start_days; batch.num_rows()]);
-
-        // Vectorized comparison: date >= start_date
-        let ge_result =
-            cmp::gt_eq(date_array, &start_date_array).with_context(|| "Failed to compare dates")?;
-
-        // Combine with existing mask
-        in_range = kernels::boolean::and(&in_range, &ge_result)
-            .with_context(|| "Failed to combine date filters")?;
-    }
-
-    // Apply end date filter if specified
-    if let Some(end) = end_date {
-        let end_days = end.num_days_from_ce() - 719_163;
-
-        // Create array of the end date for vectorized comparison
-        let end_date_array = Date32Array::from(vec![end_days; batch.num_rows()]);
-
-        // Vectorized comparison: date <= end_date
-        let le_result =
-            cmp::lt_eq(date_array, &end_date_array).with_context(|| "Failed to compare dates")?;
-
-        // Combine with existing mask
-        in_range = kernels::boolean::and(&in_range, &le_result)
-            .with_context(|| "Failed to combine date filters")?;
-    }
-
-    // Handle nulls in the date column - exclude rows with null dates
-    // Create a boolean array where true means the date is not null
-    let mut not_null_values = Vec::with_capacity(date_array.len());
-    for i in 0..date_array.len() {
-        not_null_values.push(!date_array.is_null(i));
-    }
-    let null_mask = arrow::array::BooleanArray::from(not_null_values);
-
-    // Combine with date range mask
-    let mask = kernels::boolean::and(&in_range, &null_mask).with_context(|| "Failed to combine masks")?;
-
-    // Apply the filter to all columns
-    let filtered_columns: Vec<ArrayRef> = batch
-        .columns()
-        .iter()
-        .map(|col| filter_batch(col, &mask))
-        .collect::<arrow::error::Result<_>>()
-        .with_context(|| "Failed to filter batch by date range")?;
-
-    // Create a new record batch with filtered data
-    RecordBatch::try_new(batch.schema(), filtered_columns)
-        .with_context(|| "Failed to create filtered batch")
+    date_filter.filter(batch)
 }
 
 /// Extract year from date column and add it as a new column
 pub fn add_year_column(batch: &RecordBatch, date_column: &str) -> Result<RecordBatch> {
-    // Find the date column
-    let date_idx = batch.schema().index_of(date_column).map_err(|e| {
-        Error::ValidationError(format!("Date column '{date_column}' not found: {e}"))
-    })?;
-
-    let date_array = batch.column(date_idx);
-    let date_array = date_array
-        .as_any()
-        .downcast_ref::<Date32Array>()
-        .ok_or_else(|| {
-            Error::ValidationError(format!("Column '{date_column}' is not a Date32 array"))
-        })?;
-
-    // Create a new Int32Array with year values - use arrow computation logic
-    let mut year_values = Vec::with_capacity(batch.num_rows());
-
-    // Implement this vectorized if Arrow provides a function, otherwise do it per-element
-    for i in 0..date_array.len() {
-        if date_array.is_null(i) {
-            year_values.push(None);
-        } else {
-            let days = date_array.value(i);
-            let date = NaiveDate::from_num_days_from_ce_opt(days + 719_163).unwrap_or_default();
-            year_values.push(Some(date.year()));
-        }
-    }
-
-    // Create the Int32Array for the years
-    let year_array = Int32Array::from(year_values);
-
-    // Create a new field for the year column
-    let year_field = Field::new("year", DataType::Int32, true);
-
-    // Create a new schema by adding the year field
-    let schema = batch.schema();
-    let fields = schema.fields();
-    let mut field_vec = fields.to_vec();
-    field_vec.push(Arc::new(year_field));
-    let new_schema = Arc::new(Schema::new(field_vec));
-
-    // Create a new record batch with all the original columns plus the year column
-    let mut columns: Vec<ArrayRef> = batch.columns().to_vec();
-    columns.push(Arc::new(year_array));
-
-    // Create a new record batch with the new schema and columns
-    RecordBatch::try_new(new_schema, columns).map_err(|e| {
-        Error::ArrowError(format!(
-            "Failed to create record batch with year column: {e}"
-        ))
-        .into()
-    })
+    // Use the centralized implementation
+    crate::filter::date::add_year_column(batch, date_column)
 }
 
 /// Filter out records with missing values in specific columns
@@ -214,12 +96,12 @@ pub fn filter_out_missing_values(
                     builder.append_value(!column.is_null(i));
                 }
                 builder.finish()
-            }
+            },
         );
-        
+
         // Update the overall mask to include only rows where all required fields are non-null
-        mask =
-            kernels::boolean::and(&mask, &is_valid_array).with_context(|| "Failed to combine null masks")?;
+        mask = kernels::boolean::and(&mask, &is_valid_array)
+            .with_context(|| "Failed to combine null masks")?;
     }
 
     // Apply the filter to all columns
@@ -283,7 +165,8 @@ pub fn map_categorical_values(
     let mut columns = batch.columns().to_vec();
     columns[col_idx] = Arc::new(mapped_array);
 
-    RecordBatch::try_new(new_schema, columns).with_context(|| "Failed to create batch with mapped values")
+    RecordBatch::try_new(new_schema, columns)
+        .with_context(|| "Failed to create batch with mapped values")
 }
 
 /// Scale numeric values in a column by a scaling factor
@@ -407,20 +290,23 @@ pub fn add_postal_code_region(
     let mut columns = batch.columns().to_vec();
     columns.push(Arc::new(region_array));
 
-    RecordBatch::try_new(new_schema, columns).with_context(|| "Failed to create batch with region column")
+    RecordBatch::try_new(new_schema, columns)
+        .with_context(|| "Failed to create batch with region column")
 }
 
 /// Determine Danish region from postal code
 fn determine_region_from_postal_code(postal_code: &str) -> &'static str {
-    postal_code.parse::<u32>().map_or("Unknown", |code| match code {
-        1000..=2999 => "Hovedstaden",  // Copenhagen and surrounding areas
-        3000..=3999 => "Nordsjælland", // North Zealand
-        4000..=4999 => "Sjælland",     // Zealand
-        5000..=5999 => "Fyn",          // Funen
-        6000..=6999 => "Sydjylland",   // Southern Jutland
-        7000..=7999 => "Midtjylland",  // Central Jutland
-        8000..=8999 => "Østjylland",   // Eastern Jutland
-        9000..=9999 => "Nordjylland",  // Northern Jutland
-        _ => "Unknown",
-    })
+    postal_code
+        .parse::<u32>()
+        .map_or("Unknown", |code| match code {
+            1000..=2999 => "Hovedstaden",  // Copenhagen and surrounding areas
+            3000..=3999 => "Nordsjælland", // North Zealand
+            4000..=4999 => "Sjælland",     // Zealand
+            5000..=5999 => "Fyn",          // Funen
+            6000..=6999 => "Sydjylland",   // Southern Jutland
+            7000..=7999 => "Midtjylland",  // Central Jutland
+            8000..=8999 => "Østjylland",   // Eastern Jutland
+            9000..=9999 => "Nordjylland",  // Northern Jutland
+            _ => "Unknown",
+        })
 }
