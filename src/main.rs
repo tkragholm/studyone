@@ -2,6 +2,7 @@ use par_reader::{
     // Arrow types
     Expr,
     LiteralValue,
+    RecordBatch,
     // Original types
     ParquetReader,
     ParquetReaderConfig,
@@ -13,9 +14,16 @@ use par_reader::{
     // Async functionality
     read_parquet_async,
     read_parquet_with_filter_async,
+    // Registry functionality
+    RegistryManager,
+    AkmRegister,
+    BefRegister,
+    filter_by_date_range,
+    add_year_column,
 };
 
 use parquet::file::metadata::ParquetMetaDataReader;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::path::Path;
 use std::time::Instant;
@@ -57,7 +65,7 @@ async fn main() -> Result<()> {
     let mut reader = ParquetReader::new();
 
     // Use string slices directly
-    let path_refs: Vec<&str> = paths.clone();
+    let path_refs: Vec<&str> = paths.iter().map(|s| s.as_str()).collect();
 
     // Preload all files to cache their metadata
     println!("Preloading files to cache metadata...");
@@ -109,7 +117,7 @@ async fn main() -> Result<()> {
                     "  Total rows: {}",
                     batches
                         .iter()
-                        .map(par_reader::RecordBatch::num_rows)
+                        .map(RecordBatch::num_rows)
                         .sum::<usize>()
                 );
 
@@ -159,7 +167,7 @@ async fn main() -> Result<()> {
                 "  Total rows: {}",
                 batches
                     .iter()
-                    .map(par_reader::RecordBatch::num_rows)
+                    .map(RecordBatch::num_rows)
                     .sum::<usize>()
             );
         }
@@ -181,7 +189,7 @@ async fn main() -> Result<()> {
                     "  Total filtered rows: {}",
                     batches
                         .iter()
-                        .map(par_reader::RecordBatch::num_rows)
+                        .map(RecordBatch::num_rows)
                         .sum::<usize>()
                 );
             }
@@ -207,7 +215,7 @@ async fn main() -> Result<()> {
                     "  Total filtered rows: {}",
                     batches
                         .iter()
-                        .map(par_reader::RecordBatch::num_rows)
+                        .map(RecordBatch::num_rows)
                         .sum::<usize>()
                 );
             }
@@ -232,7 +240,7 @@ async fn main() -> Result<()> {
                     "  Total rows: {}",
                     batches
                         .iter()
-                        .map(par_reader::RecordBatch::num_rows)
+                        .map(RecordBatch::num_rows)
                         .sum::<usize>()
                 );
             }
@@ -256,11 +264,99 @@ async fn main() -> Result<()> {
                 "  Total rows: {}",
                 batches
                     .iter()
-                    .map(par_reader::RecordBatch::num_rows)
+                    .map(RecordBatch::num_rows)
                     .sum::<usize>()
             );
         }
         Err(e) => println!("  Error reading files asynchronously: {e}"),
+    }
+
+    println!("\n============= REGISTRY SYSTEM =============");
+
+    // Create a registry manager
+    let manager = RegistryManager::new();
+
+    // Register data sources - these paths would need to be adjusted for your environment
+    let akm_path = Path::new(&paths[0]).parent().unwrap();
+    let bef_path = Path::new("/Users/tobiaskragholm/generated_data/parquet/bef");
+    
+    println!("\nRegistering data sources:");
+    
+    match manager.register("akm", akm_path) {
+        Ok(()) => println!("  Registered AKM registry from {}", akm_path.display()),
+        Err(e) => println!("  Failed to register AKM registry: {e}"),
+    }
+    
+    // Register BEF if it exists
+    if bef_path.exists() {
+        match manager.register("bef", bef_path) {
+            Ok(()) => println!("  Registered BEF registry from {}", bef_path.display()),
+            Err(e) => println!("  Failed to register BEF registry: {e}"),
+        }
+    }
+    
+    // Load data from AKM registry
+    println!("\nLoading AKM registry data:");
+    match manager.load("akm") {
+        Ok(batches) => {
+            println!("  Loaded {} record batches", batches.len());
+            println!(
+                "  Total rows: {}",
+                batches
+                    .iter()
+                    .map(RecordBatch::num_rows)
+                    .sum::<usize>()
+            );
+            
+            // Sample transformation - add year column
+            if let Some(first_batch) = batches.first() {
+                println!("\n  Applying date transformation (add year column):");
+                
+                // Only perform if there's a date column
+                let date_col = if first_batch.schema().field_with_name("INDM_DAG").is_ok() {
+                    "INDM_DAG"
+                } else {
+                    // Example fallback
+                    println!("  No date column found, skipping transformation");
+                    continue;
+                };
+                
+                match add_year_column(first_batch, date_col) {
+                    Ok(transformed) => {
+                        println!("  Added year column successfully");
+                        println!("  Transformed schema:");
+                        for field in transformed.schema().fields() {
+                            println!("    - {} ({})", field.name(), field.data_type());
+                        }
+                    }
+                    Err(e) => println!("  Error adding year column: {e}"),
+                }
+            }
+        }
+        Err(e) => println!("  Error loading AKM registry: {e}"),
+    }
+    
+    // Filter by PNR if we have multiple registries
+    if bef_path.exists() {
+        println!("\nFiltering data by PNR across registries:");
+        
+        // Create a sample PNR filter with some synthetic PNRs
+        let mut pnr_filter = HashSet::new();
+        pnr_filter.insert("0101701234".to_string());
+        pnr_filter.insert("0101801234".to_string());
+        pnr_filter.insert("0101901234".to_string());
+        
+        match manager.filter_by_pnr(&["akm", "bef"], &pnr_filter) {
+            Ok(filtered_data) => {
+                for (registry, batches) in filtered_data {
+                    println!("  {registry}: {} batches with {} total rows", 
+                        batches.len(),
+                        batches.iter().map(RecordBatch::num_rows).sum::<usize>()
+                    );
+                }
+            }
+            Err(e) => println!("  Error filtering by PNR: {e}"),
+        }
     }
 
     println!("\n============= METADATA OPERATIONS =============");

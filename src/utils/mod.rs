@@ -24,10 +24,10 @@ use crate::error::{ParquetReaderError, Result};
 /// Returns an error if the directory does not exist or is not a directory
 pub fn validate_directory(dir: &Path) -> Result<()> {
     if !dir.exists() || !dir.is_dir() {
-        return Err(ParquetReaderError::IoError(std::io::Error::new(
-            std::io::ErrorKind::NotFound,
-            format!("Directory does not exist: {}", dir.display()),
-        )));
+        return Err(anyhow::anyhow!(
+            "Directory does not exist: {}",
+            dir.display()
+        ));
     }
     Ok(())
 }
@@ -49,9 +49,7 @@ pub fn find_pnr_column(batch: &RecordBatch) -> Result<(String, usize)> {
         Err(_) => match batch.schema().field_with_name("pnr") {
             Ok(_) => "pnr",
             Err(_) => {
-                return Err(ParquetReaderError::MetadataError(
-                    "PNR column not found in record batch".to_string(),
-                ));
+                return Err(anyhow::anyhow!("PNR column not found in record batch"));
             }
         },
     };
@@ -72,20 +70,6 @@ pub fn get_batch_size() -> Option<usize> {
     std::env::var("PARQUET_BATCH_SIZE")
         .ok()
         .and_then(|s| s.parse::<usize>().ok())
-}
-
-/// Creates a standardized error for Parquet operations
-///
-/// # Arguments
-/// * `message` - Base error message
-/// * `error` - The original error that occurred
-///
-/// # Returns
-/// A standardized `ParquetReaderError`
-pub fn create_parquet_error<E: std::fmt::Display>(message: &str, error: E) -> ParquetReaderError {
-    ParquetReaderError::ParquetError(parquet::errors::ParquetError::General(format!(
-        "{message}: {error}"
-    )))
 }
 
 /// Log an operation start with consistent format
@@ -152,28 +136,29 @@ pub fn log_warning(message: &str, path: Option<&Path>) {
 /// A tuple with:
 /// - Boolean indicating if projection was applied
 /// - Optional projection mask if applied
-#[must_use] pub fn create_projection(
+#[must_use]
+pub fn create_projection(
     schema: &Schema,
     file_schema: &Schema,
     parquet_schema: &parquet::schema::types::SchemaDescriptor,
 ) -> (bool, Option<ProjectionMask>) {
     use itertools::Itertools;
-    
+
     // Use itertools for more efficient iteration and collection
-    let projection: Vec<usize> = schema.fields()
+    let projection: Vec<usize> = schema
+        .fields()
         .iter()
         .filter_map(|f| {
             let field_name = f.name();
-            match file_schema.index_of(field_name) {
-                Ok(idx) => Some(idx),
-                Err(_) => {
-                    // Skip fields that don't exist in the file
-                    log_warning(
-                        &format!("Field {field_name} not found in parquet file, skipping"),
-                        None,
-                    );
-                    None
-                }
+            if let Ok(idx) = file_schema.index_of(field_name) {
+                Some(idx)
+            } else {
+                // Skip fields that don't exist in the file
+                log_warning(
+                    &format!("Field {field_name} not found in parquet file, skipping"),
+                    None,
+                );
+                None
             }
         })
         .collect_vec();
@@ -212,20 +197,12 @@ pub fn read_parquet(
     let start = std::time::Instant::now();
     log_operation_start("Reading parquet file", path);
     // Open the file
-    let file = File::open(path).map_err(|e| {
-        ParquetReaderError::IoError(std::io::Error::new(
-            std::io::ErrorKind::NotFound,
-            format!("Failed to open file {}: {}", path.display(), e),
-        ))
-    })?;
+    let file = File::open(path)
+        .map_err(|e| anyhow::anyhow!("Failed to open file {}: {}", path.display(), e))?;
 
     // Create the reader
-    let reader_builder = ParquetRecordBatchReaderBuilder::try_new(file).map_err(|e| {
-        create_parquet_error(
-            &format!("Failed to read parquet file {}", path.display()),
-            e,
-        )
-    })?;
+    let reader_builder = ParquetRecordBatchReaderBuilder::try_new(file)
+        .map_err(|e| anyhow::anyhow!("Failed to read parquet file {}", e))?;
 
     // Create the reader with optional projection
     let reader = if let Some(schema) = schema {
@@ -240,48 +217,53 @@ pub fn read_parquet(
                 .with_projection(projection_mask.unwrap())
                 .build()
                 .map_err(|e| {
-                    create_parquet_error("Failed to build parquet reader with projection", e)
+                    anyhow::anyhow!(
+                        "Failed to build parquet reader with projection. Error: {}",
+                        e
+                    )
                 })?
         } else {
             // Build without projection (all columns)
             reader_builder
                 .build()
-                .map_err(|e| create_parquet_error("Failed to build parquet reader", e))?
+                .map_err(|e| anyhow::anyhow!("Failed to build parquet reader. Error: {}", e))?
         }
     } else {
         // No projection, read all columns
         reader_builder
             .build()
-            .map_err(|e| create_parquet_error("Failed to build parquet reader", e))?
+            .map_err(|e| anyhow::anyhow!("Failed to build parquet reader. Error: {}", e))?
     };
 
     use rayon::prelude::*;
     use std::sync::Mutex;
-    
+
     // Collect the batches first to enable parallel processing
     let batch_results: Vec<_> = reader.collect();
-    
+
     // Process the batches in parallel using rayon
     let batches = if let Some(pnr_filter) = pnr_filter {
         // Create a thread-safe collector for filtered batches
         let batches_collector = Mutex::new(Vec::with_capacity(batch_results.len()));
-        
+
         // Process batches in parallel
-        batch_results.par_iter()
-            .for_each(|batch_result| {
-                // Handle each batch independently
-                if let Ok(batch) = batch_result.as_ref().map_err(|e| create_parquet_error("Failed to read record batch", e)) {
-                    // Filter the batch by PNR
-                    if let Ok(filtered_batch) = filter_batch_by_pnr(batch, pnr_filter) {
-                        // Add non-empty batches to the collector
-                        if filtered_batch.num_rows() > 0 {
-                            let mut batches = batches_collector.lock().unwrap();
-                            batches.push(filtered_batch);
-                        }
+        batch_results.par_iter().for_each(|batch_result| {
+            // Handle each batch independently
+            if let Ok(batch) = batch_result
+                .as_ref()
+                .map_err(|e| anyhow::anyhow!("Failed to read record batch. Error: {}", e))
+            {
+                // Filter the batch by PNR
+                if let Ok(filtered_batch) = filter_batch_by_pnr(batch, pnr_filter) {
+                    // Add non-empty batches to the collector
+                    if filtered_batch.num_rows() > 0 {
+                        let mut batches = batches_collector.lock().unwrap();
+                        batches.push(filtered_batch);
                     }
                 }
-            });
-            
+            }
+        });
+
         // Get the collected batches
         batches_collector.into_inner().unwrap()
     } else {
@@ -289,10 +271,11 @@ pub fn read_parquet(
         let result: Result<Vec<RecordBatch>> = batch_results
             .into_iter()
             .map(|batch_result| {
-                batch_result.map_err(|e| create_parquet_error("Failed to read record batch", e))
+                batch_result
+                    .map_err(|e| anyhow::anyhow!("Failed to read record batch. Error: {}", e))
             })
             .collect();
-            
+
         result?
     };
 
@@ -307,26 +290,26 @@ pub fn read_parquet(
 /// Returns an error if the PNR column cannot be found or filtered
 fn filter_batch_by_pnr(batch: &RecordBatch, pnr_filter: &HashSet<String>) -> Result<RecordBatch> {
     use itertools::Itertools;
-    
+
     // Find the PNR column
     let (_, pnr_idx) = find_pnr_column(batch)?;
     let pnr_array = batch.column(pnr_idx);
-    
+
     let str_array = pnr_array
         .as_any()
         .downcast_ref::<StringArray>()
         .ok_or_else(|| {
             ParquetReaderError::MetadataError("PNR column is not a string array".to_string())
         })?;
-    
+
     // Create filter mask efficiently using itertools
     // This avoids manual looping and creates the boolean array in one pass
     let filter_values = (0..str_array.len())
         .map(|i| !str_array.is_null(i) && pnr_filter.contains(str_array.value(i)))
         .collect_vec();
-    
+
     let filter_mask = BooleanArray::from(filter_values);
-    
+
     // Use the common filter function from the filter module
     crate::filter::filter_record_batch(batch, &filter_mask)
 }
@@ -344,7 +327,7 @@ fn filter_batch_by_pnr(batch: &RecordBatch, pnr_filter: &HashSet<String>) -> Res
 pub fn find_parquet_files(dir: &Path) -> Result<Vec<PathBuf>> {
     use itertools::Itertools;
     use rayon::prelude::*;
-    
+
     log_operation_start("Searching for parquet files in", dir);
 
     // Validate directory
@@ -353,28 +336,18 @@ pub fn find_parquet_files(dir: &Path) -> Result<Vec<PathBuf>> {
     // Find all parquet files in the directory efficiently using rayon for parallelism
     // and itertools for improved iteration performance
     let parquet_files = std::fs::read_dir(dir)
-        .map_err(|e| {
-            ParquetReaderError::IoError(std::io::Error::new(
-                std::io::ErrorKind::PermissionDenied,
-                format!("Failed to read directory {}: {}", dir.display(), e),
-            ))
-        })?
+        .map_err(|e| anyhow::anyhow!("Failed to read directory {}: {}", dir.display(), e))?
         .par_bridge() // Convert to parallel iterator
-        .filter_map(|entry_result| {
-            match entry_result {
-                Ok(entry) => {
-                    let path = entry.path();
-                    if path.is_file() && path.extension().is_some_and(|ext| ext == "parquet") {
-                        Some(Ok(path))
-                    } else {
-                        None
-                    }
+        .filter_map(|entry_result| match entry_result {
+            Ok(entry) => {
+                let path = entry.path();
+                if path.is_file() && path.extension().is_some_and(|ext| ext == "parquet") {
+                    Some(Ok(path))
+                } else {
+                    None
                 }
-                Err(e) => Some(Err(ParquetReaderError::IoError(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    format!("Failed to read directory entry: {e}"),
-                )))),
             }
+            Err(e) => Some(Err(anyhow::anyhow!("Failed to read directory entry: {e}"))),
         })
         .collect::<Result<Vec<_>>>()? // Collect errors during processing
         .into_iter()

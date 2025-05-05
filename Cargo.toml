@@ -20,7 +20,14 @@ log = "0.4.20"
 env_logger = "0.11.8"
 # Error handling
 thiserror = "2.0.12"
+anyhow = "1.0.80"
 snmalloc-rs = { version = "0.3.8", features = ["lto", "check", "native-cpu"] }
+chrono = "0.4.41"
+
+[features]
+default = []
+# Enable backtraces in error messages (requires nightly Rust or Rust 1.65+)
+backtrace = []
 
 [profile.release]
 lto = "fat"           # Enable Link Time Optimization for maximum performance

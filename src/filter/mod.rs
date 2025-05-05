@@ -3,6 +3,7 @@
 //! This module provides a flexible expression-based filtering system
 //! for Parquet files, allowing you to filter rows based on column values.
 
+use anyhow::Context;
 use std::collections::HashSet;
 use std::path::Path;
 
@@ -179,16 +180,12 @@ pub fn evaluate_expr(batch: &RecordBatch, expr: &Expr) -> Result<BooleanArray> {
 
                 // Use Arrow's vectorized 'and' function instead of row-by-row
                 let result_ref = and(&result, &mask)
-                    .map_err(|e| ParquetReaderError::FilterError(e.to_string()))?;
+                    .context(format!("Failed to apply AND operation to filter arrays"))?;
 
                 result = result_ref
                     .as_any()
                     .downcast_ref::<BooleanArray>()
-                    .ok_or_else(|| {
-                        ParquetReaderError::FilterError(
-                            "Failed to downcast boolean array".to_string(),
-                        )
-                    })?
+                    .ok_or_else(|| anyhow::anyhow!("Failed to downcast boolean array"))?
                     .clone();
             }
 
@@ -214,11 +211,7 @@ pub fn evaluate_expr(batch: &RecordBatch, expr: &Expr) -> Result<BooleanArray> {
                 result = result_ref
                     .as_any()
                     .downcast_ref::<BooleanArray>()
-                    .ok_or_else(|| {
-                        ParquetReaderError::FilterError(
-                            "Failed to downcast boolean array".to_string(),
-                        )
-                    })?
+                    .ok_or_else(|| anyhow::anyhow!("Failed to downcast boolean array"))?
                     .clone();
             }
 
@@ -271,9 +264,7 @@ pub fn evaluate_expr(batch: &RecordBatch, expr: &Expr) -> Result<BooleanArray> {
                             })?
                             .clone())
                     } else {
-                        Err(ParquetReaderError::FilterError(format!(
-                            "Column {col_name} is not a string array"
-                        )))
+                        Err(anyhow::anyhow!("Column {col_name} is not a string array"))
                     }
                 }
                 LiteralValue::Int(n) => {
@@ -318,14 +309,12 @@ pub fn evaluate_expr(batch: &RecordBatch, expr: &Expr) -> Result<BooleanArray> {
                             })?
                             .clone())
                     } else {
-                        Err(ParquetReaderError::FilterError(format!(
-                            "Column {col_name} is not an integer array"
-                        )))
+                        Err(anyhow::anyhow!("Column {col_name} is not an integer array"))
                     }
                 }
-                _ => Err(ParquetReaderError::FilterError(format!(
+                _ => Err(anyhow::anyhow!(
                     "Unsupported literal type for equality comparison: {literal_value:?}"
-                ))),
+                )),
             }
         }
 
@@ -380,24 +369,19 @@ pub fn evaluate_expr(batch: &RecordBatch, expr: &Expr) -> Result<BooleanArray> {
                             })?
                             .clone())
                     } else {
-                        Err(ParquetReaderError::FilterError(format!(
-                            "Column {col_name} is not an integer array"
-                        )))
+                        Err(anyhow::anyhow!("Column {col_name} is not an integer array"))
                     }
                 }
-                _ => Err(ParquetReaderError::FilterError(format!(
+                _ => Err(anyhow::anyhow!(
                     "Unsupported literal type for greater than comparison: {literal_value:?}"
-                ))),
+                )),
             }
         }
 
         // Other expression types would be implemented similarly
-        _ => Err(ParquetReaderError::FilterError(format!(
-            "Unsupported filter expression: {expr:?}"
-        ))),
+        _ => Err(anyhow::anyhow!("Unsupported filter expression: {expr:?}")),
     }
 }
-
 
 /// Filters a record batch based on a boolean mask
 ///
@@ -411,22 +395,31 @@ pub fn evaluate_expr(batch: &RecordBatch, expr: &Expr) -> Result<BooleanArray> {
 /// # Errors
 /// Returns an error if filtering fails
 pub fn filter_record_batch(batch: &RecordBatch, mask: &BooleanArray) -> Result<RecordBatch> {
+    // Validate with clear error message
     if batch.num_rows() != mask.len() {
-        return Err(ParquetReaderError::FilterError(
-            "Mask length doesn't match batch row count".to_string(),
+        return Err(anyhow::anyhow!(
+            "Mask length ({}) doesn't match batch row count ({})",
+            mask.len(),
+            batch.num_rows()
         ));
     }
 
-    // Apply the filter to all columns
+    // Apply the filter to all columns with specific error context
     let filtered_columns: Vec<ArrayRef> = batch
         .columns()
         .iter()
         .map(|col| arrow_filter(col, mask))
         .collect::<arrow::error::Result<_>>()
-        .map_err(ParquetReaderError::ArrowError)?;
+        .map_err(|e| {
+            ParquetReaderError::arrow_error_with_source(
+                "Failed to apply boolean filter to columns",
+                e,
+            )
+        })?;
 
     // Create a new record batch with filtered data
-    RecordBatch::try_new(batch.schema(), filtered_columns).map_err(ParquetReaderError::ArrowError)
+    RecordBatch::try_new(batch.schema(), filtered_columns)
+        .map_err(|e| anyhow::anyhow!("Failed to create filtered record batch. Error: {}", e))
 }
 
 /// Reads a Parquet file with filtering
@@ -446,6 +439,11 @@ pub fn read_parquet_with_filter(
     expr: &Expr,
     columns: Option<&[String]>,
 ) -> Result<Vec<RecordBatch>> {
+    // Validate path
+    if !path.exists() {
+        return Err(anyhow::anyhow!("File not found"));
+    }
+
     // Get all columns required by the filter expression
     let mut all_required_columns = expr.required_columns();
 
@@ -457,21 +455,40 @@ pub fn read_parquet_with_filter(
     }
 
     // Read the file with schema projection containing required columns
-    let batches = utils::read_parquet(path, None, None)?;
+    let batches = utils::read_parquet(path, None, None).map_err(|e| {
+        e.with_path(path)
+            .context(format!("Failed to read Parquet file for filtering"))
+    })?;
 
     // Filter each batch
     let mut filtered_batches = Vec::new();
-    for batch in batches {
+    for (i, batch) in batches.iter().enumerate() {
         // Evaluate the filter expression
-        let mask = evaluate_expr(&batch, expr)?;
+        let mask = evaluate_expr(batch, expr)
+            .map_err(|e| e.context(format!("Failed to evaluate filter on batch {}", i)))?;
 
         // Apply the filter to the batch
-        let filtered_batch = filter_record_batch(&batch, &mask)?;
+        let filtered_batch = filter_record_batch(batch, &mask)
+            .map_err(|e| e.context(format!("Failed to apply filter to batch {}", i)))?;
 
         // Only add non-empty batches
         if filtered_batch.num_rows() > 0 {
             filtered_batches.push(filtered_batch);
         }
+    }
+
+    if filtered_batches.is_empty() {
+        log::info!(
+            "No records matched the filter criteria in file: {}",
+            path.display()
+        );
+    } else {
+        log::debug!(
+            "Applied filter to file {}: filtered {} batches with {} total rows",
+            path.display(),
+            filtered_batches.len(),
+            filtered_batches.iter().map(|b| b.num_rows()).sum::<usize>()
+        );
     }
 
     Ok(filtered_batches)
