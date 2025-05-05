@@ -168,7 +168,7 @@ pub async fn load_parquet_files_parallel_with_filter_async(
 ///
 /// # Errors
 /// Returns an error if directory reading, file reading, or filtering fails
-pub async fn load_parquet_files_parallel_with_pnr_filter_async<S: ::std::hash::BuildHasher>(
+pub async fn load_parquet_files_parallel_with_pnr_filter_async<S: ::std::hash::BuildHasher + Sync>(
     dir: &Path,
     schema: Option<&Schema>,
     pnr_filter: Option<&HashSet<String, S>>,

@@ -41,7 +41,8 @@ pub struct RegistryManager {
 
 impl RegistryManager {
     /// Create a new registry manager
-    #[must_use] pub fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self {
             loaders: RwLock::new(HashMap::new()),
             paths: RwLock::new(HashMap::new()),
@@ -53,7 +54,8 @@ impl RegistryManager {
     }
 
     /// Create a new registry manager with specified joins
-    #[must_use] pub fn with_joins(joins: HashMap<String, (String, String, String)>) -> Self {
+    #[must_use]
+    pub fn with_joins(joins: HashMap<String, (String, String, String)>) -> Self {
         Self {
             loaders: RwLock::new(HashMap::new()),
             paths: RwLock::new(HashMap::new()),
@@ -70,17 +72,14 @@ impl RegistryManager {
         let loader = registry_from_name(name)?;
 
         // Register the loader and path
-        let mut loaders = self.loaders.write().map_err(|_| {
-            Error::InvalidOperation("Failed to acquire lock on loaders".to_string())
-        })?;
+        self.loaders.write()
+            .map_err(|_| Error::InvalidOperation("Failed to acquire lock on loaders".to_string()))?
+            .insert(name.to_string(), loader);
 
-        let mut paths = self
-            .paths
+        self.paths
             .write()
-            .map_err(|_| Error::InvalidOperation("Failed to acquire lock on paths".to_string()))?;
-
-        loaders.insert(name.to_string(), loader);
-        paths.insert(name.to_string(), path.to_path_buf());
+            .map_err(|_| Error::InvalidOperation("Failed to acquire lock on paths".to_string()))?
+            .insert(name.to_string(), path.to_path_buf());
 
         Ok(())
     }
@@ -92,17 +91,14 @@ impl RegistryManager {
         let name = loader.get_register_name().to_string();
 
         // Register the loader and path
-        let mut loaders = self.loaders.write().map_err(|_| {
-            Error::InvalidOperation("Failed to acquire lock on loaders".to_string())
-        })?;
+        self.loaders.write()
+            .map_err(|_| Error::InvalidOperation("Failed to acquire lock on loaders".to_string()))?
+            .insert(name.clone(), loader);
 
-        let mut paths = self
-            .paths
+        self.paths
             .write()
-            .map_err(|_| Error::InvalidOperation("Failed to acquire lock on paths".to_string()))?;
-
-        loaders.insert(name.clone(), loader);
-        paths.insert(name.clone(), path.to_path_buf());
+            .map_err(|_| Error::InvalidOperation("Failed to acquire lock on paths".to_string()))?
+            .insert(name.clone(), path.to_path_buf());
 
         Ok(name)
     }
@@ -129,25 +125,21 @@ impl RegistryManager {
             }
         }
 
-        // Data not cached, load it
-        let loaders = self.loaders.read().map_err(|_| {
-            Error::InvalidOperation("Failed to acquire read lock on loaders".to_string())
-        })?;
-
-        let paths = self.paths.read().map_err(|_| {
-            Error::InvalidOperation("Failed to acquire read lock on paths".to_string())
-        })?;
-
-        let loader = loaders
+        // Get loader and path from the registry
+        let loader = self.loaders.read()
+            .map_err(|_| Error::InvalidOperation("Failed to acquire read lock on loaders".to_string()))?
             .get(name)
-            .ok_or_else(|| Error::ValidationError(format!("No loader registered for {name}")))?;
+            .ok_or_else(|| Error::ValidationError(format!("No loader registered for {name}")))?
+            .clone();
 
-        let path = paths
+        let path = self.paths.read()
+            .map_err(|_| Error::InvalidOperation("Failed to acquire read lock on paths".to_string()))?
             .get(name)
-            .ok_or_else(|| Error::ValidationError(format!("No path registered for {name}")))?;
+            .ok_or_else(|| Error::ValidationError(format!("No path registered for {name}")))?
+            .clone();
 
         // Load the data
-        let data = loader.load(path, None)?;
+        let data = loader.load(&path, None)?;
 
         // Cache the data
         let mut cache = self.data_cache.write().map_err(|_| {
@@ -160,6 +152,7 @@ impl RegistryManager {
         }
 
         cache.insert(name.to_string(), data.clone());
+        drop(cache);
 
         Ok(data)
     }
@@ -180,33 +173,21 @@ impl RegistryManager {
             }
         }
 
-        // Clone the values we need before the await point to avoid holding RwLockReadGuard across await
-        let loader_and_path = {
-            // Data not cached, load it
-            let loaders = self.loaders.read().map_err(|_| {
-                Error::InvalidOperation("Failed to acquire read lock on loaders".to_string())
-            })?;
+        // Get loader and path from the registry
+        let loader = self.loaders.read()
+            .map_err(|_| Error::InvalidOperation("Failed to acquire read lock on loaders".to_string()))?
+            .get(name)
+            .ok_or_else(|| Error::ValidationError(format!("No loader registered for {name}")))?
+            .clone();
 
-            let paths = self.paths.read().map_err(|_| {
-                Error::InvalidOperation("Failed to acquire read lock on paths".to_string())
-            })?;
+        let path = self.paths.read()
+            .map_err(|_| Error::InvalidOperation("Failed to acquire read lock on paths".to_string()))?
+            .get(name)
+            .ok_or_else(|| Error::ValidationError(format!("No path registered for {name}")))?
+            .clone();
 
-            let loader = loaders
-                .get(name)
-                .ok_or_else(|| Error::ValidationError(format!("No loader registered for {name}")))?
-                .clone();
+        // Now we can safely use await since we no longer hold any read locks
 
-            let path = paths
-                .get(name)
-                .ok_or_else(|| Error::ValidationError(format!("No path registered for {name}")))?
-                .clone();
-
-            (loader, path)
-        };
-
-        // Now we can safely use await since we no longer hold the read lock
-        let (loader, path) = loader_and_path;
-        
         // Load the data asynchronously
         let data = loader.load_async(&path, None).await?;
 
@@ -221,6 +202,7 @@ impl RegistryManager {
         }
 
         cache.insert(name.to_string(), data.clone());
+        drop(cache);
 
         Ok(data)
     }
@@ -361,7 +343,7 @@ impl RegistryManager {
         let cache_key = Self::generate_cache_key(pnr_filter);
         let names_vec = names.iter().map(|&s| s.to_string()).collect::<Vec<_>>();
         let pnr_filter_cloned = pnr_filter.clone();
-        
+
         // Check cache first
         {
             let filtered_cache = self.filtered_cache.lock().map_err(|_| {
@@ -387,10 +369,10 @@ impl RegistryManager {
             let schemas = self.get_schemas(names)?;
             let joins = self.get_joins_for_registries(names);
             let pnr_columns = self.get_pnr_columns(names)?;
-            
+
             (schemas, joins, pnr_columns)
         };
-        
+
         // Build the filter plan before any async operations
         let plan = build_filter_plan(&schemas, &joins, &pnr_columns);
 
@@ -429,9 +411,13 @@ impl RegistryManager {
     /// Get the schema for a registry
     pub fn get_schema(&self, name: &str) -> Result<SchemaRef> {
         // Get the loader directly to avoid holding the lock longer than necessary
-        let loader = self.loaders.read().map_err(|_| {
-            Error::InvalidOperation("Failed to acquire read lock on loaders".to_string())
-        })?.get(name)
+        let loader = self
+            .loaders
+            .read()
+            .map_err(|_| {
+                Error::InvalidOperation("Failed to acquire read lock on loaders".to_string())
+            })?
+            .get(name)
             .ok_or_else(|| Error::ValidationError(format!("No loader registered for {name}")))?
             .clone();
 
@@ -446,13 +432,19 @@ impl RegistryManager {
     /// Clear all caches
     pub fn clear_caches(&self) -> Result<()> {
         // Clear data cache - drop lock immediately after clearing
-        self.data_cache.write()
-            .map_err(|_| Error::InvalidOperation("Failed to acquire write lock on data cache".to_string()))?
+        self.data_cache
+            .write()
+            .map_err(|_| {
+                Error::InvalidOperation("Failed to acquire write lock on data cache".to_string())
+            })?
             .clear();
 
         // Clear filtered cache - drop lock immediately after clearing
-        self.filtered_cache.lock()
-            .map_err(|_| Error::InvalidOperation("Failed to acquire lock on filtered cache".to_string()))?
+        self.filtered_cache
+            .lock()
+            .map_err(|_| {
+                Error::InvalidOperation("Failed to acquire lock on filtered cache".to_string())
+            })?
             .clear();
 
         Ok(())
@@ -492,18 +484,20 @@ impl RegistryManager {
             let loaders = self.loaders.read().map_err(|_| {
                 Error::InvalidOperation("Failed to acquire read lock on loaders".to_string())
             })?;
-            
+
             let mut loader_map = HashMap::with_capacity(names.len());
             for &name in names {
                 if let Some(loader) = loaders.get(name) {
                     loader_map.insert(name.to_string(), loader.clone());
                 } else {
-                    return Err(Error::ValidationError(format!("No loader registered for {name}")).into());
+                    return Err(
+                        Error::ValidationError(format!("No loader registered for {name}")).into(),
+                    );
                 }
             }
             loader_map
         };
-        
+
         // Build the schemas map
         let mut schemas = HashMap::with_capacity(names.len());
         for (name, loader) in loaders_map {
@@ -520,18 +514,20 @@ impl RegistryManager {
             let loaders = self.loaders.read().map_err(|_| {
                 Error::InvalidOperation("Failed to acquire read lock on loaders".to_string())
             })?;
-            
+
             let mut loader_map = HashMap::with_capacity(names.len());
             for &name in names {
                 if let Some(loader) = loaders.get(name) {
                     loader_map.insert(name.to_string(), loader.clone());
                 } else {
-                    return Err(Error::ValidationError(format!("No loader registered for {name}")).into());
+                    return Err(
+                        Error::ValidationError(format!("No loader registered for {name}")).into(),
+                    );
                 }
             }
             loader_map
         };
-        
+
         // Build the pnr_columns map
         let mut pnr_columns = HashMap::with_capacity(names.len());
         for (name, loader) in loaders_map {
@@ -550,10 +546,7 @@ impl RegistryManager {
         for &name in names {
             if let Some((parent, parent_col, _child_col)) = self.joins.get(name) {
                 if names.contains(&parent.as_str()) {
-                    joins.insert(
-                        name.to_string(),
-                        (parent.clone(), parent_col.clone()),
-                    );
+                    joins.insert(name.to_string(), (parent.clone(), parent_col.clone()));
                 }
             }
         }

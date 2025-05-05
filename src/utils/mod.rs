@@ -151,16 +151,17 @@ pub fn create_projection(
         .iter()
         .filter_map(|f| {
             let field_name = f.name();
-            if let Ok(idx) = file_schema.index_of(field_name) {
-                Some(idx)
-            } else {
-                // Skip fields that don't exist in the file
-                log_warning(
-                    &format!("Field {field_name} not found in parquet file, skipping"),
-                    None,
-                );
-                None
-            }
+            file_schema.index_of(field_name).map_or_else(
+                |_| {
+                    // Skip fields that don't exist in the file
+                    log_warning(
+                        &format!("Field {field_name} not found in parquet file, skipping"),
+                        None,
+                    );
+                    None
+                },
+                Some
+            )
         })
         .collect_vec();
 

@@ -472,10 +472,9 @@ pub fn read_parquet_with_filter(
     }
 
     // Get all columns required by the filter expression - used for projection below
-    let expr_required_columns = expr.required_columns();
+    let mut all_required_columns = expr.required_columns();
 
     // Add any additional columns requested for projection
-    let mut all_required_columns = expr_required_columns;
     if let Some(cols) = columns {
         for col in cols {
             all_required_columns.insert(col.clone());

@@ -201,18 +201,21 @@ pub fn filter_out_missing_values(
 
         // Create a mask where true means non-null values
         let null_bitmap = column.nulls();
-        let is_valid_array = if let Some(_bitmap) = null_bitmap {
-            // If we have a null bitmap, create a boolean array from validity
-            let mut builder = arrow::array::BooleanBuilder::new();
-            for i in 0..column.len() {
-                builder.append_value(!column.is_null(i));
+        let is_valid_array = null_bitmap.map_or_else(
+            || {
+                // If there are no nulls, all values are valid
+                let values = vec![true; column.len()];
+                arrow::array::BooleanArray::from(values)
+            },
+            |_bitmap| {
+                // If we have a null bitmap, create a boolean array from validity
+                let mut builder = arrow::array::BooleanBuilder::new();
+                for i in 0..column.len() {
+                    builder.append_value(!column.is_null(i));
+                }
+                builder.finish()
             }
-            builder.finish()
-        } else {
-            // If there are no nulls, all values are valid
-            let values = vec![true; column.len()];
-            arrow::array::BooleanArray::from(values)
-        };
+        );
         
         // Update the overall mask to include only rows where all required fields are non-null
         mask =
@@ -409,19 +412,15 @@ pub fn add_postal_code_region(
 
 /// Determine Danish region from postal code
 fn determine_region_from_postal_code(postal_code: &str) -> &'static str {
-    if let Ok(code) = postal_code.parse::<u32>() {
-        match code {
-            1000..=2999 => "Hovedstaden",  // Copenhagen and surrounding areas
-            3000..=3999 => "Nordsjælland", // North Zealand
-            4000..=4999 => "Sjælland",     // Zealand
-            5000..=5999 => "Fyn",          // Funen
-            6000..=6999 => "Sydjylland",   // Southern Jutland
-            7000..=7999 => "Midtjylland",  // Central Jutland
-            8000..=8999 => "Østjylland",   // Eastern Jutland
-            9000..=9999 => "Nordjylland",  // Northern Jutland
-            _ => "Unknown",
-        }
-    } else {
-        "Unknown"
-    }
+    postal_code.parse::<u32>().map_or("Unknown", |code| match code {
+        1000..=2999 => "Hovedstaden",  // Copenhagen and surrounding areas
+        3000..=3999 => "Nordsjælland", // North Zealand
+        4000..=4999 => "Sjælland",     // Zealand
+        5000..=5999 => "Fyn",          // Funen
+        6000..=6999 => "Sydjylland",   // Southern Jutland
+        7000..=7999 => "Midtjylland",  // Central Jutland
+        8000..=8999 => "Østjylland",   // Eastern Jutland
+        9000..=9999 => "Nordjylland",  // Northern Jutland
+        _ => "Unknown",
+    })
 }

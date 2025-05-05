@@ -27,7 +27,7 @@ use crate::utils::{DEFAULT_BATCH_SIZE, get_batch_size};
 ///
 /// # Errors
 /// Returns an error if file reading or filtering fails
-pub async fn read_parquet_with_pnr_filter_async<S: ::std::hash::BuildHasher>(
+pub async fn read_parquet_with_pnr_filter_async<S: ::std::hash::BuildHasher + Sync>(
     path: &Path,
     schema: Option<&arrow::datatypes::Schema>,
     pnr_filter: &HashSet<String, S>,
@@ -195,7 +195,7 @@ pub async fn read_parquet_with_filter_async(
 ///
 /// # Errors
 /// Returns an error if file reading or filtering fails
-pub async fn read_parquet_with_optional_pnr_filter_async<S: ::std::hash::BuildHasher>(
+pub async fn read_parquet_with_optional_pnr_filter_async<S: ::std::hash::BuildHasher + Sync>(
     path: &Path,
     schema: Option<&arrow::datatypes::Schema>,
     pnr_filter: Option<&HashSet<String, S>>,
