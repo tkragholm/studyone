@@ -116,16 +116,14 @@ impl RegistryIntegration {
 
             for detail in child_details {
                 if let Some(individual) = self.collection.get_individual(&detail.individual().pnr) {
-                    // Create a Child object using from_individual
+                    // Create a Child object using from_individual and all MFR-specific details
                     // Use the individual directly without creating a new Arc
-                    let mut child = Child::from_individual(individual.clone());
-
-                    // Add MFR-specific details using with_birth_details
-                    child = child.with_birth_details(
-                        detail.birth_weight,
-                        detail.gestational_age,
-                        detail.apgar_score,
-                    );
+                    let _child_with_details = Child::from_individual(individual.clone())
+                        .with_birth_details(
+                            detail.birth_weight,
+                            detail.gestational_age,
+                            detail.apgar_score,
+                        );
 
                     // TODO: Update the original family with this child information
                     // This would require more complex update logic for existing families
