@@ -215,7 +215,7 @@ impl MfrChildAdapter {
 
 impl RegistryAdapter<Child> for MfrChildAdapter {
     /// Convert an MFR `RecordBatch` to a vector of Child objects
-    fn from_record_batch(batch: &RecordBatch) -> Result<Vec<Child>> {
+    fn from_record_batch(_batch: &RecordBatch) -> Result<Vec<Child>> {
         // This is a static implementation with no individual lookup
         // In practice, it's better to use the constructor to provide the lookup
         Err(anyhow::anyhow!(
@@ -224,7 +224,7 @@ impl RegistryAdapter<Child> for MfrChildAdapter {
     }
 
     /// Apply additional transformations to the Child models
-    fn transform(models: &mut [Child]) -> Result<()> {
+    fn transform(_models: &mut [Child]) -> Result<()> {
         // No additional transformations needed for children from MFR
         Ok(())
     }

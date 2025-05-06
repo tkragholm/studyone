@@ -245,7 +245,7 @@ impl RegistryAdapter<Individual> for BefIndividualAdapter {
     }
 
     /// Apply additional transformations to the Individual models
-    fn transform(models: &mut [Individual]) -> Result<()> {
+    fn transform(_models: &mut [Individual]) -> Result<()> {
         // No additional transformations needed for individuals from BEF
         Ok(())
     }
@@ -302,7 +302,6 @@ impl RegistryAdapter<Family> for BefFamilyAdapter {
                 (1.., 0) => FamilyType::SingleMother,
                 (0, 1..) => FamilyType::SingleFather,
                 (0, 0) => FamilyType::NoParent,
-                _ => FamilyType::Unknown,
             };
 
             // Create a new family
@@ -324,14 +323,15 @@ impl RegistryAdapter<Family> for BefFamilyAdapter {
     }
 
     /// Apply additional transformations to the Family models
-    fn transform(models: &mut [Family]) -> Result<()> {
+    fn transform(_models: &mut [Family]) -> Result<()> {
         // No additional transformations needed for families from BEF
         Ok(())
     }
 }
 
 /// Helper function to create a lookup of Individual objects by PNR
-#[must_use] pub fn create_individual_lookup(individuals: &[Individual]) -> HashMap<String, Arc<Individual>> {
+#[must_use]
+pub fn create_individual_lookup(individuals: &[Individual]) -> HashMap<String, Arc<Individual>> {
     let mut lookup = HashMap::new();
     for individual in individuals {
         lookup.insert(individual.pnr.clone(), Arc::new(individual.clone()));
@@ -351,7 +351,8 @@ impl BefCombinedAdapter {
     }
 
     /// Extract unique family relationships from BEF data
-    #[must_use] pub fn extract_relationships(
+    #[must_use]
+    pub fn extract_relationships(
         individuals: &[Individual],
     ) -> HashMap<String, (Option<String>, Option<String>, Vec<String>)> {
         let mut relationships: HashMap<String, (Option<String>, Option<String>, Vec<String>)> =
@@ -377,10 +378,8 @@ impl BefCombinedAdapter {
             for member in &members {
                 // Check if this individual is a parent of any other individual in the family
                 let is_parent = members.iter().any(|m| {
-                    (m.mother_pnr
-                        .as_ref() == Some(&member.pnr))
-                        || (m.father_pnr
-                            .as_ref() == Some(&member.pnr))
+                    (m.mother_pnr.as_ref() == Some(&member.pnr))
+                        || (m.father_pnr.as_ref() == Some(&member.pnr))
                 });
 
                 if is_parent {

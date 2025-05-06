@@ -47,7 +47,7 @@ impl Income {
     }
 
     /// Convert a vector of Income objects to a `RecordBatch`
-    pub fn to_record_batch(incomes: &[Self]) -> Result<RecordBatch> {
+    pub fn to_record_batch(_incomes: &[Self]) -> Result<RecordBatch> {
         // Implementation of conversion to RecordBatch
         // This would create Arrow arrays for each field and then combine them
         // For brevity, this is left as a placeholder

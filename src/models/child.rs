@@ -265,7 +265,7 @@ impl Child {
     /// Calculate age at onset of SCD
     #[must_use]
     pub fn age_at_onset(&self) -> Option<i32> {
-        if let (Some(birth_date), Some(first_scd_date)) =
+        if let (Some(_birth_date), Some(first_scd_date)) =
             (self.individual().birth_date, self.first_scd_date)
         {
             self.individual().age_at(&first_scd_date)
@@ -294,7 +294,7 @@ impl Child {
     }
 
     /// Convert a vector of Child objects to a `RecordBatch`
-    pub fn to_record_batch(children: &[Self]) -> Result<RecordBatch> {
+    pub fn to_record_batch(_children: &[Self]) -> Result<RecordBatch> {
         // Implementation of conversion to RecordBatch
         // This would create Arrow arrays for each field and then combine them
         // For brevity, this is left as a placeholder

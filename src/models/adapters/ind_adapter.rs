@@ -95,7 +95,8 @@ impl IndIncomeAdapter {
     }
 
     /// Create a trajectory from a collection of income records
-    #[must_use] pub fn create_trajectory(&self, incomes: &[Income]) -> IncomeTrajectory {
+    #[must_use]
+    pub fn create_trajectory(&self, incomes: &[Income]) -> IncomeTrajectory {
         if incomes.is_empty() {
             return IncomeTrajectory::new(String::new(), String::new());
         }
@@ -121,7 +122,8 @@ impl IndIncomeAdapter {
     }
 
     /// Create family trajectories from parent PNRs and income collection
-    #[must_use] pub fn create_family_trajectories(
+    #[must_use]
+    pub fn create_family_trajectories(
         &self,
         family_map: &HashMap<String, (Option<String>, Option<String>)>,
         incomes: &[Income],
@@ -298,7 +300,7 @@ impl RegistryAdapter<Income> for IndIncomeAdapter {
         let adapter = IndIncomeAdapter::new_without_cpi(2020); // Default year
         adapter.from_record_batch_with_year(batch)
     }
-    
+
     /// Apply additional transformations to the Income models
     fn transform(_models: &mut [Income]) -> Result<()> {
         // No additional transformations needed for incomes from IND
@@ -425,6 +427,7 @@ pub struct IndMultiYearAdapter {
     /// Base adapter instances by year
     adapters: HashMap<i32, IndIncomeAdapter>,
     /// CPI index for inflation adjustment (base year = current year)
+    #[allow(dead_code)]
     cpi_index: HashMap<i32, f64>,
 }
 
@@ -457,7 +460,8 @@ impl IndMultiYearAdapter {
     }
 
     /// Get adapter for a specific year
-    #[must_use] pub fn get_adapter(&self, year: i32) -> Option<&IndIncomeAdapter> {
+    #[must_use]
+    pub fn get_adapter(&self, year: i32) -> Option<&IndIncomeAdapter> {
         self.adapters.get(&year)
     }
 
@@ -471,7 +475,8 @@ impl IndMultiYearAdapter {
     }
 
     /// Create trajectories from income records across all years
-    #[must_use] pub fn create_trajectories(
+    #[must_use]
+    pub fn create_trajectories(
         &self,
         incomes: &[Income],
     ) -> HashMap<String, HashMap<String, IncomeTrajectory>> {
@@ -511,7 +516,8 @@ impl IndMultiYearAdapter {
     }
 
     /// Create family trajectories for all families
-    #[must_use] pub fn create_family_trajectories(
+    #[must_use]
+    pub fn create_family_trajectories(
         &self,
         family_map: &HashMap<String, (Option<String>, Option<String>)>,
         individual_trajectories: &HashMap<String, HashMap<String, IncomeTrajectory>>,

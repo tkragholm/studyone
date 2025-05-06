@@ -34,12 +34,13 @@ impl ScdCriteria {
         scd_codes.insert("Q90".to_string()); // Down syndrome
         scd_codes.insert("C50".to_string()); // Malignant neoplasm of breast
 
-        let mut scd_patterns = Vec::new();
         // Examples of ICD-10 code patterns for SCD categories
-        scd_patterns.push("C".to_string()); // All cancers
-        scd_patterns.push("D80".to_string()); // Immunodeficiency
-        scd_patterns.push("G71".to_string()); // Primary disorders of muscles
-        scd_patterns.push("Q".to_string()); // Congenital malformations
+        let scd_patterns = vec![
+            "C".to_string(),   // All cancers
+            "D80".to_string(), // Immunodeficiency
+            "G71".to_string(), // Primary disorders of muscles
+            "Q".to_string(),   // Congenital malformations
+        ];
 
         let mut severity_mappings = HashMap::new();
         // Examples of severity classifications (1=mild, 2=moderate, 3=severe)
@@ -140,7 +141,8 @@ impl LprBaseAdapter {
     }
 
     /// Process SCD results from a list of diagnoses
-    #[must_use] pub fn process_scd_results(&self, diagnoses: &[Diagnosis]) -> HashMap<String, ScdResult> {
+    #[must_use]
+    pub fn process_scd_results(&self, diagnoses: &[Diagnosis]) -> HashMap<String, ScdResult> {
         // Group diagnoses by individual
         let mut diagnoses_by_pnr: HashMap<String, Vec<Arc<Diagnosis>>> = HashMap::new();
 
@@ -235,7 +237,7 @@ impl Lpr2DiagAdapter {
 
 impl RegistryAdapter<Diagnosis> for Lpr2DiagAdapter {
     /// Convert an LPR2 DIAG `RecordBatch` to a vector of Diagnosis objects
-    fn from_record_batch(batch: &RecordBatch) -> Result<Vec<Diagnosis>> {
+    fn from_record_batch(_batch: &RecordBatch) -> Result<Vec<Diagnosis>> {
         // This is a static implementation with no PNR lookup
         // In practice, it's better to use the constructor to provide the lookup
         Err(anyhow::anyhow!(
@@ -244,7 +246,7 @@ impl RegistryAdapter<Diagnosis> for Lpr2DiagAdapter {
     }
 
     /// Apply additional transformations to the Diagnosis models
-    fn transform(models: &mut [Diagnosis]) -> Result<()> {
+    fn transform(_models: &mut [Diagnosis]) -> Result<()> {
         // No additional transformations needed
         Ok(())
     }
@@ -390,7 +392,7 @@ impl Lpr3DiagnoserAdapter {
 
 impl RegistryAdapter<Diagnosis> for Lpr3DiagnoserAdapter {
     /// Convert an LPR3 Diagnoser `RecordBatch` to a vector of Diagnosis objects
-    fn from_record_batch(batch: &RecordBatch) -> Result<Vec<Diagnosis>> {
+    fn from_record_batch(_batch: &RecordBatch) -> Result<Vec<Diagnosis>> {
         // This is a static implementation with no PNR lookup
         // In practice, it's better to use the constructor to provide the lookup
         Err(anyhow::anyhow!(
@@ -399,7 +401,7 @@ impl RegistryAdapter<Diagnosis> for Lpr3DiagnoserAdapter {
     }
 
     /// Apply additional transformations to the Diagnosis models
-    fn transform(models: &mut [Diagnosis]) -> Result<()> {
+    fn transform(_models: &mut [Diagnosis]) -> Result<()> {
         // No additional transformations needed
         Ok(())
     }
@@ -571,7 +573,8 @@ impl LprCombinedAdapter {
     }
 
     /// Combine diagnoses from multiple sources and create SCD results
-    #[must_use] pub fn process_scd_results(&self, diagnoses: &[Diagnosis]) -> HashMap<String, ScdResult> {
+    #[must_use]
+    pub fn process_scd_results(&self, diagnoses: &[Diagnosis]) -> HashMap<String, ScdResult> {
         self.base.process_scd_results(diagnoses)
     }
 }

@@ -176,7 +176,7 @@ impl Parent {
     }
 
     /// Convert a vector of Parent objects to a `RecordBatch`
-    pub fn to_record_batch(parents: &[Self]) -> Result<RecordBatch> {
+    pub fn to_record_batch(_parents: &[Self]) -> Result<RecordBatch> {
         // Implementation of conversion to RecordBatch
         // This would create Arrow arrays for each field and then combine them
         // For brevity, this is left as a placeholder

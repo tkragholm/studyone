@@ -105,6 +105,7 @@ pub fn load_multiple_registries(
 }
 
 /// Load data from multiple registries asynchronously and combine them
+#[allow(dead_code)]
 pub async fn load_multiple_registries_async(
     base_paths: &[(&str, &Path)], // (registry_name, path)
     pnr_filter: Option<&HashSet<String>>,
