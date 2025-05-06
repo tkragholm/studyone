@@ -132,7 +132,7 @@ impl Population {
         use crate::algorithm::population::integration::RegistryIntegration;
 
         log::info!("Starting population generation from registry data");
-        log::info!("Configuration: {}", config);
+        log::info!("Configuration: {config}");
 
         // Initialize registry integration manager
         let mut integration = RegistryIntegration::new();
@@ -222,9 +222,7 @@ impl Population {
 
         // Step 7: Process and enhance the population
         log::info!(
-            "[Step {}/{}] Processing population relationships",
-            total_steps,
-            total_steps
+            "[Step {total_steps}/{total_steps}] Processing population relationships"
         );
 
         // Identify siblings
@@ -335,10 +333,9 @@ impl Population {
             };
 
             summary.push_str("\nCase Family Characteristics:\n");
-            summary.push_str(&format!("  Total SCD Children: {}\n", total_scd_children));
+            summary.push_str(&format!("  Total SCD Children: {total_scd_children}\n"));
             summary.push_str(&format!(
-                "  Average Children per Family: {:.2}\n",
-                avg_children_per_case
+                "  Average Children per Family: {avg_children_per_case:.2}\n"
             ));
 
             // Add family type distribution
@@ -353,14 +350,13 @@ impl Population {
                 };
 
                 let percentage = if case_count > 0 {
-                    (count as f64 / case_count as f64) * 100.0
+                    (f64::from(count) / case_count as f64) * 100.0
                 } else {
                     0.0
                 };
 
                 summary.push_str(&format!(
-                    "    {}: {} ({:.1}%)\n",
-                    type_label, count, percentage
+                    "    {type_label}: {count} ({percentage:.1}%)\n"
                 ));
             }
         }
@@ -379,16 +375,15 @@ impl Population {
 
             summary.push_str("\nControl Family Characteristics:\n");
             summary.push_str(&format!(
-                "  Average Children per Family: {:.2}\n",
-                avg_children_per_control
+                "  Average Children per Family: {avg_children_per_control:.2}\n"
             ));
         }
 
         // Add matching potential estimate
         if case_count > 0 && control_count > 0 {
             let ratio = control_count as f64 / case_count as f64;
-            summary.push_str(&format!("\nMatching Potential:\n"));
-            summary.push_str(&format!("  Control-to-Case Ratio: {:.2}:1\n", ratio));
+            summary.push_str("\nMatching Potential:\n");
+            summary.push_str(&format!("  Control-to-Case Ratio: {ratio:.2}:1\n"));
 
             // Suggest potential matching strategies
             summary.push_str("  Recommended Matching Approaches:\n");
@@ -436,7 +431,7 @@ impl PopulationBuilder {
         }
     }
 
-    /// Create a new PopulationBuilder with progress tracking
+    /// Create a new `PopulationBuilder` with progress tracking
     ///
     /// This constructor sets up a builder that will log progress at each step
     #[must_use]

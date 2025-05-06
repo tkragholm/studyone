@@ -100,7 +100,7 @@ impl RegistryIntegration {
             let last_event = events
                 .iter()
                 .filter(|(event_date, _)| event_date <= date)
-                .last();
+                .next_back();
 
             if let Some((_, is_emigration)) = last_event {
                 return !is_emigration; // If last event was emigration, not resident
@@ -467,7 +467,7 @@ impl RegistryIntegration {
                 // Add to migration events
                 self.migration_events
                     .entry(pnr.to_string())
-                    .or_insert_with(Vec::new)
+                    .or_default()
                     .push((event_date, is_emigration));
 
                 if is_emigration {
@@ -541,7 +541,7 @@ impl RegistryIntegration {
             }
         }
 
-        log::info!("Added {} death records", death_count);
+        log::info!("Added {death_count} death records");
 
         Ok(())
     }
@@ -654,8 +654,7 @@ impl RegistryIntegration {
             family_children.len()
         );
         log::info!(
-            "{} families have at least one child with SCD",
-            scd_sibling_count
+            "{scd_sibling_count} families have at least one child with SCD"
         );
 
         // For further analysis, we could add additional metadata to the family collection
