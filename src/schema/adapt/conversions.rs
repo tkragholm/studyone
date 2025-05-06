@@ -476,7 +476,7 @@ fn convert_to_string(array: &ArrayRef) -> Result<ArrayRef> {
         }
 
         // Use the array debug format for the value
-        let value = format!("{:?}", array);
+        let value = format!("{array:?}");
         string_builder.append_value(&value);
     }
 
