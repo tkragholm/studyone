@@ -138,7 +138,7 @@ impl Population {
     /// Print a summary of the population
     pub fn print_summary(&self) -> String {
         let mut summary = String::new();
-        summary.push_str(&"Study Population Summary:\n".to_string());
+        summary.push_str("Study Population Summary:\n");
         summary.push_str(&format!("  Index Date: {}\n", self.config.index_date));
         summary.push_str(&format!("  Total Individuals: {}\n", self.individual_count));
         summary.push_str(&format!("  Total Families: {}\n", self.family_count));
