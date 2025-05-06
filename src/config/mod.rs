@@ -1,6 +1,6 @@
 //! Configuration for `ParquetReader`.
 
-use crate::schema::adapters::DateFormatConfig;
+use crate::schema::DateFormatConfig;
 
 /// Configuration for the `ParquetReader`
 #[derive(Debug, Clone)]

@@ -2,7 +2,16 @@
 
 use parquet::schema::types::Type;
 
-pub mod adapters;
+// Re-export old adapters module for backward compatibility
+//pub mod adapters;
+// New modular design
+pub mod adapt;
+
+// Re-export the main adaptation types and functions for easier access
+pub use adapt::{
+    AdaptationStrategy, AdapterError, DateFormatConfig, TypeCompatibility, adapt_record_batch,
+    check_schema_with_adaptation, convert_array,
+};
 
 /// A struct that represents the compatibility between parquet file schemas
 #[derive(Debug)]
@@ -36,7 +45,7 @@ pub fn schemas_compatible(schema1: &Type, schema2: &Type) -> bool {
         return false;
     }
 
-    // Skip repetition check for now to avoid assertion errors 
+    // Skip repetition check for now to avoid assertion errors
     // with malformed parquet files
     // This is a defensive approach that allows reading more files
     // without breaking on schema validation
@@ -167,7 +176,7 @@ pub fn find_schema_incompatibilities(
 /// Checks if two field types are compatible
 #[must_use]
 pub fn types_compatible(field1: &Type, field2: &Type) -> bool {
-    // Skip repetition check for now to avoid assertion errors 
+    // Skip repetition check for now to avoid assertion errors
     // with malformed parquet files
     // This is a defensive approach that allows reading more files
     // without breaking on schema validation

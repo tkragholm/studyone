@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 use crate::filter::core::BatchFilter;
-use crate::schema::adapters::{DateFormatConfig, adapt_record_batch};
+use crate::schema::{DateFormatConfig, adapt_record_batch};
 use arrow::datatypes::Schema;
 use arrow::record_batch::RecordBatch;
 use parquet::arrow::{ProjectionMask, arrow_reader::ParquetRecordBatchReaderBuilder};
@@ -186,7 +186,7 @@ pub fn read_parquet<S: ::std::hash::BuildHasher + std::marker::Sync>(
     schema: Option<&Schema>,
     pnr_filter: Option<&HashSet<String, S>>,
     adapt_types: Option<bool>,
-    date_format_config: Option<&crate::schema::adapters::DateFormatConfig>,
+    date_format_config: Option<&crate::schema::DateFormatConfig>,
 ) -> Result<Vec<RecordBatch>> {
     let start = std::time::Instant::now();
     log_operation_start("Reading parquet file", path);
