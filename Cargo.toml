@@ -37,3 +37,6 @@ opt-level = 3         # Maximum optimization level
 debug = false         # No debug symbols
 strip = true          # Strip debug symbols
 overflow-checks = false # Disable overflow checks for performance
+
+[lints.clippy]
+enum_glob_use = "deny"
