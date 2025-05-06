@@ -3,7 +3,7 @@
 //!
 //! This library provides optimized tools for working with Danish registry data in Parquet format,
 //! including schema validation, filtering, and async loading capabilities.
-
+#[clippy::missing_errors_doc]
 pub mod async_io;
 pub mod config;
 pub mod error;
