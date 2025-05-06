@@ -71,7 +71,7 @@ pub struct Parent {
 
 impl Parent {
     /// Create a new Parent from an Individual
-    pub fn from_individual(individual: Arc<Individual>) -> Self {
+    #[must_use] pub fn from_individual(individual: Arc<Individual>) -> Self {
         Self {
             individual,
             employment_status: false,
@@ -84,24 +84,24 @@ impl Parent {
     }
 
     /// Get a reference to the underlying Individual
-    pub fn individual(&self) -> &Individual {
+    #[must_use] pub fn individual(&self) -> &Individual {
         &self.individual
     }
 
     /// Set the employment status
-    pub fn with_employment_status(mut self, employed: bool) -> Self {
+    #[must_use] pub fn with_employment_status(mut self, employed: bool) -> Self {
         self.employment_status = employed;
         self
     }
 
     /// Set the job situation
-    pub fn with_job_situation(mut self, job_situation: JobSituation) -> Self {
+    #[must_use] pub fn with_job_situation(mut self, job_situation: JobSituation) -> Self {
         self.job_situation = job_situation;
         self
     }
 
     /// Set the pre-exposure income
-    pub fn with_pre_exposure_income(mut self, income: f64) -> Self {
+    #[must_use] pub fn with_pre_exposure_income(mut self, income: f64) -> Self {
         self.pre_exposure_income = Some(income);
         self
     }
@@ -124,7 +124,7 @@ impl Parent {
     }
 
     /// Get income for a specific year
-    pub fn income_for_year(&self, year: i32) -> Option<f64> {
+    #[must_use] pub fn income_for_year(&self, year: i32) -> Option<f64> {
         self.income_data
             .iter()
             .find(|income| income.year == year)
@@ -132,7 +132,7 @@ impl Parent {
     }
 
     /// Get income trajectory for a range of years
-    pub fn income_trajectory(&self, start_year: i32, end_year: i32) -> HashMap<i32, f64> {
+    #[must_use] pub fn income_trajectory(&self, start_year: i32, end_year: i32) -> HashMap<i32, f64> {
         let mut trajectory = HashMap::new();
 
         for year in start_year..=end_year {
@@ -145,7 +145,7 @@ impl Parent {
     }
 
     /// Check if parent had any diagnoses before a specific date
-    pub fn had_diagnosis_before(&self, date: &NaiveDate) -> bool {
+    #[must_use] pub fn had_diagnosis_before(&self, date: &NaiveDate) -> bool {
         self.diagnoses.iter().any(|diagnosis| {
             if let Some(diagnosis_date) = diagnosis.diagnosis_date {
                 diagnosis_date < *date
@@ -156,7 +156,7 @@ impl Parent {
     }
 
     /// Get the Arrow schema for Parent records
-    pub fn schema() -> Schema {
+    #[must_use] pub fn schema() -> Schema {
         Schema::new(vec![
             Field::new("pnr", DataType::Utf8, false),
             Field::new("employment_status", DataType::Boolean, false),
@@ -166,7 +166,7 @@ impl Parent {
         ])
     }
 
-    /// Convert a vector of Parent objects to a RecordBatch
+    /// Convert a vector of Parent objects to a `RecordBatch`
     pub fn to_record_batch(parents: &[Self]) -> Result<RecordBatch> {
         // Implementation of conversion to RecordBatch
         // This would create Arrow arrays for each field and then combine them
@@ -182,9 +182,15 @@ pub struct ParentCollection {
     parents: HashMap<String, Arc<Parent>>,
 }
 
+impl Default for ParentCollection {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ParentCollection {
-    /// Create a new empty ParentCollection
-    pub fn new() -> Self {
+    /// Create a new empty `ParentCollection`
+    #[must_use] pub fn new() -> Self {
         Self {
             parents: HashMap::new(),
         }
@@ -198,12 +204,12 @@ impl ParentCollection {
     }
 
     /// Get a parent by PNR
-    pub fn get_parent(&self, pnr: &str) -> Option<Arc<Parent>> {
+    #[must_use] pub fn get_parent(&self, pnr: &str) -> Option<Arc<Parent>> {
         self.parents.get(pnr).cloned()
     }
 
     /// Get all parents in the collection
-    pub fn all_parents(&self) -> Vec<Arc<Parent>> {
+    #[must_use] pub fn all_parents(&self) -> Vec<Arc<Parent>> {
         self.parents.values().cloned().collect()
     }
 
@@ -220,22 +226,22 @@ impl ParentCollection {
     }
 
     /// Get employed parents
-    pub fn employed_parents(&self) -> Vec<Arc<Parent>> {
+    #[must_use] pub fn employed_parents(&self) -> Vec<Arc<Parent>> {
         self.filter(|parent| parent.employment_status)
     }
 
     /// Get unemployed parents
-    pub fn unemployed_parents(&self) -> Vec<Arc<Parent>> {
+    #[must_use] pub fn unemployed_parents(&self) -> Vec<Arc<Parent>> {
         self.filter(|parent| !parent.employment_status)
     }
 
     /// Get parents with comorbidity
-    pub fn parents_with_comorbidity(&self) -> Vec<Arc<Parent>> {
+    #[must_use] pub fn parents_with_comorbidity(&self) -> Vec<Arc<Parent>> {
         self.filter(|parent| parent.has_comorbidity)
     }
 
     /// Count total number of parents in the collection
-    pub fn count(&self) -> usize {
+    #[must_use] pub fn count(&self) -> usize {
         self.parents.len()
     }
 }
@@ -272,9 +278,9 @@ mod tests {
         let parent = Parent::from_individual(individual.clone());
 
         assert_eq!(parent.individual().pnr, "1234567890");
-        assert_eq!(parent.employment_status, false);
+        assert!(!parent.employment_status);
         assert_eq!(parent.job_situation, JobSituation::Other);
-        assert_eq!(parent.has_comorbidity, false);
+        assert!(!parent.has_comorbidity);
         assert!(parent.pre_exposure_income.is_none());
         assert!(parent.diagnoses.is_empty());
         assert!(parent.income_data.is_empty());
@@ -288,7 +294,7 @@ mod tests {
             .with_job_situation(JobSituation::EmployedFullTime)
             .with_pre_exposure_income(350000.0);
 
-        assert_eq!(parent.employment_status, true);
+        assert!(parent.employment_status);
         assert_eq!(parent.job_situation, JobSituation::EmployedFullTime);
         assert_eq!(parent.pre_exposure_income, Some(350000.0));
     }
@@ -299,7 +305,7 @@ mod tests {
         let mut parent = Parent::from_individual(individual.clone());
 
         // Initially no comorbidity
-        assert_eq!(parent.has_comorbidity, false);
+        assert!(!parent.has_comorbidity);
 
         // Add a diagnosis
         let diagnosis = Diagnosis {
@@ -314,7 +320,7 @@ mod tests {
         parent.add_diagnosis(Arc::new(diagnosis));
 
         // Should now have comorbidity
-        assert_eq!(parent.has_comorbidity, true);
+        assert!(parent.has_comorbidity);
         assert_eq!(parent.diagnoses.len(), 1);
     }
 

@@ -61,7 +61,7 @@ pub struct Diagnosis {
 
 impl Diagnosis {
     /// Create a new diagnosis
-    pub fn new(
+    #[must_use] pub fn new(
         individual_pnr: String,
         diagnosis_code: String,
         diagnosis_type: DiagnosisType,
@@ -78,14 +78,14 @@ impl Diagnosis {
     }
 
     /// Set the diagnosis as a Severe Chronic Disease
-    pub fn as_scd(mut self, severity: i32) -> Self {
+    #[must_use] pub fn as_scd(mut self, severity: i32) -> Self {
         self.is_scd = true;
         self.severity = severity;
         self
     }
 
     /// Check if this diagnosis is part of a specific ICD-10 chapter
-    pub fn is_in_chapter(&self, chapter: &str) -> bool {
+    #[must_use] pub fn is_in_chapter(&self, chapter: &str) -> bool {
         if self.diagnosis_code.len() < 3 {
             return false;
         }
@@ -120,7 +120,7 @@ impl Diagnosis {
     }
 
     /// Check if this diagnosis matches a specific code or pattern
-    pub fn matches_code(&self, pattern: &str) -> bool {
+    #[must_use] pub fn matches_code(&self, pattern: &str) -> bool {
         if pattern.ends_with('*') {
             // Prefix matching
             let prefix = pattern.trim_end_matches('*');
@@ -132,7 +132,7 @@ impl Diagnosis {
     }
 
     /// Get the Arrow schema for Diagnosis records
-    pub fn schema() -> Schema {
+    #[must_use] pub fn schema() -> Schema {
         Schema::new(vec![
             Field::new("individual_pnr", DataType::Utf8, false),
             Field::new("diagnosis_code", DataType::Utf8, false),
@@ -143,7 +143,7 @@ impl Diagnosis {
         ])
     }
 
-    /// Convert a vector of Diagnosis objects to a RecordBatch
+    /// Convert a vector of Diagnosis objects to a `RecordBatch`
     pub fn to_record_batch(diagnoses: &[Self]) -> Result<RecordBatch> {
         // Implementation of conversion to RecordBatch
         // This would create Arrow arrays for each field and then combine them
@@ -175,7 +175,7 @@ pub struct ScdResult {
 
 impl ScdResult {
     /// Create a new SCD result for an individual
-    pub fn new(pnr: String) -> Self {
+    #[must_use] pub fn new(pnr: String) -> Self {
         Self {
             pnr,
             has_scd: false,
@@ -230,17 +230,17 @@ impl ScdResult {
     }
 
     /// Check if individual has a specific SCD category
-    pub fn has_category(&self, category: u8) -> bool {
+    #[must_use] pub fn has_category(&self, category: u8) -> bool {
         self.scd_categories.contains(&category)
     }
 
     /// Get category count
-    pub fn category_count(&self) -> usize {
+    #[must_use] pub fn category_count(&self) -> usize {
         self.scd_categories.len()
     }
 
     /// Calculate hospitalization-based severity
-    pub fn hospitalization_severity(&self) -> i32 {
+    #[must_use] pub fn hospitalization_severity(&self) -> i32 {
         if self.hospitalization_count >= 5 {
             3 // Severe
         } else if self.hospitalization_count >= 2 {
@@ -251,7 +251,7 @@ impl ScdResult {
     }
 
     /// Get combined severity score from multiple measures
-    pub fn combined_severity(&self) -> i32 {
+    #[must_use] pub fn combined_severity(&self) -> i32 {
         let diagnosis_severity = self.max_severity;
         let hospitalization_severity = self.hospitalization_severity();
         let category_severity = if self.category_count() > 1 { 3 } else { 1 };
@@ -272,9 +272,15 @@ pub struct DiagnosisCollection {
     scd_results: HashMap<String, ScdResult>,
 }
 
+impl Default for DiagnosisCollection {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DiagnosisCollection {
-    /// Create a new empty DiagnosisCollection
-    pub fn new() -> Self {
+    /// Create a new empty `DiagnosisCollection`
+    #[must_use] pub fn new() -> Self {
         Self {
             diagnoses_by_pnr: HashMap::new(),
             scd_results: HashMap::new(),
@@ -288,16 +294,15 @@ impl DiagnosisCollection {
 
         self.diagnoses_by_pnr
             .entry(pnr)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(diagnosis_arc);
     }
 
     /// Get all diagnoses for an individual
-    pub fn get_diagnoses(&self, pnr: &str) -> Vec<Arc<Diagnosis>> {
+    #[must_use] pub fn get_diagnoses(&self, pnr: &str) -> Vec<Arc<Diagnosis>> {
         self.diagnoses_by_pnr
-            .get(pnr)
-            .map(|diagnoses| diagnoses.clone())
-            .unwrap_or_else(Vec::new)
+            .get(pnr).cloned()
+            .unwrap_or_default()
     }
 
     /// Add an SCD result
@@ -306,12 +311,12 @@ impl DiagnosisCollection {
     }
 
     /// Get SCD result for an individual
-    pub fn get_scd_result(&self, pnr: &str) -> Option<&ScdResult> {
+    #[must_use] pub fn get_scd_result(&self, pnr: &str) -> Option<&ScdResult> {
         self.scd_results.get(pnr)
     }
 
     /// Get all individuals with SCD
-    pub fn individuals_with_scd(&self) -> Vec<String> {
+    #[must_use] pub fn individuals_with_scd(&self) -> Vec<String> {
         self.scd_results
             .iter()
             .filter(|(_, result)| result.has_scd)
@@ -320,7 +325,7 @@ impl DiagnosisCollection {
     }
 
     /// Get all individuals without SCD
-    pub fn individuals_without_scd(&self) -> Vec<String> {
+    #[must_use] pub fn individuals_without_scd(&self) -> Vec<String> {
         self.scd_results
             .iter()
             .filter(|(_, result)| !result.has_scd)
@@ -329,7 +334,7 @@ impl DiagnosisCollection {
     }
 
     /// Get individuals with a specific SCD category
-    pub fn individuals_with_category(&self, category: u8) -> Vec<String> {
+    #[must_use] pub fn individuals_with_category(&self, category: u8) -> Vec<String> {
         self.scd_results
             .iter()
             .filter(|(_, result)| result.has_category(category))
@@ -338,12 +343,12 @@ impl DiagnosisCollection {
     }
 
     /// Count individuals with SCD
-    pub fn scd_count(&self) -> usize {
+    #[must_use] pub fn scd_count(&self) -> usize {
         self.individuals_with_scd().len()
     }
 
     /// Count individuals by severity level
-    pub fn count_by_severity(&self) -> HashMap<i32, usize> {
+    #[must_use] pub fn count_by_severity(&self) -> HashMap<i32, usize> {
         let mut counts = HashMap::new();
 
         for result in self.scd_results.values() {

@@ -2,7 +2,7 @@
 //!
 //! This module contains the core entity models used throughout the application.
 //! These models represent the domain entities for the study design as outlined
-//! in the STUDY_FLOW.md document.
+//! in the `STUDY_FLOW.md` document.
 
 // Re-export entity models
 pub mod individual;

@@ -68,7 +68,7 @@ pub struct Family {
 
 impl Family {
     /// Create a new family with minimum required information
-    pub fn new(family_id: String, family_type: FamilyType, valid_from: NaiveDate) -> Self {
+    #[must_use] pub fn new(family_id: String, family_type: FamilyType, valid_from: NaiveDate) -> Self {
         Self {
             family_id,
             family_type,
@@ -85,13 +85,13 @@ impl Family {
     }
 
     /// Set the mother for this family
-    pub fn with_mother(mut self, mother: Arc<Parent>) -> Self {
+    #[must_use] pub fn with_mother(mut self, mother: Arc<Parent>) -> Self {
         self.mother = Some(mother);
         self
     }
 
     /// Set the father for this family
-    pub fn with_father(mut self, father: Arc<Parent>) -> Self {
+    #[must_use] pub fn with_father(mut self, father: Arc<Parent>) -> Self {
         self.father = Some(father);
         self
     }
@@ -102,7 +102,7 @@ impl Family {
     }
 
     /// Check if this family was valid at a specific date
-    pub fn was_valid_at(&self, date: &NaiveDate) -> bool {
+    #[must_use] pub fn was_valid_at(&self, date: &NaiveDate) -> bool {
         if self.valid_from > *date {
             return false;
         }
@@ -117,32 +117,32 @@ impl Family {
     }
 
     /// Get number of children in the family
-    pub fn family_size(&self) -> usize {
+    #[must_use] pub fn family_size(&self) -> usize {
         self.children.len()
     }
 
     /// Check if family has any children with severe chronic disease
-    pub fn has_child_with_scd(&self) -> bool {
+    #[must_use] pub fn has_child_with_scd(&self) -> bool {
         self.children.iter().any(|child| child.has_scd())
     }
 
     /// Determine if both parents were present at a specific date
-    pub fn has_both_parents_at(&self, date: &NaiveDate) -> bool {
+    #[must_use] pub fn has_both_parents_at(&self, date: &NaiveDate) -> bool {
         let mother_present = self
             .mother
             .as_ref()
-            .map_or(false, |m| m.individual().was_resident_at(date));
+            .is_some_and(|m| m.individual().was_resident_at(date));
 
         let father_present = self
             .father
             .as_ref()
-            .map_or(false, |f| f.individual().was_resident_at(date));
+            .is_some_and(|f| f.individual().was_resident_at(date));
 
         mother_present && father_present
     }
 
     /// Get the Arrow schema for Family records
-    pub fn schema() -> Schema {
+    #[must_use] pub fn schema() -> Schema {
         Schema::new(vec![
             Field::new("family_id", DataType::Utf8, false),
             Field::new("family_type", DataType::Int32, false),
@@ -160,7 +160,7 @@ impl Family {
     }
 
     /// Create a snapshot of the family at a specific point in time
-    pub fn snapshot_at(&self, date: &NaiveDate) -> Option<FamilySnapshot> {
+    #[must_use] pub fn snapshot_at(&self, date: &NaiveDate) -> Option<FamilySnapshot> {
         if !self.was_valid_at(date) {
             return None;
         }
@@ -180,13 +180,13 @@ impl Family {
         let mother_present = self
             .mother
             .as_ref()
-            .map_or(false, |m| m.individual().was_resident_at(date));
+            .is_some_and(|m| m.individual().was_resident_at(date));
 
         // Check if father was present
         let father_present = self
             .father
             .as_ref()
-            .map_or(false, |f| f.individual().was_resident_at(date));
+            .is_some_and(|f| f.individual().was_resident_at(date));
 
         // Determine the effective family type based on parents present
         let effective_type = match (mother_present, father_present) {
@@ -246,24 +246,24 @@ pub struct FamilySnapshot {
 
 impl FamilySnapshot {
     /// Get number of children in the family at snapshot date
-    pub fn family_size(&self) -> usize {
+    #[must_use] pub fn family_size(&self) -> usize {
         self.children.len()
     }
 
     /// Check if family had any children with severe chronic disease at snapshot date
-    pub fn has_child_with_scd(&self) -> bool {
+    #[must_use] pub fn has_child_with_scd(&self) -> bool {
         self.children
             .iter()
             .any(|child| child.had_scd_at(&self.snapshot_date))
     }
 
     /// Check if the family can be a case family (has child with SCD)
-    pub fn is_eligible_case(&self) -> bool {
+    #[must_use] pub fn is_eligible_case(&self) -> bool {
         self.has_child_with_scd()
     }
 
     /// Check if the family can be a control family (no child with SCD)
-    pub fn is_eligible_control(&self) -> bool {
+    #[must_use] pub fn is_eligible_control(&self) -> bool {
         !self.has_child_with_scd()
     }
 }
@@ -271,15 +271,21 @@ impl FamilySnapshot {
 /// A collection of families that can be efficiently queried
 #[derive(Debug)]
 pub struct FamilyCollection {
-    /// Families indexed by family_id
+    /// Families indexed by `family_id`
     families: HashMap<String, Arc<Family>>,
     /// Individuals indexed by PNR
     individuals: HashMap<String, Arc<Individual>>,
 }
 
+impl Default for FamilyCollection {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FamilyCollection {
-    /// Create a new empty FamilyCollection
-    pub fn new() -> Self {
+    /// Create a new empty `FamilyCollection`
+    #[must_use] pub fn new() -> Self {
         Self {
             families: HashMap::new(),
             individuals: HashMap::new(),
@@ -301,17 +307,17 @@ impl FamilyCollection {
     }
 
     /// Get a family by its ID
-    pub fn get_family(&self, family_id: &str) -> Option<Arc<Family>> {
+    #[must_use] pub fn get_family(&self, family_id: &str) -> Option<Arc<Family>> {
         self.families.get(family_id).cloned()
     }
 
     /// Get an individual by their PNR
-    pub fn get_individual(&self, pnr: &str) -> Option<Arc<Individual>> {
+    #[must_use] pub fn get_individual(&self, pnr: &str) -> Option<Arc<Individual>> {
         self.individuals.get(pnr).cloned()
     }
 
     /// Get families with a specific type
-    pub fn get_families_by_type(&self, family_type: FamilyType) -> Vec<Arc<Family>> {
+    #[must_use] pub fn get_families_by_type(&self, family_type: FamilyType) -> Vec<Arc<Family>> {
         self.families
             .values()
             .filter(|family| family.family_type == family_type)
@@ -320,7 +326,7 @@ impl FamilyCollection {
     }
 
     /// Get families valid at a specific date
-    pub fn get_families_valid_at(&self, date: &NaiveDate) -> Vec<Arc<Family>> {
+    #[must_use] pub fn get_families_valid_at(&self, date: &NaiveDate) -> Vec<Arc<Family>> {
         self.families
             .values()
             .filter(|family| family.was_valid_at(date))
@@ -329,7 +335,7 @@ impl FamilyCollection {
     }
 
     /// Get family snapshots for all families at a specific date
-    pub fn get_snapshots_at(&self, date: &NaiveDate) -> Vec<FamilySnapshot> {
+    #[must_use] pub fn get_snapshots_at(&self, date: &NaiveDate) -> Vec<FamilySnapshot> {
         self.families
             .values()
             .filter_map(|family| family.snapshot_at(date))
@@ -337,28 +343,28 @@ impl FamilyCollection {
     }
 
     /// Get case families (families with a child with SCD) at a specific date
-    pub fn get_case_families_at(&self, date: &NaiveDate) -> Vec<FamilySnapshot> {
+    #[must_use] pub fn get_case_families_at(&self, date: &NaiveDate) -> Vec<FamilySnapshot> {
         self.get_snapshots_at(date)
             .into_iter()
-            .filter(|snapshot| snapshot.is_eligible_case())
+            .filter(FamilySnapshot::is_eligible_case)
             .collect()
     }
 
     /// Get control families (families without a child with SCD) at a specific date
-    pub fn get_control_families_at(&self, date: &NaiveDate) -> Vec<FamilySnapshot> {
+    #[must_use] pub fn get_control_families_at(&self, date: &NaiveDate) -> Vec<FamilySnapshot> {
         self.get_snapshots_at(date)
             .into_iter()
-            .filter(|snapshot| snapshot.is_eligible_control())
+            .filter(FamilySnapshot::is_eligible_control)
             .collect()
     }
 
     /// Count the total number of families in the collection
-    pub fn family_count(&self) -> usize {
+    #[must_use] pub fn family_count(&self) -> usize {
         self.families.len()
     }
 
     /// Count the total number of individuals in the collection
-    pub fn individual_count(&self) -> usize {
+    #[must_use] pub fn individual_count(&self) -> usize {
         self.individuals.len()
     }
 }

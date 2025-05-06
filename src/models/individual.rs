@@ -145,7 +145,7 @@ pub struct Individual {
 
 impl Individual {
     /// Create a new Individual with minimal required information
-    pub fn new(pnr: String, gender: Gender, birth_date: Option<NaiveDate>) -> Self {
+    #[must_use] pub fn new(pnr: String, gender: Gender, birth_date: Option<NaiveDate>) -> Self {
         Self {
             pnr,
             gender,
@@ -164,11 +164,11 @@ impl Individual {
     }
 
     /// Calculate age of the individual at a specific reference date
-    pub fn age_at(&self, reference_date: &NaiveDate) -> Option<i32> {
+    #[must_use] pub fn age_at(&self, reference_date: &NaiveDate) -> Option<i32> {
         match self.birth_date {
             Some(birth_date) => {
                 // Check if the individual was alive at the reference date
-                if self.death_date.map_or(true, |d| d >= *reference_date) {
+                if self.death_date.is_none_or(|d| d >= *reference_date) {
                     let years = reference_date.year() - birth_date.year();
                     // Adjust for birthday not yet reached in the reference year
                     if reference_date.month() < birth_date.month()
@@ -189,7 +189,7 @@ impl Individual {
     }
 
     /// Check if the individual was alive at a specific date
-    pub fn was_alive_at(&self, date: &NaiveDate) -> bool {
+    #[must_use] pub fn was_alive_at(&self, date: &NaiveDate) -> bool {
         // Check birth date (must be born before or on the date)
         if let Some(birth) = self.birth_date {
             if birth > *date {
@@ -211,7 +211,7 @@ impl Individual {
     }
 
     /// Check if the individual was resident in Denmark at a specific date
-    pub fn was_resident_at(&self, date: &NaiveDate) -> bool {
+    #[must_use] pub fn was_resident_at(&self, date: &NaiveDate) -> bool {
         // Must be alive to be resident
         if !self.was_alive_at(date) {
             return false;
@@ -233,7 +233,7 @@ impl Individual {
     }
 
     /// Get the Arrow schema for Individual records
-    pub fn schema() -> Schema {
+    #[must_use] pub fn schema() -> Schema {
         Schema::new(vec![
             Field::new("pnr", DataType::Utf8, false),
             Field::new("gender", DataType::Int32, false),
@@ -251,7 +251,7 @@ impl Individual {
         ])
     }
 
-    /// Convert a RecordBatch to a vector of Individual objects
+    /// Convert a `RecordBatch` to a vector of Individual objects
     pub fn from_record_batch(batch: &RecordBatch) -> Result<Vec<Self>> {
         let pnr_array = batch
             .column(batch.schema().index_of("pnr")?)
@@ -413,7 +413,7 @@ impl Individual {
         Ok(individuals)
     }
 
-    /// Convert a vector of Individual objects to a RecordBatch
+    /// Convert a vector of Individual objects to a `RecordBatch`
     pub fn to_record_batch(individuals: &[Self]) -> Result<RecordBatch> {
         // Implementation of conversion to RecordBatch
         // This would create Arrow arrays for each field and then combine them

@@ -136,7 +136,7 @@ pub struct Child {
 
 impl Child {
     /// Create a new Child from an Individual
-    pub fn from_individual(individual: Arc<Individual>) -> Self {
+    #[must_use] pub fn from_individual(individual: Arc<Individual>) -> Self {
         Self {
             individual,
             birth_weight: None,
@@ -155,12 +155,12 @@ impl Child {
     }
 
     /// Get a reference to the underlying Individual
-    pub fn individual(&self) -> &Individual {
+    #[must_use] pub fn individual(&self) -> &Individual {
         &self.individual
     }
 
     /// Set birth details
-    pub fn with_birth_details(
+    #[must_use] pub fn with_birth_details(
         mut self,
         birth_weight: Option<i32>,
         gestational_age: Option<i32>,
@@ -173,13 +173,13 @@ impl Child {
     }
 
     /// Set birth order
-    pub fn with_birth_order(mut self, birth_order: i32) -> Self {
+    #[must_use] pub fn with_birth_order(mut self, birth_order: i32) -> Self {
         self.birth_order = Some(birth_order);
         self
     }
 
     /// Mark as having SCD with details
-    pub fn with_scd(
+    #[must_use] pub fn with_scd(
         mut self,
         scd_category: ScdCategory,
         first_scd_date: NaiveDate,
@@ -195,13 +195,13 @@ impl Child {
     }
 
     /// Set hospitalization frequency
-    pub fn with_hospitalizations(mut self, hospitalizations_per_year: f64) -> Self {
+    #[must_use] pub fn with_hospitalizations(mut self, hospitalizations_per_year: f64) -> Self {
         self.hospitalizations_per_year = Some(hospitalizations_per_year);
         self
     }
 
     /// Mark as an index case
-    pub fn as_index_case(mut self) -> Self {
+    #[must_use] pub fn as_index_case(mut self) -> Self {
         self.is_index_case = true;
         self
     }
@@ -224,12 +224,12 @@ impl Child {
     }
 
     /// Check if the child has SCD
-    pub fn has_scd(&self) -> bool {
+    #[must_use] pub fn has_scd(&self) -> bool {
         self.has_severe_chronic_disease
     }
 
     /// Check if the child had SCD at a specific date
-    pub fn had_scd_at(&self, date: &NaiveDate) -> bool {
+    #[must_use] pub fn had_scd_at(&self, date: &NaiveDate) -> bool {
         if !self.has_severe_chronic_disease {
             return false;
         }
@@ -242,17 +242,17 @@ impl Child {
     }
 
     /// Check if this child is eligible to be a case based on SCD status
-    pub fn is_eligible_case(&self) -> bool {
+    #[must_use] pub fn is_eligible_case(&self) -> bool {
         self.has_severe_chronic_disease
     }
 
     /// Check if this child is eligible to be a control based on SCD status
-    pub fn is_eligible_control(&self) -> bool {
+    #[must_use] pub fn is_eligible_control(&self) -> bool {
         !self.has_severe_chronic_disease
     }
 
     /// Calculate age at onset of SCD
-    pub fn age_at_onset(&self) -> Option<i32> {
+    #[must_use] pub fn age_at_onset(&self) -> Option<i32> {
         if let (Some(birth_date), Some(first_scd_date)) =
             (self.individual().birth_date, self.first_scd_date)
         {
@@ -263,7 +263,7 @@ impl Child {
     }
 
     /// Get the Arrow schema for Child records
-    pub fn schema() -> Schema {
+    #[must_use] pub fn schema() -> Schema {
         Schema::new(vec![
             Field::new("pnr", DataType::Utf8, false),
             Field::new("birth_weight", DataType::Int32, true),
@@ -280,7 +280,7 @@ impl Child {
         ])
     }
 
-    /// Convert a vector of Child objects to a RecordBatch
+    /// Convert a vector of Child objects to a `RecordBatch`
     pub fn to_record_batch(children: &[Self]) -> Result<RecordBatch> {
         // Implementation of conversion to RecordBatch
         // This would create Arrow arrays for each field and then combine them
@@ -296,9 +296,15 @@ pub struct ChildCollection {
     children: HashMap<String, Arc<Child>>,
 }
 
+impl Default for ChildCollection {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ChildCollection {
-    /// Create a new empty ChildCollection
-    pub fn new() -> Self {
+    /// Create a new empty `ChildCollection`
+    #[must_use] pub fn new() -> Self {
         Self {
             children: HashMap::new(),
         }
@@ -312,12 +318,12 @@ impl ChildCollection {
     }
 
     /// Get a child by PNR
-    pub fn get_child(&self, pnr: &str) -> Option<Arc<Child>> {
+    #[must_use] pub fn get_child(&self, pnr: &str) -> Option<Arc<Child>> {
         self.children.get(pnr).cloned()
     }
 
     /// Get all children in the collection
-    pub fn all_children(&self) -> Vec<Arc<Child>> {
+    #[must_use] pub fn all_children(&self) -> Vec<Arc<Child>> {
         self.children.values().cloned().collect()
     }
 
@@ -334,42 +340,42 @@ impl ChildCollection {
     }
 
     /// Get children with SCD
-    pub fn children_with_scd(&self) -> Vec<Arc<Child>> {
-        self.filter(|child| child.has_scd())
+    #[must_use] pub fn children_with_scd(&self) -> Vec<Arc<Child>> {
+        self.filter(Child::has_scd)
     }
 
     /// Get children without SCD (potential controls)
-    pub fn children_without_scd(&self) -> Vec<Arc<Child>> {
+    #[must_use] pub fn children_without_scd(&self) -> Vec<Arc<Child>> {
         self.filter(|child| !child.has_scd())
     }
 
     /// Get children with SCD at a specific date
-    pub fn children_with_scd_at(&self, date: &NaiveDate) -> Vec<Arc<Child>> {
+    #[must_use] pub fn children_with_scd_at(&self, date: &NaiveDate) -> Vec<Arc<Child>> {
         self.filter(|child| child.had_scd_at(date))
     }
 
     /// Get children with a specific SCD category
-    pub fn children_with_scd_category(&self, category: ScdCategory) -> Vec<Arc<Child>> {
+    #[must_use] pub fn children_with_scd_category(&self, category: ScdCategory) -> Vec<Arc<Child>> {
         self.filter(|child| child.scd_category == category)
     }
 
     /// Get children with a specific disease severity
-    pub fn children_with_severity(&self, severity: DiseaseSeverity) -> Vec<Arc<Child>> {
+    #[must_use] pub fn children_with_severity(&self, severity: DiseaseSeverity) -> Vec<Arc<Child>> {
         self.filter(|child| child.disease_severity == severity)
     }
 
     /// Get children marked as index cases
-    pub fn index_cases(&self) -> Vec<Arc<Child>> {
+    #[must_use] pub fn index_cases(&self) -> Vec<Arc<Child>> {
         self.filter(|child| child.is_index_case)
     }
 
     /// Count total number of children in the collection
-    pub fn count(&self) -> usize {
+    #[must_use] pub fn count(&self) -> usize {
         self.children.len()
     }
 
     /// Count children with SCD
-    pub fn scd_count(&self) -> usize {
+    #[must_use] pub fn scd_count(&self) -> usize {
         self.children_with_scd().len()
     }
 }

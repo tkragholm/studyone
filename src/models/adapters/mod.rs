@@ -9,7 +9,7 @@ use arrow::record_batch::RecordBatch;
 
 /// Defines the interface for registry-to-model adapters
 pub trait RegistryAdapter<T> {
-    /// Convert a RecordBatch from a registry into domain model objects
+    /// Convert a `RecordBatch` from a registry into domain model objects
     fn from_record_batch(batch: &RecordBatch) -> Result<Vec<T>>;
 
     /// Apply additional transformations if needed
