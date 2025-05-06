@@ -16,10 +16,14 @@ pub trait RegistryAdapter<T> {
     fn transform(models: &mut [T]) -> Result<()>;
 }
 
-// Future submodules for specific registry adapters.
-// These will be implemented in Phase 2.2 of the project.
-//
-// pub mod bef_adapter;    // Map BEF registry to Individual/Family models
-// pub mod mfr_adapter;    // Map MFR registry to Child models
-// pub mod lpr_adapter;    // Map LPR registry to Diagnosis models
-// pub mod ind_adapter;    // Map IND registry to Income models
+// Registry adapters for specific Danish registries
+pub mod bef_adapter; // Map BEF registry to Individual/Family models
+pub mod ind_adapter;
+pub mod lpr_adapter; // Map LPR registry to Diagnosis models
+pub mod mfr_adapter; // Map MFR registry to Child models // Map IND registry to Income models
+
+// Re-export commonly used types
+pub use bef_adapter::{BefCombinedAdapter, BefFamilyAdapter, BefIndividualAdapter};
+pub use ind_adapter::{IncomeType, IndIncomeAdapter, IndMultiYearAdapter};
+pub use lpr_adapter::{Lpr2DiagAdapter, Lpr3DiagnoserAdapter, LprCombinedAdapter};
+pub use mfr_adapter::MfrChildAdapter;

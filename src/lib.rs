@@ -40,6 +40,20 @@ pub use models::{
     Income,
 };
 
+// Adapter models for registry data
+pub use models::adapters::{
+    RegistryAdapter,
+    BefIndividualAdapter, 
+    BefFamilyAdapter,
+    BefCombinedAdapter,
+    MfrChildAdapter,
+    Lpr2DiagAdapter, 
+    Lpr3DiagnoserAdapter,
+    LprCombinedAdapter,
+    IndIncomeAdapter,
+    IndMultiYearAdapter,
+};
+
 // Filtering capabilities
 pub use filter::{Expr, LiteralValue};
 pub use filter::{filter_record_batch, read_parquet_with_filter};

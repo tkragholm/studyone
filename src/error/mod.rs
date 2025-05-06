@@ -52,6 +52,18 @@ pub enum ParquetReaderError {
     #[error("Invalid operation: {0}")]
     InvalidOperation(String),
 
+    /// Column not found in record batch
+    #[error("Column not found: {column}")]
+    ColumnNotFound { column: String },
+
+    /// Invalid data type for column
+    #[error("Invalid data type for column {column}: expected {expected}")]
+    InvalidDataType { column: String, expected: String },
+
+    /// Custom error message
+    #[error("Error: {message}")]
+    Custom { message: String },
+
     /// Any other error
     #[error("{0}")]
     Other(String),
@@ -230,6 +242,24 @@ impl ParquetReaderError {
     pub fn other<S: Into<String>>(message: S) -> Self {
         Self::Other(message.into())
     }
+    
+    /// Create a column not found error
+    pub fn column_not_found<S: Into<String>>(column: S) -> Self {
+        Self::ColumnNotFound { column: column.into() }
+    }
+    
+    /// Create an invalid data type error
+    pub fn invalid_data_type<S1: Into<String>, S2: Into<String>>(column: S1, expected: S2) -> Self {
+        Self::InvalidDataType { 
+            column: column.into(), 
+            expected: expected.into() 
+        }
+    }
+    
+    /// Create a custom error
+    pub fn custom<S: Into<String>>(message: S) -> Self {
+        Self::Custom { message: message.into() }
+    }
 
     /// Add path context to an error message (for backward compatibility)
     ///
@@ -254,6 +284,16 @@ impl ParquetReaderError {
                 Self::InvalidOperation(format!("{msg} (path: {path_str})"))
             }
             Self::ArrowError(msg) => Self::ArrowError(format!("{msg} (path: {path_str})")),
+            Self::ColumnNotFound { column } => Self::ColumnNotFound { 
+                column: format!("{column} (path: {path_str})") 
+            },
+            Self::InvalidDataType { column, expected } => Self::InvalidDataType { 
+                column: format!("{column} (path: {path_str})"),
+                expected: expected.clone()
+            },
+            Self::Custom { message } => Self::Custom { 
+                message: format!("{message} (path: {path_str})") 
+            },
             Self::Other(msg) => Self::Other(format!("{msg} (path: {path_str})")),
         }
     }
@@ -275,6 +315,16 @@ impl ParquetReaderError {
             Self::AsyncError(msg) => Self::AsyncError(format!("{ctx}: {msg}")),
             Self::ValidationError(msg) => Self::ValidationError(format!("{ctx}: {msg}")),
             Self::InvalidOperation(msg) => Self::InvalidOperation(format!("{ctx}: {msg}")),
+            Self::ColumnNotFound { column } => Self::ColumnNotFound { 
+                column: format!("{ctx}: {column}") 
+            },
+            Self::InvalidDataType { column, expected } => Self::InvalidDataType { 
+                column: format!("{ctx}: {column}"),
+                expected: expected.clone()
+            },
+            Self::Custom { message } => Self::Custom { 
+                message: format!("{ctx}: {message}") 
+            },
             Self::Other(msg) => Self::Other(format!("{ctx}: {msg}")),
         }
     }
