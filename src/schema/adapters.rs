@@ -33,7 +33,7 @@ pub enum AdapterError {
     ValidationError(String),
 }
 
-/// Alias for Result with AdapterError
+/// Alias for Result with `AdapterError`
 pub type Result<T> = std::result::Result<T, AdapterError>;
 
 /// Types of data type compatibility
@@ -48,66 +48,39 @@ pub enum TypeCompatibility {
 }
 
 /// Check if two Arrow data types are compatible for conversion
-pub fn check_type_compatibility(from: &DataType, to: &DataType) -> TypeCompatibility {
+#[must_use] pub fn check_type_compatibility(from: &DataType, to: &DataType) -> TypeCompatibility {
     if from == to {
         return TypeCompatibility::Exact;
     }
 
     match (from, to) {
         // Numeric type conversions (widening)
-        (DataType::Int8, DataType::Int16)
-        | (DataType::Int8, DataType::Int32)
-        | (DataType::Int8, DataType::Int64)
-        | (DataType::Int16, DataType::Int32)
-        | (DataType::Int16, DataType::Int64)
-        | (DataType::Int32, DataType::Int64)
-        | (DataType::UInt8, DataType::UInt16)
-        | (DataType::UInt8, DataType::UInt32)
-        | (DataType::UInt8, DataType::UInt64)
-        | (DataType::UInt16, DataType::UInt32)
-        | (DataType::UInt16, DataType::UInt64)
-        | (DataType::UInt32, DataType::UInt64)
-        | (DataType::Float32, DataType::Float64) => TypeCompatibility::Compatible,
+        (DataType::Int8, DataType::Int16 | DataType::Int32 | DataType::Int64) |
+(DataType::Int16, DataType::Int32 | DataType::Int64) |
+(DataType::Int32, DataType::Int64) |
+(DataType::UInt8, DataType::UInt16 | DataType::UInt32 | DataType::UInt64) |
+(DataType::UInt16, DataType::UInt32 | DataType::UInt64) |
+(DataType::UInt32, DataType::UInt64) | (DataType::Float32, DataType::Float64) => TypeCompatibility::Compatible,
 
         // Integer to float conversions
-        (DataType::Int8, DataType::Float32)
-        | (DataType::Int8, DataType::Float64)
-        | (DataType::Int16, DataType::Float32)
-        | (DataType::Int16, DataType::Float64)
-        | (DataType::Int32, DataType::Float32)
-        | (DataType::Int32, DataType::Float64)
-        | (DataType::Int64, DataType::Float64)
-        | (DataType::UInt8, DataType::Float32)
-        | (DataType::UInt8, DataType::Float64)
-        | (DataType::UInt16, DataType::Float32)
-        | (DataType::UInt16, DataType::Float64)
-        | (DataType::UInt32, DataType::Float32)
-        | (DataType::UInt32, DataType::Float64)
-        | (DataType::UInt64, DataType::Float64) => TypeCompatibility::Compatible,
+        (DataType::Int8 | DataType::Int16 | DataType::Int32 | DataType::UInt8 |
+DataType::UInt16 | DataType::UInt32, DataType::Float32) |
+(DataType::Int8 | DataType::Int16 | DataType::Int32 | DataType::Int64 |
+DataType::UInt8 | DataType::UInt16 | DataType::UInt32 | DataType::UInt64,
+DataType::Float64) => TypeCompatibility::Compatible,
 
         // String-convertible types
-        (DataType::Utf8, DataType::Date32)
-        | (DataType::Utf8, DataType::Date64)
-        | (DataType::Utf8, DataType::Timestamp(_, _))
-        | (DataType::LargeUtf8, DataType::Date32)
-        | (DataType::LargeUtf8, DataType::Date64)
-        | (DataType::LargeUtf8, DataType::Timestamp(_, _)) => TypeCompatibility::Compatible,
+        (DataType::Utf8 | DataType::LargeUtf8,
+DataType::Date32 | DataType::Date64 | DataType::Timestamp(_, _)) => TypeCompatibility::Compatible,
 
         // Date/Timestamp to String conversions
-        (DataType::Date32, DataType::Utf8)
-        | (DataType::Date32, DataType::LargeUtf8)
-        | (DataType::Date64, DataType::Utf8)
-        | (DataType::Date64, DataType::LargeUtf8)
-        | (DataType::Timestamp(_, _), DataType::Utf8)
-        | (DataType::Timestamp(_, _), DataType::LargeUtf8) => TypeCompatibility::Compatible,
+        (DataType::Date32 | DataType::Date64 | DataType::Timestamp(_, _),
+DataType::Utf8 | DataType::LargeUtf8) => TypeCompatibility::Compatible,
 
         // Date and timestamp interconversions
-        (DataType::Date32, DataType::Date64)
-        | (DataType::Date32, DataType::Timestamp(_, _))
-        | (DataType::Date64, DataType::Date32)
-        | (DataType::Date64, DataType::Timestamp(_, _))
-        | (DataType::Timestamp(_, _), DataType::Date32)
-        | (DataType::Timestamp(_, _), DataType::Date64) => TypeCompatibility::Compatible,
+        (DataType::Date32 | DataType::Timestamp(_, _), DataType::Date64) |
+(DataType::Date32 | DataType::Date64, DataType::Timestamp(_, _)) |
+(DataType::Date64 | DataType::Timestamp(_, _), DataType::Date32) => TypeCompatibility::Compatible,
 
         // Between string types
         (DataType::Utf8, DataType::LargeUtf8) | (DataType::LargeUtf8, DataType::Utf8) => {
@@ -115,16 +88,10 @@ pub fn check_type_compatibility(from: &DataType, to: &DataType) -> TypeCompatibi
         }
 
         // Boolean conversions
-        (DataType::Boolean, DataType::Int8)
-        | (DataType::Boolean, DataType::Int16)
-        | (DataType::Boolean, DataType::Int32)
-        | (DataType::Boolean, DataType::Int64)
-        | (DataType::Boolean, DataType::UInt8)
-        | (DataType::Boolean, DataType::UInt16)
-        | (DataType::Boolean, DataType::UInt32)
-        | (DataType::Boolean, DataType::UInt64)
-        | (DataType::Boolean, DataType::Utf8)
-        | (DataType::Boolean, DataType::LargeUtf8) => TypeCompatibility::Compatible,
+        (DataType::Boolean,
+DataType::Int8 | DataType::Int16 | DataType::Int32 | DataType::Int64 |
+DataType::UInt8 | DataType::UInt16 | DataType::UInt32 | DataType::UInt64 |
+DataType::Utf8 | DataType::LargeUtf8) => TypeCompatibility::Compatible,
 
         // Default - Incompatible
         _ => TypeCompatibility::Incompatible,
@@ -132,7 +99,7 @@ pub fn check_type_compatibility(from: &DataType, to: &DataType) -> TypeCompatibi
 }
 
 /// Identifies whether a data type is numeric
-pub fn is_numeric(data_type: &DataType) -> bool {
+#[must_use] pub const fn is_numeric(data_type: &DataType) -> bool {
     matches!(
         data_type,
         DataType::Int8
@@ -150,12 +117,12 @@ pub fn is_numeric(data_type: &DataType) -> bool {
 }
 
 /// Identifies whether a data type is a string type
-pub fn is_string(data_type: &DataType) -> bool {
+#[must_use] pub const fn is_string(data_type: &DataType) -> bool {
     matches!(data_type, DataType::Utf8 | DataType::LargeUtf8)
 }
 
 /// Identifies whether a data type is a date or timestamp type
-pub fn is_temporal(data_type: &DataType) -> bool {
+#[must_use] pub const fn is_temporal(data_type: &DataType) -> bool {
     matches!(
         data_type,
         DataType::Date32 | DataType::Date64 | DataType::Timestamp(_, _)
@@ -217,7 +184,7 @@ pub enum AdaptationStrategy {
 }
 
 /// Check schema compatibility with adaptation options
-pub fn check_schema_with_adaptation(
+#[must_use] pub fn check_schema_with_adaptation(
     source_schema: &Schema,
     target_schema: &Schema,
 ) -> EnhancedSchemaCompatibilityReport {
@@ -257,8 +224,7 @@ pub fn check_schema_with_adaptation(
                         source_type: source_type.clone(),
                         target_type: target_type.clone(),
                         description: format!(
-                            "Incompatible types for field '{}': {:?} cannot be converted to {:?}",
-                            field_name, source_type, target_type
+                            "Incompatible types for field '{field_name}': {source_type:?} cannot be converted to {target_type:?}"
                         ),
                     });
                 }
@@ -284,7 +250,7 @@ pub fn check_schema_with_adaptation(
 }
 
 /// Determine the appropriate adaptation strategy for a given source and target type
-fn determine_adaptation_strategy(
+const fn determine_adaptation_strategy(
     source_type: &DataType,
     target_type: &DataType,
 ) -> AdaptationStrategy {
@@ -302,7 +268,7 @@ fn determine_adaptation_strategy(
         (DataType::Boolean, _) => AdaptationStrategy::BooleanConversion,
 
         // String conversions for other types
-        (_, DataType::Utf8) | (_, DataType::LargeUtf8) => AdaptationStrategy::StringConversion,
+        (_, DataType::Utf8 | DataType::LargeUtf8) => AdaptationStrategy::StringConversion,
 
         // Default to auto cast
         _ => AdaptationStrategy::AutoCast,
@@ -324,34 +290,32 @@ pub fn convert_array(
 
     match (source_type, target_type) {
         // String to Date32 conversion
-        (DataType::Utf8, &DataType::Date32) | (DataType::LargeUtf8, &DataType::Date32) => {
+        (DataType::Utf8 | DataType::LargeUtf8, &DataType::Date32) => {
             convert_string_to_date32(array, date_config)
         }
 
         // String to Date64 conversion
-        (DataType::Utf8, &DataType::Date64) | (DataType::LargeUtf8, &DataType::Date64) => {
+        (DataType::Utf8 | DataType::LargeUtf8, &DataType::Date64) => {
             convert_string_to_date64(array, date_config)
         }
 
         // String to Timestamp conversion
-        (DataType::Utf8, &DataType::Timestamp(unit, _))
-        | (DataType::LargeUtf8, &DataType::Timestamp(unit, _)) => {
+        (DataType::Utf8 | DataType::LargeUtf8, &DataType::Timestamp(unit, _)) => {
             convert_string_to_timestamp(array, &unit, date_config)
         }
 
         // Date32 to String conversion
-        (&DataType::Date32, DataType::Utf8) | (&DataType::Date32, DataType::LargeUtf8) => {
+        (&DataType::Date32, DataType::Utf8 | DataType::LargeUtf8) => {
             convert_date32_to_string(array, date_config)
         }
 
         // Date64 to String conversion
-        (&DataType::Date64, DataType::Utf8) | (&DataType::Date64, DataType::LargeUtf8) => {
+        (&DataType::Date64, DataType::Utf8 | DataType::LargeUtf8) => {
             convert_date64_to_string(array, date_config)
         }
 
         // Timestamp to String conversion
-        (&DataType::Timestamp(unit, _), DataType::Utf8)
-        | (&DataType::Timestamp(unit, _), DataType::LargeUtf8) => {
+        (&DataType::Timestamp(unit, _), DataType::Utf8 | DataType::LargeUtf8) => {
             convert_timestamp_to_string(array, &unit, date_config)
         }
 
@@ -363,27 +327,26 @@ pub fn convert_array(
         // Boolean to numeric conversion
         (&DataType::Boolean, t) if is_numeric(t) => {
             // Use Arrow's cast functionality
-            cast::cast(array, target_type).map_err(|e| AdapterError::ArrowError(e))
+            cast::cast(array, target_type).map_err(AdapterError::ArrowError)
         }
 
         // Boolean to string conversion
-        (&DataType::Boolean, &DataType::Utf8) | (&DataType::Boolean, &DataType::LargeUtf8) => {
+        (&DataType::Boolean, &DataType::Utf8 | &DataType::LargeUtf8) => {
             convert_boolean_to_string(array)
         }
 
         // Numeric type conversions (use Arrow's built-in casting)
         (s, t) if is_numeric(s) && is_numeric(t) => {
-            cast::cast(array, target_type).map_err(|e| AdapterError::ArrowError(e))
+            cast::cast(array, target_type).map_err(AdapterError::ArrowError)
         }
 
         // Other types to string
-        (_, &DataType::Utf8) | (_, &DataType::LargeUtf8) => convert_to_string(array),
+        (_, &DataType::Utf8 | &DataType::LargeUtf8) => convert_to_string(array),
 
         // Default case - try to use Arrow cast when possible
         _ => cast::cast(array, target_type).map_err(|e| {
             AdapterError::ConversionError(format!(
-                "Failed to convert from {:?} to {:?}: {}",
-                source_type, target_type, e
+                "Failed to convert from {source_type:?} to {target_type:?}: {e}"
             ))
         }),
     }
@@ -420,8 +383,7 @@ pub fn adapt_record_batch(
                 }
                 TypeCompatibility::Incompatible => {
                     return Err(AdapterError::ValidationError(format!(
-                        "Incompatible types for field '{}': {:?} -> {:?}",
-                        field_name, source_type, target_type
+                        "Incompatible types for field '{field_name}': {source_type:?} -> {target_type:?}"
                     )));
                 }
             }
@@ -434,7 +396,7 @@ pub fn adapt_record_batch(
 
     // Create a new record batch with the adapted columns
     RecordBatch::try_new(Arc::new(target_schema.clone()), adapted_columns)
-        .map_err(|e| AdapterError::ArrowError(e))
+        .map_err(AdapterError::ArrowError)
 }
 
 /// Create a null array of the specified type and length
@@ -444,8 +406,7 @@ fn create_null_array(data_type: &DataType, length: usize) -> Result<ArrayRef> {
     match cast::cast(&null_array, data_type) {
         Ok(array) => Ok(array),
         Err(e) => Err(AdapterError::ConversionError(format!(
-            "Failed to create null array of type {:?}: {}",
-            data_type, e
+            "Failed to create null array of type {data_type:?}: {e}"
         ))),
     }
 }
@@ -481,7 +442,7 @@ impl Default for DateFormatConfig {
 }
 
 /// Parse a date string with multiple format attempts
-pub fn parse_date_string(s: &str, config: &DateFormatConfig) -> Option<NaiveDate> {
+#[must_use] pub fn parse_date_string(s: &str, config: &DateFormatConfig) -> Option<NaiveDate> {
     // Try all the provided formats
     for format in &config.date_formats {
         if let Ok(date) = NaiveDate::parse_from_str(s, format) {
@@ -519,11 +480,10 @@ fn detect_date_format(s: &str) -> Option<String> {
                 if let Ok(first_num) = parts[0].parse::<u8>() {
                     if first_num > 12 {
                         return Some("%d/%m/%Y".to_string()); // DD/MM/YYYY
-                    } else {
-                        // Could be either MM/DD/YYYY or DD/MM/YYYY
-                        // Default to European format, but this might need context-specific logic
-                        return Some("%d/%m/%Y".to_string());
                     }
+                    // Could be either MM/DD/YYYY or DD/MM/YYYY
+                    // Default to European format, but this might need context-specific logic
+                    return Some("%d/%m/%Y".to_string());
                 }
             }
         }
@@ -538,7 +498,7 @@ fn detect_date_format(s: &str) -> Option<String> {
     }
 
     // Check for compact format (YYYYMMDD)
-    if s.len() == 8 && s.chars().all(|c| c.is_digit(10)) {
+    if s.len() == 8 && s.chars().all(|c| c.is_ascii_digit()) {
         return Some("%Y%m%d".to_string());
     }
 
@@ -641,22 +601,22 @@ fn convert_string_to_timestamp(
             &date64_array,
             &DataType::Timestamp(arrow::datatypes::TimeUnit::Second, None),
         )
-        .map_err(|e| AdapterError::ArrowError(e)),
+        .map_err(AdapterError::ArrowError),
         arrow::datatypes::TimeUnit::Millisecond => cast::cast(
             &date64_array,
             &DataType::Timestamp(arrow::datatypes::TimeUnit::Millisecond, None),
         )
-        .map_err(|e| AdapterError::ArrowError(e)),
+        .map_err(AdapterError::ArrowError),
         arrow::datatypes::TimeUnit::Microsecond => cast::cast(
             &date64_array,
             &DataType::Timestamp(arrow::datatypes::TimeUnit::Microsecond, None),
         )
-        .map_err(|e| AdapterError::ArrowError(e)),
+        .map_err(AdapterError::ArrowError),
         arrow::datatypes::TimeUnit::Nanosecond => cast::cast(
             &date64_array,
             &DataType::Timestamp(arrow::datatypes::TimeUnit::Nanosecond, None),
         )
-        .map_err(|e| AdapterError::ArrowError(e)),
+        .map_err(AdapterError::ArrowError),
     }
 }
 
@@ -679,9 +639,9 @@ fn convert_date32_to_string(array: &ArrayRef, date_config: &DateFormatConfig) ->
         let days = date_array.value(i);
         let date = NaiveDate::from_ymd_opt(1970, 1, 1)
             .unwrap()
-            .checked_add_signed(chrono::Duration::days(days as i64))
+            .checked_add_signed(chrono::Duration::days(i64::from(days)))
             .ok_or_else(|| {
-                AdapterError::ConversionError(format!("Invalid date value: {}", days))
+                AdapterError::ConversionError(format!("Invalid date value: {days}"))
             })?;
 
         let formatted = date.format(format).to_string();
@@ -711,7 +671,7 @@ fn convert_date64_to_string(array: &ArrayRef, date_config: &DateFormatConfig) ->
         let datetime =
             DateTime::from_timestamp(millis / 1000, ((millis % 1000) * 1_000_000) as u32)
                 .ok_or_else(|| {
-                    AdapterError::ConversionError(format!("Invalid date value: {}", millis))
+                    AdapterError::ConversionError(format!("Invalid date value: {millis}"))
                 })?;
 
         let formatted = datetime.format(format).to_string();
@@ -748,7 +708,7 @@ fn convert_timestamp_to_string(
 
                 let seconds = ts_array.value(i);
                 let datetime = DateTime::from_timestamp(seconds, 0).ok_or_else(|| {
-                    AdapterError::ConversionError(format!("Invalid timestamp: {}", seconds))
+                    AdapterError::ConversionError(format!("Invalid timestamp: {seconds}"))
                 })?;
 
                 let formatted = datetime.format(format).to_string();
@@ -773,7 +733,7 @@ fn convert_timestamp_to_string(
                 let datetime =
                     DateTime::from_timestamp(millis / 1000, ((millis % 1000) * 1_000_000) as u32)
                         .ok_or_else(|| {
-                        AdapterError::ConversionError(format!("Invalid timestamp: {}", millis))
+                        AdapterError::ConversionError(format!("Invalid timestamp: {millis}"))
                     })?;
 
                 let formatted = datetime.format(format).to_string();
@@ -800,7 +760,7 @@ fn convert_timestamp_to_string(
                     ((micros % 1_000_000) * 1000) as u32,
                 )
                 .ok_or_else(|| {
-                    AdapterError::ConversionError(format!("Invalid timestamp: {}", micros))
+                    AdapterError::ConversionError(format!("Invalid timestamp: {micros}"))
                 })?;
 
                 let formatted = datetime.format(format).to_string();
@@ -825,7 +785,7 @@ fn convert_timestamp_to_string(
                 let datetime =
                     DateTime::from_timestamp(nanos / 1_000_000_000, (nanos % 1_000_000_000) as u32)
                         .ok_or_else(|| {
-                            AdapterError::ConversionError(format!("Invalid timestamp: {}", nanos))
+                            AdapterError::ConversionError(format!("Invalid timestamp: {nanos}"))
                         })?;
 
                 let formatted = datetime.format(format).to_string();
@@ -854,7 +814,7 @@ fn convert_date32_to_date64(array: &ArrayRef) -> Result<ArrayRef> {
 
         let days = date32_array.value(i);
         // Convert days to milliseconds (86400000 ms per day)
-        let millis = (days as i64) * 86_400_000;
+        let millis = i64::from(days) * 86_400_000;
         date64_builder.append_value(millis);
     }
 
@@ -924,7 +884,7 @@ fn convert_to_string(array: &ArrayRef) -> Result<ArrayRef> {
         }
 
         // Convert to debug string format
-        let value = format!("{:?}", array);
+        let value = format!("{array:?}");
         string_builder.append_value(&value);
     }
 

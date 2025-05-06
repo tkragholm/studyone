@@ -269,8 +269,7 @@ pub fn read_parquet<S: ::std::hash::BuildHasher + std::marker::Sync>(
                             }
                             Err(e) => {
                                 log::warn!(
-                                    "Failed to adapt record batch: {}. Using original batch.",
-                                    e
+                                    "Failed to adapt record batch: {e}. Using original batch."
                                 );
                                 let mut batches = batches_collector.lock().unwrap();
                                 batches.push(filtered_batch);
@@ -305,8 +304,7 @@ pub fn read_parquet<S: ::std::hash::BuildHasher + std::marker::Sync>(
                         }
                         Err(e) => {
                             log::warn!(
-                                "Failed to adapt record batch: {}. Using original batch.",
-                                e
+                                "Failed to adapt record batch: {e}. Using original batch."
                             );
                             let mut batches = batches_collector.lock().unwrap();
                             batches.push(batch.clone());
