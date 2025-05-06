@@ -54,18 +54,18 @@ impl fmt::Display for PopulationConfig {
         writeln!(f, "Population Configuration:")?;
         writeln!(f, "  Index Date: {}", self.index_date)?;
         if let Some(min_age) = self.min_age {
-            writeln!(f, "  Minimum Age: {}", min_age)?;
+            writeln!(f, "  Minimum Age: {min_age}")?;
         }
         if let Some(max_age) = self.max_age {
-            writeln!(f, "  Maximum Age: {}", max_age)?;
+            writeln!(f, "  Maximum Age: {max_age}")?;
         }
         writeln!(f, "  Resident Only: {}", self.resident_only)?;
         writeln!(f, "  Two Parent Only: {}", self.two_parent_only)?;
         if let Some(start) = self.study_start_date {
-            writeln!(f, "  Study Start Date: {}", start)?;
+            writeln!(f, "  Study Start Date: {start}")?;
         }
         if let Some(end) = self.study_end_date {
-            writeln!(f, "  Study End Date: {}", end)?;
+            writeln!(f, "  Study End Date: {end}")?;
         }
         Ok(())
     }
@@ -92,7 +92,7 @@ pub struct Population {
 
 impl Population {
     /// Create a new population with the specified configuration
-    pub fn new(config: PopulationConfig) -> Self {
+    #[must_use] pub fn new(config: PopulationConfig) -> Self {
         Self {
             config,
             collection: FamilyCollection::new(),
@@ -124,19 +124,19 @@ impl Population {
     }
 
     /// Get eligible case families at the index date
-    pub fn get_case_families(&self) -> Vec<FamilySnapshot> {
+    #[must_use] pub fn get_case_families(&self) -> Vec<FamilySnapshot> {
         self.collection
             .get_case_families_at(&self.config.index_date)
     }
 
     /// Get eligible control families at the index date
-    pub fn get_control_families(&self) -> Vec<FamilySnapshot> {
+    #[must_use] pub fn get_control_families(&self) -> Vec<FamilySnapshot> {
         self.collection
             .get_control_families_at(&self.config.index_date)
     }
 
     /// Print a summary of the population
-    pub fn print_summary(&self) -> String {
+    #[must_use] pub fn print_summary(&self) -> String {
         let mut summary = String::new();
         summary.push_str("Study Population Summary:\n");
         summary.push_str(&format!("  Index Date: {}\n", self.config.index_date));
@@ -152,8 +152,8 @@ impl Population {
         // Calculate eligibility counts
         let case_count = self.get_case_families().len();
         let control_count = self.get_control_families().len();
-        summary.push_str(&format!("  Eligible Case Families: {}\n", case_count));
-        summary.push_str(&format!("  Eligible Control Families: {}\n", control_count));
+        summary.push_str(&format!("  Eligible Case Families: {case_count}\n"));
+        summary.push_str(&format!("  Eligible Control Families: {control_count}\n"));
 
         summary
     }
@@ -165,7 +165,7 @@ pub struct PopulationBuilder {
     config: PopulationConfig,
     /// Individual data with PNR as key
     individuals: HashMap<String, Individual>,
-    /// Family data with family_id as key
+    /// Family data with `family_id` as key
     families: HashMap<String, Family>,
     /// Child data with PNR as key
     children: HashMap<String, Child>,
@@ -177,7 +177,7 @@ pub struct PopulationBuilder {
 
 impl PopulationBuilder {
     /// Create a new population builder with default configuration
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         Self {
             config: PopulationConfig::default(),
             individuals: HashMap::new(),
@@ -189,13 +189,13 @@ impl PopulationBuilder {
     }
 
     /// Set the population configuration
-    pub fn with_config(mut self, config: PopulationConfig) -> Self {
+    #[must_use] pub fn with_config(mut self, config: PopulationConfig) -> Self {
         self.config = config;
         self
     }
 
     /// Set the PNR filter to limit the population to specific individuals
-    pub fn with_pnr_filter(mut self, pnr_filter: HashSet<String>) -> Self {
+    #[must_use] pub fn with_pnr_filter(mut self, pnr_filter: HashSet<String>) -> Self {
         self.pnr_filter = Some(pnr_filter);
         self
     }
@@ -206,7 +206,7 @@ impl PopulationBuilder {
         register: &dyn RegisterLoader,
         path: &std::path::Path,
     ) -> Result<Self> {
-        log::info!("Loading BEF data from {:?}", path);
+        log::info!("Loading BEF data from {path:?}");
 
         // Load the BEF data using the register loader
         let batches = register.load(path, self.pnr_filter.as_ref())?;
@@ -268,7 +268,7 @@ impl PopulationBuilder {
         register: &dyn RegisterLoader,
         path: &std::path::Path,
     ) -> Result<Self> {
-        log::info!("Loading MFR data from {:?}", path);
+        log::info!("Loading MFR data from {path:?}");
 
         // Load the MFR data using the register loader
         let batches = register.load(path, self.pnr_filter.as_ref())?;
@@ -322,7 +322,7 @@ impl PopulationBuilder {
     }
 
     /// Identify parents and children based on family relationships
-    pub fn identify_family_roles(mut self) -> Self {
+    #[must_use] pub fn identify_family_roles(mut self) -> Self {
         log::info!(
             "Identifying family roles for {} individuals in {} families",
             self.individuals.len(),
@@ -389,7 +389,7 @@ impl PopulationBuilder {
     }
 
     /// Build the final Population object
-    pub fn build(mut self) -> Population {
+    #[must_use] pub fn build(mut self) -> Population {
         log::info!(
             "Building population with {} individuals, {} families, {} parents, {} children",
             self.individuals.len(),

@@ -264,7 +264,7 @@ impl PopulationFilter {
 
     /// Create a case-control filter pair for selecting case and control groups
     /// with matching demographic characteristics
-    pub fn create_case_control_filters() -> (FamilySnapshotFilter, FamilySnapshotFilter) {
+    #[must_use] pub fn create_case_control_filters() -> (FamilySnapshotFilter, FamilySnapshotFilter) {
         // Case filter: Families with SCD children
         let case_filter = FamilySnapshotFilter::HasChildWithSCD(true);
 

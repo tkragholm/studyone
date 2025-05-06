@@ -33,7 +33,7 @@ pub struct RegistryIntegration {
 
 impl RegistryIntegration {
     /// Create a new registry integration manager
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         Self {
             collection: FamilyCollection::new(),
             diagnoses: HashMap::new(),
@@ -42,17 +42,17 @@ impl RegistryIntegration {
     }
 
     /// Get the integrated family collection
-    pub fn collection(&self) -> &FamilyCollection {
+    #[must_use] pub fn collection(&self) -> &FamilyCollection {
         &self.collection
     }
 
     /// Get diagnoses for a specific individual
-    pub fn get_diagnoses(&self, pnr: &str) -> Option<&Vec<Diagnosis>> {
+    #[must_use] pub fn get_diagnoses(&self, pnr: &str) -> Option<&Vec<Diagnosis>> {
         self.diagnoses.get(pnr)
     }
 
     /// Get income data for a specific individual
-    pub fn get_incomes(&self, pnr: &str) -> Option<&Vec<Income>> {
+    #[must_use] pub fn get_incomes(&self, pnr: &str) -> Option<&Vec<Income>> {
         self.incomes.get(pnr)
     }
 
@@ -250,10 +250,10 @@ impl RegistryIntegration {
                         // NOTE: This is a simplified implementation. In a real system,
                         // you would use the full SCD algorithm.
                         let has_scd = diagnoses.iter().any(|d| {
-                            d.diagnosis_code.starts_with("C") || // Cancer
+                            d.diagnosis_code.starts_with('C') || // Cancer
                             d.diagnosis_code.starts_with("D80") || // Immunodeficiency
                             d.diagnosis_code.starts_with("G71") || // Muscular disorders
-                            d.diagnosis_code.starts_with("Q") // Congenital malformations
+                            d.diagnosis_code.starts_with('Q') // Congenital malformations
                         });
 
                         if has_scd {
@@ -286,7 +286,7 @@ impl RegistryIntegration {
             }
         }
 
-        log::info!("Linked {} children with SCD diagnoses", scd_count);
+        log::info!("Linked {scd_count} children with SCD diagnoses");
 
         Ok(())
     }
@@ -299,7 +299,7 @@ impl RegistryIntegration {
         // TODO: Implement income linking to parents
         // This requires accessing and updating the Parent objects in families
 
-        log::info!("Linked income data to {} parents", income_count);
+        log::info!("Linked income data to {income_count} parents");
 
         Ok(())
     }
