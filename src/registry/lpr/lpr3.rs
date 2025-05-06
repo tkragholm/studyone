@@ -5,7 +5,6 @@
 use crate::registry::RegisterLoader;
 use crate::registry::schemas::lpr3_diagnoser::lpr3_diagnoser_schema;
 use crate::registry::schemas::lpr3_kontakter::lpr3_kontakter_schema;
-use crate::Error;
 use crate::RecordBatch;
 use crate::Result;
 

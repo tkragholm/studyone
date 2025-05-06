@@ -6,7 +6,6 @@ use crate::registry::RegisterLoader;
 use crate::registry::schemas::lpr_adm::lpr_adm_schema;
 use crate::registry::schemas::lpr_bes::lpr_bes_schema;
 use crate::registry::schemas::lpr_diag::lpr_diag_schema;
-use crate::Error;
 use crate::RecordBatch;
 use crate::Result;
 
