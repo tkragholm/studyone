@@ -39,4 +39,4 @@ strip = true          # Strip debug symbols
 overflow-checks = false # Disable overflow checks for performance
 
 [lints.clippy]
-enum_glob_use = "deny"
+missing_errors_doc = "allow"
