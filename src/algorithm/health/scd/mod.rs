@@ -65,7 +65,7 @@ pub fn apply_scd_algorithm(
 
         // Process each diagnosis
         for diagnosis in &diagnoses {
-            process_diagnosis(&mut scd_result, &diagnosis, config, birth_dates)?;
+            process_diagnosis(&mut scd_result, diagnosis, config, birth_dates)?;
         }
 
         // Add hospitalization count (this would come from a separate source,
@@ -313,7 +313,7 @@ fn categorize_diagnosis(diagnosis_code: &str) -> Option<(ScdCategory, bool, Seve
                     {
                         // Kidney failure
                         // Check for specific stages of CKD
-                        if clean_code.len() > 3 && clean_code.chars().nth(3).unwrap().is_digit(10) {
+                        if clean_code.len() > 3 && clean_code.chars().nth(3).unwrap().is_ascii_digit() {
                             let stage = clean_code.chars().nth(3).unwrap().to_digit(10).unwrap();
                             if stage >= 4 {
                                 // CKD stage 4-5

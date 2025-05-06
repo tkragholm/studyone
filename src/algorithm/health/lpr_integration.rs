@@ -162,7 +162,7 @@ pub fn integrate_lpr2_components(
 
         diagnoses_by_recnum
             .entry(recnum)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push((diagnosis, diag_type));
     }
 
@@ -354,7 +354,7 @@ pub fn integrate_lpr3_components(
 
         diagnoses_by_kontakt_id
             .entry(kontakt_id)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push((diagnosis, diag_type));
     }
 
