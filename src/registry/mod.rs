@@ -94,7 +94,7 @@ pub use mfr::MfrRegister;
 pub use uddf::UddfRegister;
 pub use vnds::VndsRegister;
 
-mod factory;
+pub mod factory;
 pub use factory::{load_multiple_registries, registry_from_name, registry_from_path};
 
 mod transform;

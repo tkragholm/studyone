@@ -332,6 +332,12 @@ impl FamilyCollection {
         self.individuals.get(pnr).cloned()
     }
 
+    /// Get all individuals in the collection
+    #[must_use]
+    pub fn get_individuals(&self) -> Vec<Arc<Individual>> {
+        self.individuals.values().cloned().collect()
+    }
+
     /// Get families with a specific type
     #[must_use]
     pub fn get_families_by_type(&self, family_type: FamilyType) -> Vec<Arc<Family>> {

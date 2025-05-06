@@ -17,6 +17,12 @@ pub mod integration {
     pub mod registry_integration_test;
 }
 
+pub mod algorithm {
+    pub mod population {
+        pub mod population_test;
+    }
+}
+
 // pub mod models {
 //     pub mod child_test;
 //     pub mod diagnosis_test;
