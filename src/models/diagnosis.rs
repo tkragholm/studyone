@@ -25,9 +25,9 @@ pub enum DiagnosisType {
 impl From<&str> for DiagnosisType {
     fn from(s: &str) -> Self {
         match s.trim().to_lowercase().as_str() {
-            "primary" | "main" | "a" => DiagnosisType::Primary,
-            "secondary" | "b" => DiagnosisType::Secondary,
-            _ => DiagnosisType::Other,
+            "primary" | "main" | "a" => Self::Primary,
+            "secondary" | "b" => Self::Secondary,
+            _ => Self::Other,
         }
     }
 }
@@ -35,9 +35,9 @@ impl From<&str> for DiagnosisType {
 impl From<i32> for DiagnosisType {
     fn from(value: i32) -> Self {
         match value {
-            1 => DiagnosisType::Primary,
-            2 => DiagnosisType::Secondary,
-            _ => DiagnosisType::Other,
+            1 => Self::Primary,
+            2 => Self::Secondary,
+            _ => Self::Other,
         }
     }
 }
@@ -62,7 +62,7 @@ pub struct Diagnosis {
 impl Diagnosis {
     /// Create a new diagnosis
     #[must_use]
-    pub fn new(
+    pub const fn new(
         individual_pnr: String,
         diagnosis_code: String,
         diagnosis_type: DiagnosisType,
@@ -80,7 +80,7 @@ impl Diagnosis {
 
     /// Set the diagnosis as a Severe Chronic Disease
     #[must_use]
-    pub fn as_scd(mut self, severity: i32) -> Self {
+    pub const fn as_scd(mut self, severity: i32) -> Self {
         self.is_scd = true;
         self.severity = severity;
         self
@@ -181,7 +181,7 @@ pub struct ScdResult {
 impl ScdResult {
     /// Create a new SCD result for an individual
     #[must_use]
-    pub fn new(pnr: String) -> Self {
+    pub const fn new(pnr: String) -> Self {
         Self {
             pnr,
             has_scd: false,
@@ -231,7 +231,7 @@ impl ScdResult {
     }
 
     /// Add hospitalization count
-    pub fn add_hospitalizations(&mut self, count: i32) {
+    pub const fn add_hospitalizations(&mut self, count: i32) {
         self.hospitalization_count += count;
     }
 
@@ -249,7 +249,7 @@ impl ScdResult {
 
     /// Calculate hospitalization-based severity
     #[must_use]
-    pub fn hospitalization_severity(&self) -> i32 {
+    pub const fn hospitalization_severity(&self) -> i32 {
         if self.hospitalization_count >= 5 {
             3 // Severe
         } else if self.hospitalization_count >= 2 {

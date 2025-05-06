@@ -235,7 +235,7 @@ impl Population {
         integration.link_income_to_parents()?;
 
         // Create final population from the integration result
-        let mut population = Population::new(config);
+        let mut population = Self::new(config);
         population.collection = integration.collection().clone();
 
         // Update statistics
@@ -442,7 +442,7 @@ impl PopulationBuilder {
 
     /// Set the population configuration
     #[must_use]
-    pub fn with_config(mut self, config: PopulationConfig) -> Self {
+    pub const fn with_config(mut self, config: PopulationConfig) -> Self {
         self.config = config;
         self
     }

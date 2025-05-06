@@ -52,7 +52,7 @@ impl RegistryIntegration {
 
     /// Get the integrated family collection
     #[must_use]
-    pub fn collection(&self) -> &FamilyCollection {
+    pub const fn collection(&self) -> &FamilyCollection {
         &self.collection
     }
 

@@ -21,7 +21,7 @@ pub struct MfrChildAdapter {
 impl MfrChildAdapter {
     /// Create a new MFR adapter with a lookup of existing individuals
     #[must_use]
-    pub fn new(individuals: HashMap<String, Arc<Individual>>) -> Self {
+    pub const fn new(individuals: HashMap<String, Arc<Individual>>) -> Self {
         Self {
             individual_lookup: individuals,
         }

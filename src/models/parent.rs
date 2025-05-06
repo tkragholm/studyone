@@ -38,14 +38,14 @@ pub enum JobSituation {
 impl From<i32> for JobSituation {
     fn from(value: i32) -> Self {
         match value {
-            1 => JobSituation::EmployedFullTime,
-            2 => JobSituation::EmployedPartTime,
-            3 => JobSituation::SelfEmployed,
-            4 => JobSituation::Unemployed,
-            5 => JobSituation::Student,
-            6 => JobSituation::Retired,
-            7 => JobSituation::OnLeave,
-            _ => JobSituation::Other,
+            1 => Self::EmployedFullTime,
+            2 => Self::EmployedPartTime,
+            3 => Self::SelfEmployed,
+            4 => Self::Unemployed,
+            5 => Self::Student,
+            6 => Self::Retired,
+            7 => Self::OnLeave,
+            _ => Self::Other,
         }
     }
 }
@@ -72,7 +72,7 @@ pub struct Parent {
 impl Parent {
     /// Create a new Parent from an Individual
     #[must_use]
-    pub fn from_individual(individual: Arc<Individual>) -> Self {
+    pub const fn from_individual(individual: Arc<Individual>) -> Self {
         Self {
             individual,
             employment_status: false,
@@ -92,21 +92,21 @@ impl Parent {
 
     /// Set the employment status
     #[must_use]
-    pub fn with_employment_status(mut self, employed: bool) -> Self {
+    pub const fn with_employment_status(mut self, employed: bool) -> Self {
         self.employment_status = employed;
         self
     }
 
     /// Set the job situation
     #[must_use]
-    pub fn with_job_situation(mut self, job_situation: JobSituation) -> Self {
+    pub const fn with_job_situation(mut self, job_situation: JobSituation) -> Self {
         self.job_situation = job_situation;
         self
     }
 
     /// Set the pre-exposure income
     #[must_use]
-    pub fn with_pre_exposure_income(mut self, income: f64) -> Self {
+    pub const fn with_pre_exposure_income(mut self, income: f64) -> Self {
         self.pre_exposure_income = Some(income);
         self
     }

@@ -30,7 +30,7 @@ pub enum IncomeType {
 
 impl IncomeType {
     /// Convert income type to string representation
-    fn as_str(&self) -> &'static str {
+    const fn as_str(&self) -> &'static str {
         match self {
             Self::TotalPersonal => "total_personal",
             Self::Salary => "salary",
@@ -53,7 +53,7 @@ pub struct IndIncomeAdapter {
 impl IndIncomeAdapter {
     /// Create a new IND adapter for a specific year with inflation adjustment
     #[must_use]
-    pub fn new(year: i32, cpi_index: HashMap<i32, f64>) -> Self {
+    pub const fn new(year: i32, cpi_index: HashMap<i32, f64>) -> Self {
         Self { year, cpi_index }
     }
 
@@ -79,7 +79,7 @@ impl IndIncomeAdapter {
     }
 
     /// Extract job situation from employment status code
-    fn extract_job_situation(&self, employment_code: i8) -> crate::models::parent::JobSituation {
+    const fn extract_job_situation(&self, employment_code: i8) -> crate::models::parent::JobSituation {
         use crate::models::parent::JobSituation;
 
         match employment_code {
@@ -297,7 +297,7 @@ impl RegistryAdapter<Income> for IndIncomeAdapter {
     fn from_record_batch(batch: &RecordBatch) -> Result<Vec<Income>> {
         // This implementation is for static calls without an instance
         // For instance-specific processing, use the instance method from_record_batch_with_year
-        let adapter = IndIncomeAdapter::new_without_cpi(2020); // Default year
+        let adapter = Self::new_without_cpi(2020); // Default year
         adapter.from_record_batch_with_year(batch)
     }
 

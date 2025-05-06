@@ -43,17 +43,17 @@ pub enum ScdCategory {
 impl From<i32> for ScdCategory {
     fn from(value: i32) -> Self {
         match value {
-            1 => ScdCategory::BloodDisorder,
-            2 => ScdCategory::ImmuneDisorder,
-            3 => ScdCategory::EndocrineDisorder,
-            4 => ScdCategory::NeurologicalDisorder,
-            5 => ScdCategory::CardiovascularDisorder,
-            6 => ScdCategory::RespiratoryDisorder,
-            7 => ScdCategory::GastrointestinalDisorder,
-            8 => ScdCategory::MusculoskeletalDisorder,
-            9 => ScdCategory::RenalDisorder,
-            10 => ScdCategory::CongenitalDisorder,
-            _ => ScdCategory::None,
+            1 => Self::BloodDisorder,
+            2 => Self::ImmuneDisorder,
+            3 => Self::EndocrineDisorder,
+            4 => Self::NeurologicalDisorder,
+            5 => Self::CardiovascularDisorder,
+            6 => Self::RespiratoryDisorder,
+            7 => Self::GastrointestinalDisorder,
+            8 => Self::MusculoskeletalDisorder,
+            9 => Self::RenalDisorder,
+            10 => Self::CongenitalDisorder,
+            _ => Self::None,
         }
     }
 }
@@ -74,10 +74,10 @@ pub enum DiseaseSeverity {
 impl From<i32> for DiseaseSeverity {
     fn from(value: i32) -> Self {
         match value {
-            1 => DiseaseSeverity::Mild,
-            2 => DiseaseSeverity::Moderate,
-            3 => DiseaseSeverity::Severe,
-            _ => DiseaseSeverity::None,
+            1 => Self::Mild,
+            2 => Self::Moderate,
+            3 => Self::Severe,
+            _ => Self::None,
         }
     }
 }
@@ -96,9 +96,9 @@ pub enum DiseaseOrigin {
 impl From<i32> for DiseaseOrigin {
     fn from(value: i32) -> Self {
         match value {
-            1 => DiseaseOrigin::Congenital,
-            2 => DiseaseOrigin::Acquired,
-            _ => DiseaseOrigin::None,
+            1 => Self::Congenital,
+            2 => Self::Acquired,
+            _ => Self::None,
         }
     }
 }
@@ -137,7 +137,7 @@ pub struct Child {
 impl Child {
     /// Create a new Child from an Individual
     #[must_use]
-    pub fn from_individual(individual: Arc<Individual>) -> Self {
+    pub const fn from_individual(individual: Arc<Individual>) -> Self {
         Self {
             individual,
             birth_weight: None,
@@ -163,7 +163,7 @@ impl Child {
 
     /// Set birth details
     #[must_use]
-    pub fn with_birth_details(
+    pub const fn with_birth_details(
         mut self,
         birth_weight: Option<i32>,
         gestational_age: Option<i32>,
@@ -177,14 +177,14 @@ impl Child {
 
     /// Set birth order
     #[must_use]
-    pub fn with_birth_order(mut self, birth_order: i32) -> Self {
+    pub const fn with_birth_order(mut self, birth_order: i32) -> Self {
         self.birth_order = Some(birth_order);
         self
     }
 
     /// Mark as having SCD with details
     #[must_use]
-    pub fn with_scd(
+    pub const fn with_scd(
         mut self,
         scd_category: ScdCategory,
         first_scd_date: NaiveDate,
@@ -201,14 +201,14 @@ impl Child {
 
     /// Set hospitalization frequency
     #[must_use]
-    pub fn with_hospitalizations(mut self, hospitalizations_per_year: f64) -> Self {
+    pub const fn with_hospitalizations(mut self, hospitalizations_per_year: f64) -> Self {
         self.hospitalizations_per_year = Some(hospitalizations_per_year);
         self
     }
 
     /// Mark as an index case
     #[must_use]
-    pub fn as_index_case(mut self) -> Self {
+    pub const fn as_index_case(mut self) -> Self {
         self.is_index_case = true;
         self
     }
@@ -232,7 +232,7 @@ impl Child {
 
     /// Check if the child has SCD
     #[must_use]
-    pub fn has_scd(&self) -> bool {
+    pub const fn has_scd(&self) -> bool {
         self.has_severe_chronic_disease
     }
 
@@ -252,13 +252,13 @@ impl Child {
 
     /// Check if this child is eligible to be a case based on SCD status
     #[must_use]
-    pub fn is_eligible_case(&self) -> bool {
+    pub const fn is_eligible_case(&self) -> bool {
         self.has_severe_chronic_disease
     }
 
     /// Check if this child is eligible to be a control based on SCD status
     #[must_use]
-    pub fn is_eligible_control(&self) -> bool {
+    pub const fn is_eligible_control(&self) -> bool {
         !self.has_severe_chronic_disease
     }
 

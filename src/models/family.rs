@@ -30,11 +30,11 @@ pub enum FamilyType {
 impl From<i32> for FamilyType {
     fn from(value: i32) -> Self {
         match value {
-            1 => FamilyType::TwoParent,
-            2 => FamilyType::SingleMother,
-            3 => FamilyType::SingleFather,
-            4 => FamilyType::NoParent,
-            _ => FamilyType::Unknown,
+            1 => Self::TwoParent,
+            2 => Self::SingleMother,
+            3 => Self::SingleFather,
+            4 => Self::NoParent,
+            _ => Self::Unknown,
         }
     }
 }
@@ -69,7 +69,7 @@ pub struct Family {
 impl Family {
     /// Create a new family with minimum required information
     #[must_use]
-    pub fn new(family_id: String, family_type: FamilyType, valid_from: NaiveDate) -> Self {
+    pub const fn new(family_id: String, family_type: FamilyType, valid_from: NaiveDate) -> Self {
         Self {
             family_id,
             family_type,

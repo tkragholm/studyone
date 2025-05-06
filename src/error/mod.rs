@@ -289,7 +289,7 @@ impl ParquetReaderError {
             },
             Self::InvalidDataType { column, expected } => Self::InvalidDataType { 
                 column: format!("{column} (path: {path_str})"),
-                expected: expected.clone()
+                expected
             },
             Self::Custom { message } => Self::Custom { 
                 message: format!("{message} (path: {path_str})") 
@@ -320,7 +320,7 @@ impl ParquetReaderError {
             },
             Self::InvalidDataType { column, expected } => Self::InvalidDataType { 
                 column: format!("{ctx}: {column}"),
-                expected: expected.clone()
+                expected
             },
             Self::Custom { message } => Self::Custom { 
                 message: format!("{ctx}: {message}") 

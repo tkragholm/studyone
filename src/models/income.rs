@@ -26,7 +26,7 @@ pub struct Income {
 impl Income {
     /// Create a new Income record
     #[must_use]
-    pub fn new(individual_pnr: String, year: i32, amount: f64, income_type: String) -> Self {
+    pub const fn new(individual_pnr: String, year: i32, amount: f64, income_type: String) -> Self {
         Self {
             individual_pnr,
             year,
@@ -73,7 +73,7 @@ pub struct IncomeTrajectory {
 impl IncomeTrajectory {
     /// Create a new empty income trajectory
     #[must_use]
-    pub fn new(individual_pnr: String, income_type: String) -> Self {
+    pub const fn new(individual_pnr: String, income_type: String) -> Self {
         Self {
             individual_pnr,
             yearly_income: BTreeMap::new(),
@@ -160,7 +160,7 @@ impl IncomeTrajectory {
         let sum_xy: f64 = pairs.iter().map(|(x, y)| x * y).sum();
         let sum_xx: f64 = pairs.iter().map(|(x, _)| x * x).sum();
 
-        let slope = (n * sum_xy - sum_x * sum_y) / (n * sum_xx - sum_x * sum_x);
+        let slope = n.mul_add(sum_xy, -(sum_x * sum_y)) / n.mul_add(sum_xx, -(sum_x * sum_x));
         Some(slope)
     }
 
@@ -218,9 +218,7 @@ impl IncomeTrajectory {
                     let position = year - lower_year;
 
                     // Linear interpolation
-                    let interpolated = lower_value
-                        + (higher_value - lower_value)
-                            * (f64::from(position) / f64::from(year_span));
+                    let interpolated = (higher_value - lower_value).mul_add(f64::from(position) / f64::from(year_span), lower_value);
                     self.yearly_income.insert(year, interpolated);
                 }
             }
@@ -248,7 +246,7 @@ pub struct FamilyIncomeTrajectory {
 impl FamilyIncomeTrajectory {
     /// Create a new family income trajectory
     #[must_use]
-    pub fn new(family_id: String) -> Self {
+    pub const fn new(family_id: String) -> Self {
         Self {
             family_id,
             mother_trajectory: None,

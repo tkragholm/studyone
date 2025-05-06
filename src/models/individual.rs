@@ -25,9 +25,9 @@ pub enum Gender {
 impl From<&str> for Gender {
     fn from(s: &str) -> Self {
         match s.trim().to_lowercase().as_str() {
-            "m" | "male" | "1" => Gender::Male,
-            "f" | "female" | "2" => Gender::Female,
-            _ => Gender::Unknown,
+            "m" | "male" | "1" => Self::Male,
+            "f" | "female" | "2" => Self::Female,
+            _ => Self::Unknown,
         }
     }
 }
@@ -35,9 +35,9 @@ impl From<&str> for Gender {
 impl From<i32> for Gender {
     fn from(value: i32) -> Self {
         match value {
-            1 => Gender::Male,
-            2 => Gender::Female,
-            _ => Gender::Unknown,
+            1 => Self::Male,
+            2 => Self::Female,
+            _ => Self::Unknown,
         }
     }
 }
@@ -58,10 +58,10 @@ pub enum Origin {
 impl From<&str> for Origin {
     fn from(s: &str) -> Self {
         match s.trim().to_lowercase().as_str() {
-            "danish" | "danmark" | "dk" | "1" => Origin::Danish,
-            "western" | "west" | "2" => Origin::Western,
-            "non-western" | "nonwestern" | "3" => Origin::NonWestern,
-            _ => Origin::Unknown,
+            "danish" | "danmark" | "dk" | "1" => Self::Danish,
+            "western" | "west" | "2" => Self::Western,
+            "non-western" | "nonwestern" | "3" => Self::NonWestern,
+            _ => Self::Unknown,
         }
     }
 }
@@ -69,10 +69,10 @@ impl From<&str> for Origin {
 impl From<i32> for Origin {
     fn from(value: i32) -> Self {
         match value {
-            1 => Origin::Danish,
-            2 => Origin::Western,
-            3 => Origin::NonWestern,
-            _ => Origin::Unknown,
+            1 => Self::Danish,
+            2 => Self::Western,
+            3 => Self::NonWestern,
+            _ => Self::Unknown,
         }
     }
 }
@@ -93,10 +93,10 @@ pub enum EducationLevel {
 impl From<&str> for EducationLevel {
     fn from(s: &str) -> Self {
         match s.trim().to_lowercase().as_str() {
-            "low" | "1" => EducationLevel::Low,
-            "medium" | "2" => EducationLevel::Medium,
-            "high" | "3" => EducationLevel::High,
-            _ => EducationLevel::Unknown,
+            "low" | "1" => Self::Low,
+            "medium" | "2" => Self::Medium,
+            "high" | "3" => Self::High,
+            _ => Self::Unknown,
         }
     }
 }
@@ -104,10 +104,10 @@ impl From<&str> for EducationLevel {
 impl From<i32> for EducationLevel {
     fn from(value: i32) -> Self {
         match value {
-            1 => EducationLevel::Low,
-            2 => EducationLevel::Medium,
-            3 => EducationLevel::High,
-            _ => EducationLevel::Unknown,
+            1 => Self::Low,
+            2 => Self::Medium,
+            3 => Self::High,
+            _ => Self::Unknown,
         }
     }
 }
@@ -146,7 +146,7 @@ pub struct Individual {
 impl Individual {
     /// Create a new Individual with minimal required information
     #[must_use]
-    pub fn new(pnr: String, gender: Gender, birth_date: Option<NaiveDate>) -> Self {
+    pub const fn new(pnr: String, gender: Gender, birth_date: Option<NaiveDate>) -> Self {
         Self {
             pnr,
             gender,
@@ -339,7 +339,7 @@ impl Individual {
         let mut individuals = Vec::with_capacity(batch.num_rows());
 
         for i in 0..batch.num_rows() {
-            let individual = Individual {
+            let individual = Self {
                 pnr: pnr_array.value(i).to_string(),
                 gender: Gender::from(gender_array.value(i)),
                 birth_date: if birth_date_array.is_null(i) {
