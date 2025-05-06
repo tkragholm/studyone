@@ -6,8 +6,8 @@ use super::RegisterLoader;
 use super::schemas::ind::ind_schema;
 use crate::RecordBatch;
 use crate::Result;
-use crate::load_parquet_files_parallel;
 use crate::async_io::parallel_ops::load_parquet_files_parallel_with_pnr_filter_async;
+use crate::load_parquet_files_parallel;
 use arrow::datatypes::SchemaRef;
 use std::collections::HashSet;
 use std::future::Future;
@@ -22,7 +22,8 @@ pub struct IndRegister {
 
 impl IndRegister {
     /// Create a new IND registry loader
-    #[must_use] pub fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self {
             schema: ind_schema(),
         }
@@ -62,7 +63,13 @@ impl RegisterLoader for IndRegister {
         // Use optimized parallel loading for IND data
         let pnr_filter_arc = pnr_filter.map(|f| std::sync::Arc::new(f.clone()));
         let pnr_filter_ref = pnr_filter_arc.as_ref().map(std::convert::AsRef::as_ref);
-        load_parquet_files_parallel(base_path, Some(self.schema.as_ref()), pnr_filter_ref)
+        load_parquet_files_parallel(
+            base_path,
+            Some(self.schema.as_ref()),
+            pnr_filter_ref,
+            None,
+            None,
+        )
     }
 
     /// Load records from the IND register asynchronously
@@ -82,8 +89,12 @@ impl RegisterLoader for IndRegister {
             // Use optimized async parallel loading for IND data
             let pnr_filter_arc = pnr_filter.map(|f| std::sync::Arc::new(f.clone()));
             let pnr_filter_ref = pnr_filter_arc.as_ref().map(std::convert::AsRef::as_ref);
-            load_parquet_files_parallel_with_pnr_filter_async(base_path, Some(self.schema.as_ref()), pnr_filter_ref)
-                .await
+            load_parquet_files_parallel_with_pnr_filter_async(
+                base_path,
+                Some(self.schema.as_ref()),
+                pnr_filter_ref,
+            )
+            .await
         })
     }
 

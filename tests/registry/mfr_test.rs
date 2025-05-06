@@ -1,5 +1,5 @@
 use crate::utils::{
-    expr_to_filter, print_batch_summary, print_sample_rows, print_schema_info, registry_dir, 
+    expr_to_filter, print_batch_summary, print_sample_rows, print_schema_info, registry_dir,
     registry_file, timed_execution,
 };
 use par_reader::{
@@ -16,7 +16,7 @@ async fn test_mfr_basic_read() -> par_reader::Result<()> {
     }
 
     let (elapsed, result) = timed_execution(|| {
-        read_parquet::<std::collections::hash_map::RandomState>(&path, None, None)
+        read_parquet::<std::collections::hash_map::RandomState>(&path, None, None, None, None)
     });
 
     let batches = result?;
@@ -49,7 +49,10 @@ async fn test_mfr_filter_by_birth_details() -> par_reader::Result<()> {
             println!("Filtered to {} record batches", batches.len());
             println!(
                 "Total filtered rows: {}",
-                batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
+                batches
+                    .iter()
+                    .map(par_reader::RecordBatch::num_rows)
+                    .sum::<usize>()
             );
         }
         Err(e) => println!("Error in weight filter (likely column mismatch): {e}"),
@@ -68,7 +71,10 @@ async fn test_mfr_filter_by_birth_details() -> par_reader::Result<()> {
             println!("Complex filtered to {} record batches", batches.len());
             println!(
                 "Total complex filtered rows: {}",
-                batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
+                batches
+                    .iter()
+                    .map(par_reader::RecordBatch::num_rows)
+                    .sum::<usize>()
             );
         }
         Err(e) => println!("Error in complex filter (likely column mismatch): {e}"),
@@ -97,7 +103,10 @@ async fn test_mfr_registry_manager() -> par_reader::Result<()> {
     println!("Loaded {} record batches", batches.len());
     println!(
         "Total rows: {}",
-        batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
+        batches
+            .iter()
+            .map(par_reader::RecordBatch::num_rows)
+            .sum::<usize>()
     );
 
     // Print schema of first batch if available
@@ -117,7 +126,9 @@ async fn test_mfr_parallel_read() -> par_reader::Result<()> {
     }
 
     let (elapsed, result) = timed_execution(|| {
-        load_parquet_files_parallel::<std::collections::hash_map::RandomState>(&mfr_dir, None, None)
+        load_parquet_files_parallel::<std::collections::hash_map::RandomState>(
+            &mfr_dir, None, None, None, None,
+        )
     });
 
     let batches = result?;

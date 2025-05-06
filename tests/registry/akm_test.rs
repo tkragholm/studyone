@@ -1,5 +1,5 @@
 use crate::utils::{
-    ensure_path_exists, expr_to_filter, print_batch_summary, print_sample_rows, print_schema_info, 
+    ensure_path_exists, expr_to_filter, print_batch_summary, print_sample_rows, print_schema_info,
     registry_dir, registry_file, timed_execution,
 };
 use par_reader::{
@@ -13,7 +13,7 @@ async fn test_akm_basic_read() -> par_reader::Result<()> {
     ensure_path_exists(&path)?;
 
     let (elapsed, result) = timed_execution(|| {
-        read_parquet::<std::collections::hash_map::RandomState>(&path, None, None)
+        read_parquet::<std::collections::hash_map::RandomState>(&path, None, None, None, None)
     });
 
     let batches = result?;
@@ -91,7 +91,13 @@ async fn test_akm_filtering() -> par_reader::Result<()> {
 
     let result = read_parquet_with_filter_async(&path, expr_to_filter(&filter_expr), None).await?;
     println!("Filtered to {} record batches", result.len());
-    println!("Total filtered rows: {}", result.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>());
+    println!(
+        "Total filtered rows: {}",
+        result
+            .iter()
+            .map(par_reader::RecordBatch::num_rows)
+            .sum::<usize>()
+    );
 
     // Complex filter: SOCIO > 200 AND CPRTYPE = 5
     let complex_filter = Expr::And(vec![
@@ -99,9 +105,16 @@ async fn test_akm_filtering() -> par_reader::Result<()> {
         Expr::Eq("CPRTYPE".to_string(), LiteralValue::Int(5)),
     ]);
 
-    let result = read_parquet_with_filter_async(&path, expr_to_filter(&complex_filter), None).await?;
+    let result =
+        read_parquet_with_filter_async(&path, expr_to_filter(&complex_filter), None).await?;
     println!("Complex filtered to {} record batches", result.len());
-    println!("Total complex filtered rows: {}", result.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>());
+    println!(
+        "Total complex filtered rows: {}",
+        result
+            .iter()
+            .map(par_reader::RecordBatch::num_rows)
+            .sum::<usize>()
+    );
 
     Ok(())
 }
@@ -111,7 +124,8 @@ async fn test_akm_transformation() -> par_reader::Result<()> {
     let path = registry_file("akm", "2020.parquet");
     ensure_path_exists(&path)?;
 
-    let result = read_parquet::<std::collections::hash_map::RandomState>(&path, None, None)?;
+    let result =
+        read_parquet::<std::collections::hash_map::RandomState>(&path, None, None, None, None)?;
 
     if let Some(first_batch) = result.first() {
         // Add year column if there's a date column
@@ -156,7 +170,10 @@ async fn test_akm_registry_manager() -> par_reader::Result<()> {
     println!("Loaded {} record batches", batches.len());
     println!(
         "Total rows: {}",
-        batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
+        batches
+            .iter()
+            .map(par_reader::RecordBatch::num_rows)
+            .sum::<usize>()
     );
 
     // Print schema of first batch if available

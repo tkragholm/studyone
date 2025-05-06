@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 use crate::filter::core::BatchFilter;
+use crate::schema::adapters::{DateFormatConfig, adapt_record_batch};
 use arrow::datatypes::Schema;
 use arrow::record_batch::RecordBatch;
 use parquet::arrow::{ProjectionMask, arrow_reader::ParquetRecordBatchReaderBuilder};
@@ -184,6 +185,8 @@ pub fn read_parquet<S: ::std::hash::BuildHasher + std::marker::Sync>(
     path: &Path,
     schema: Option<&Schema>,
     pnr_filter: Option<&HashSet<String, S>>,
+    adapt_types: Option<bool>,
+    date_format_config: Option<&crate::schema::adapters::DateFormatConfig>,
 ) -> Result<Vec<RecordBatch>> {
     let start = std::time::Instant::now();
     log_operation_start("Reading parquet file", path);
@@ -231,6 +234,13 @@ pub fn read_parquet<S: ::std::hash::BuildHasher + std::marker::Sync>(
     // Collect the batches first to enable parallel processing
     let batch_results: Vec<_> = reader.collect();
 
+    let binding = DateFormatConfig::default();
+    // Use default date format config if none provided
+    let date_config = date_format_config.unwrap_or(&binding);
+
+    // Determine if type adaptation is enabled
+    let should_adapt_types = adapt_types.unwrap_or(false);
+
     // Process the batches in parallel using rayon
     let batches = if let Some(pnr_filter) = pnr_filter {
         // Create a thread-safe collector for filtered batches
@@ -245,8 +255,29 @@ pub fn read_parquet<S: ::std::hash::BuildHasher + std::marker::Sync>(
             {
                 // Filter the batch by PNR
                 if let Ok(filtered_batch) = filter_batch_by_pnr(batch, pnr_filter) {
-                    // Add non-empty batches to the collector
-                    if filtered_batch.num_rows() > 0 {
+                    // Skip empty batches
+                    if filtered_batch.num_rows() == 0 {
+                        return;
+                    }
+
+                    // Apply type adaptation if enabled and schema is provided
+                    if should_adapt_types && schema.is_some() {
+                        match adapt_record_batch(&filtered_batch, schema.unwrap(), date_config) {
+                            Ok(adapted_batch) => {
+                                let mut batches = batches_collector.lock().unwrap();
+                                batches.push(adapted_batch);
+                            }
+                            Err(e) => {
+                                log::warn!(
+                                    "Failed to adapt record batch: {}. Using original batch.",
+                                    e
+                                );
+                                let mut batches = batches_collector.lock().unwrap();
+                                batches.push(filtered_batch);
+                            }
+                        }
+                    } else {
+                        // No adaptation needed, use filtered batch as is
                         let mut batches = batches_collector.lock().unwrap();
                         batches.push(filtered_batch);
                     }
@@ -257,16 +288,46 @@ pub fn read_parquet<S: ::std::hash::BuildHasher + std::marker::Sync>(
         // Get the collected batches
         batches_collector.into_inner().unwrap()
     } else {
-        // No filter, process all batches in parallel with error handling
-        let result: Result<Vec<RecordBatch>> = batch_results
-            .into_iter()
-            .map(|batch_result| {
-                batch_result
-                    .map_err(|e| anyhow::anyhow!("Failed to read record batch. Error: {}", e))
-            })
-            .collect();
+        // No PNR filter, process all batches
+        if should_adapt_types && schema.is_some() {
+            // With type adaptation
+            let batches_collector = Mutex::new(Vec::with_capacity(batch_results.len()));
 
-        result?
+            batch_results.par_iter().for_each(|batch_result| {
+                if let Ok(batch) = batch_result
+                    .as_ref()
+                    .map_err(|e| anyhow::anyhow!("Failed to read record batch. Error: {}", e))
+                {
+                    match adapt_record_batch(batch, schema.unwrap(), date_config) {
+                        Ok(adapted_batch) => {
+                            let mut batches = batches_collector.lock().unwrap();
+                            batches.push(adapted_batch);
+                        }
+                        Err(e) => {
+                            log::warn!(
+                                "Failed to adapt record batch: {}. Using original batch.",
+                                e
+                            );
+                            let mut batches = batches_collector.lock().unwrap();
+                            batches.push(batch.clone());
+                        }
+                    }
+                }
+            });
+
+            batches_collector.into_inner().unwrap()
+        } else {
+            // No type adaptation, just process the batches
+            let result: Result<Vec<RecordBatch>> = batch_results
+                .into_iter()
+                .map(|batch_result| {
+                    batch_result
+                        .map_err(|e| anyhow::anyhow!("Failed to read record batch. Error: {}", e))
+                })
+                .collect();
+
+            result?
+        }
     };
 
     log_operation_complete("read", path, batches.len(), Some(start.elapsed()));
@@ -360,6 +421,8 @@ pub fn load_parquet_files_parallel<S: ::std::hash::BuildHasher + std::marker::Sy
     dir: &Path,
     schema: Option<&Schema>,
     pnr_filter: Option<&HashSet<String, S>>,
+    adapt_types: Option<bool>,
+    date_format_config: Option<&DateFormatConfig>,
 ) -> Result<Vec<RecordBatch>> {
     // Find all parquet files in the directory
     let parquet_files = find_parquet_files(dir)?;
@@ -372,6 +435,7 @@ pub fn load_parquet_files_parallel<S: ::std::hash::BuildHasher + std::marker::Sy
     // Clone schema and pnr_filter for sharing across threads
     let schema_arc = schema.map(|s| std::sync::Arc::new(s.clone()));
     let pnr_filter_arc = pnr_filter.map(std::sync::Arc::new);
+    let date_format_config_arc = date_format_config.map(|c| std::sync::Arc::new(c.clone()));
 
     // Process files in parallel using rayon
     let all_batches: Vec<Result<Vec<RecordBatch>>> = parquet_files
@@ -380,8 +444,15 @@ pub fn load_parquet_files_parallel<S: ::std::hash::BuildHasher + std::marker::Sy
             // Use clone of schema and pnr_filter
             let schema_ref = schema_arc.as_ref().map(std::convert::AsRef::as_ref);
             let pnr_filter_ref = pnr_filter_arc.as_deref();
+            let date_config_ref = date_format_config_arc.as_deref();
 
-            read_parquet::<S>(path, schema_ref, pnr_filter_ref.map(|v| &**v))
+            read_parquet::<S>(
+                path,
+                schema_ref,
+                pnr_filter_ref.map(|v| &**v),
+                adapt_types,
+                date_config_ref,
+            )
         })
         .collect();
 

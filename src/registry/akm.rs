@@ -6,8 +6,8 @@ use super::RegisterLoader;
 use super::schemas::akm::akm_schema;
 use crate::RecordBatch;
 use crate::Result;
-use crate::load_parquet_files_parallel;
 use crate::async_io::parallel_ops::load_parquet_files_parallel_with_pnr_filter_async;
+use crate::load_parquet_files_parallel;
 use arrow::datatypes::SchemaRef;
 use std::collections::HashSet;
 use std::path::Path;
@@ -21,7 +21,8 @@ pub struct AkmRegister {
 
 impl AkmRegister {
     /// Create a new AKM registry loader
-    #[must_use] pub fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self {
             schema: akm_schema(),
         }
@@ -61,7 +62,13 @@ impl RegisterLoader for AkmRegister {
         // Use optimized parallel loading for AKM data
         let pnr_filter_arc = pnr_filter.map(|f| std::sync::Arc::new(f.clone()));
         let pnr_filter_ref = pnr_filter_arc.as_ref().map(std::convert::AsRef::as_ref);
-        load_parquet_files_parallel(base_path, Some(self.schema.as_ref()), pnr_filter_ref)
+        load_parquet_files_parallel(
+            base_path,
+            Some(self.schema.as_ref()),
+            pnr_filter_ref,
+            None,
+            None,
+        )
     }
 
     /// Load records from the AKM register asynchronously
@@ -81,8 +88,12 @@ impl RegisterLoader for AkmRegister {
             // Use optimized async parallel loading for AKM data
             let pnr_filter_arc = pnr_filter.map(|f| std::sync::Arc::new(f.clone()));
             let pnr_filter_ref = pnr_filter_arc.as_ref().map(std::convert::AsRef::as_ref);
-            load_parquet_files_parallel_with_pnr_filter_async(base_path, Some(self.schema.as_ref()), pnr_filter_ref)
-                .await
+            load_parquet_files_parallel_with_pnr_filter_async(
+                base_path,
+                Some(self.schema.as_ref()),
+                pnr_filter_ref,
+            )
+            .await
         })
     }
 

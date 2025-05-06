@@ -2,6 +2,8 @@
 
 use parquet::schema::types::Type;
 
+pub mod adapters;
+
 /// A struct that represents the compatibility between parquet file schemas
 #[derive(Debug)]
 pub struct SchemaCompatibilityReport {

@@ -22,7 +22,10 @@ async fn test_async_read() -> par_reader::Result<()> {
     println!("Read {} record batches in {:?}", batches.len(), elapsed);
     println!(
         "Total rows: {}",
-        batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
+        batches
+            .iter()
+            .map(par_reader::RecordBatch::num_rows)
+            .sum::<usize>()
     );
 
     if let Some(first_batch) = batches.first() {
@@ -56,7 +59,10 @@ async fn test_async_filtering() -> par_reader::Result<()> {
     );
     println!(
         "Total filtered rows: {}",
-        batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
+        batches
+            .iter()
+            .map(par_reader::RecordBatch::num_rows)
+            .sum::<usize>()
     );
 
     Ok(())
@@ -79,7 +85,10 @@ async fn test_parallel_async_read() -> par_reader::Result<()> {
     println!("Read {} record batches in {:?}", batches.len(), elapsed);
     println!(
         "Total rows: {}",
-        batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
+        batches
+            .iter()
+            .map(par_reader::RecordBatch::num_rows)
+            .sum::<usize>()
     );
 
     Ok(())
@@ -144,7 +153,10 @@ async fn test_concurrent_async_operations() -> par_reader::Result<()> {
             } else {
                 "unknown"
             };
-            let registry_rows = batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>();
+            let registry_rows = batches
+                .iter()
+                .map(par_reader::RecordBatch::num_rows)
+                .sum::<usize>();
 
             println!(
                 "  {}: {} batches with {} rows",
@@ -190,8 +202,9 @@ async fn test_async_vs_sync_performance() -> par_reader::Result<()> {
     // Test synchronous read
     println!("Testing synchronous read:");
     let sync_start = std::time::Instant::now();
-    let sync_batches =
-        par_reader::read_parquet::<std::collections::hash_map::RandomState>(&path, None, None)?;
+    let sync_batches = par_reader::read_parquet::<std::collections::hash_map::RandomState>(
+        &path, None, None, None, None,
+    )?;
     let sync_elapsed = sync_start.elapsed();
 
     println!(
@@ -201,7 +214,10 @@ async fn test_async_vs_sync_performance() -> par_reader::Result<()> {
     );
     println!(
         "Sync total rows: {}",
-        sync_batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
+        sync_batches
+            .iter()
+            .map(par_reader::RecordBatch::num_rows)
+            .sum::<usize>()
     );
 
     // Test asynchronous read
@@ -217,7 +233,10 @@ async fn test_async_vs_sync_performance() -> par_reader::Result<()> {
     );
     println!(
         "Async total rows: {}",
-        async_batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
+        async_batches
+            .iter()
+            .map(par_reader::RecordBatch::num_rows)
+            .sum::<usize>()
     );
 
     // Compare performance

@@ -2,17 +2,17 @@
 //!
 //! This module contains registry loaders for LPR2 (Danish National Patient Registry version 2).
 
+use crate::RecordBatch;
+use crate::Result;
 use crate::registry::RegisterLoader;
 use crate::registry::schemas::lpr_adm::lpr_adm_schema;
 use crate::registry::schemas::lpr_bes::lpr_bes_schema;
 use crate::registry::schemas::lpr_diag::lpr_diag_schema;
-use crate::RecordBatch;
-use crate::Result;
 
-use crate::load_parquet_files_parallel;
 use crate::async_io::parallel_ops::load_parquet_files_parallel_with_pnr_filter_async;
-use crate::read_parquet;
 use crate::filter::async_filtering::read_parquet_with_optional_pnr_filter_async;
+use crate::load_parquet_files_parallel;
+use crate::read_parquet;
 use arrow::datatypes::SchemaRef;
 use std::collections::HashSet;
 use std::future::Future;
@@ -27,7 +27,8 @@ pub struct LprAdmRegister {
 
 impl LprAdmRegister {
     /// Create a new `LPR_ADM` registry loader
-    #[must_use] pub fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self {
             schema: lpr_adm_schema(),
         }
@@ -59,10 +60,22 @@ impl RegisterLoader for LprAdmRegister {
 
         if base_path.is_dir() {
             // Try to load all parquet files in the directory
-            load_parquet_files_parallel(base_path, Some(self.schema.as_ref()), pnr_filter_ref)
+            load_parquet_files_parallel(
+                base_path,
+                Some(self.schema.as_ref()),
+                pnr_filter_ref,
+                None,
+                None,
+            )
         } else {
             // Try to load a single file
-            read_parquet(base_path, Some(self.schema.as_ref()), pnr_filter_ref)
+            read_parquet(
+                base_path,
+                Some(self.schema.as_ref()),
+                pnr_filter_ref,
+                None,
+                None,
+            )
         }
     }
 
@@ -80,12 +93,17 @@ impl RegisterLoader for LprAdmRegister {
                 load_parquet_files_parallel_with_pnr_filter_async(
                     base_path,
                     Some(self.schema.as_ref()),
-                    pnr_filter_ref
+                    pnr_filter_ref,
                 )
                 .await
             } else {
                 // Try to load a single file
-                read_parquet_with_optional_pnr_filter_async(base_path, Some(self.schema.as_ref()), pnr_filter_ref).await
+                read_parquet_with_optional_pnr_filter_async(
+                    base_path,
+                    Some(self.schema.as_ref()),
+                    pnr_filter_ref,
+                )
+                .await
             }
         })
     }
@@ -99,7 +117,8 @@ pub struct LprDiagRegister {
 
 impl LprDiagRegister {
     /// Create a new `LPR_DIAG` registry loader
-    #[must_use] pub fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self {
             schema: lpr_diag_schema(),
         }
@@ -129,11 +148,23 @@ impl RegisterLoader for LprDiagRegister {
         if base_path.is_dir() {
             // Try to load all parquet files in the directory without PNR filtering
             // (because LPR_DIAG needs to be linked via RECNUM to get the PNR)
-            let batches = load_parquet_files_parallel::<std::collections::hash_map::RandomState>(base_path, Some(self.schema.as_ref()), None)?;
+            let batches = load_parquet_files_parallel::<std::collections::hash_map::RandomState>(
+                base_path,
+                Some(self.schema.as_ref()),
+                None,
+                None,
+                None,
+            )?;
             Ok(batches)
         } else {
             // Try to load a single file
-            let batches = read_parquet::<std::collections::hash_map::RandomState>(base_path, Some(self.schema.as_ref()), None)?;
+            let batches = read_parquet::<std::collections::hash_map::RandomState>(
+                base_path,
+                Some(self.schema.as_ref()),
+                None,
+                None,
+                None,
+            )?;
             Ok(batches)
         }
     }
@@ -146,14 +177,17 @@ impl RegisterLoader for LprDiagRegister {
         Box::pin(async move {
             if base_path.is_dir() {
                 // Try to load all parquet files in the directory without PNR filtering
-                let batches =
-                    load_parquet_files_parallel_with_pnr_filter_async::<std::collections::hash_map::RandomState>(base_path, Some(self.schema.as_ref()), None)
-                        .await?;
+                let batches = load_parquet_files_parallel_with_pnr_filter_async::<
+                    std::collections::hash_map::RandomState,
+                >(base_path, Some(self.schema.as_ref()), None)
+                .await?;
                 Ok(batches)
             } else {
                 // Try to load a single file
-                let batches =
-                    read_parquet_with_optional_pnr_filter_async::<std::collections::hash_map::RandomState>(base_path, Some(self.schema.as_ref()), None).await?;
+                let batches = read_parquet_with_optional_pnr_filter_async::<
+                    std::collections::hash_map::RandomState,
+                >(base_path, Some(self.schema.as_ref()), None)
+                .await?;
                 Ok(batches)
             }
         })
@@ -180,7 +214,8 @@ pub struct LprBesRegister {
 
 impl LprBesRegister {
     /// Create a new `LPR_BES` registry loader
-    #[must_use] pub fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self {
             schema: lpr_bes_schema(),
         }
@@ -210,11 +245,23 @@ impl RegisterLoader for LprBesRegister {
         if base_path.is_dir() {
             // Try to load all parquet files in the directory without PNR filtering
             // (because LPR_BES needs to be linked via RECNUM to get the PNR)
-            let batches = load_parquet_files_parallel::<std::collections::hash_map::RandomState>(base_path, Some(self.schema.as_ref()), None)?;
+            let batches = load_parquet_files_parallel::<std::collections::hash_map::RandomState>(
+                base_path,
+                Some(self.schema.as_ref()),
+                None,
+                None,
+                None,
+            )?;
             Ok(batches)
         } else {
             // Try to load a single file
-            let batches = read_parquet::<std::collections::hash_map::RandomState>(base_path, Some(self.schema.as_ref()), None)?;
+            let batches = read_parquet::<std::collections::hash_map::RandomState>(
+                base_path,
+                Some(self.schema.as_ref()),
+                None,
+                None,
+                None,
+            )?;
             Ok(batches)
         }
     }
@@ -227,14 +274,17 @@ impl RegisterLoader for LprBesRegister {
         Box::pin(async move {
             if base_path.is_dir() {
                 // Try to load all parquet files in the directory without PNR filtering
-                let batches =
-                    load_parquet_files_parallel_with_pnr_filter_async::<std::collections::hash_map::RandomState>(base_path, Some(self.schema.as_ref()), None)
-                        .await?;
+                let batches = load_parquet_files_parallel_with_pnr_filter_async::<
+                    std::collections::hash_map::RandomState,
+                >(base_path, Some(self.schema.as_ref()), None)
+                .await?;
                 Ok(batches)
             } else {
                 // Try to load a single file
-                let batches =
-                    read_parquet_with_optional_pnr_filter_async::<std::collections::hash_map::RandomState>(base_path, Some(self.schema.as_ref()), None).await?;
+                let batches = read_parquet_with_optional_pnr_filter_async::<
+                    std::collections::hash_map::RandomState,
+                >(base_path, Some(self.schema.as_ref()), None)
+                .await?;
                 Ok(batches)
             }
         })

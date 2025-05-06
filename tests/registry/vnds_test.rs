@@ -17,7 +17,7 @@ async fn test_vnds_basic_read() -> par_reader::Result<()> {
     let path = &vnds_files[0]; // Use the first available file
 
     let (elapsed, result) = timed_execution(|| {
-        read_parquet::<std::collections::hash_map::RandomState>(path, None, None)
+        read_parquet::<std::collections::hash_map::RandomState>(path, None, None, None, None)
     });
 
     let batches = result?;
@@ -57,7 +57,10 @@ async fn test_vnds_registry_manager() -> par_reader::Result<()> {
     println!("Loaded {} record batches", batches.len());
     println!(
         "Total rows: {}",
-        batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
+        batches
+            .iter()
+            .map(par_reader::RecordBatch::num_rows)
+            .sum::<usize>()
     );
 
     // Print schema of first batch if available
@@ -84,7 +87,7 @@ async fn test_vnds_parallel_read() -> par_reader::Result<()> {
 
     let (elapsed, result) = timed_execution(|| {
         load_parquet_files_parallel::<std::collections::hash_map::RandomState>(
-            &vnds_dir, None, None,
+            &vnds_dir, None, None, None, None,
         )
     });
 

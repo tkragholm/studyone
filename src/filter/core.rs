@@ -328,14 +328,15 @@ pub fn read_parquet_with_filter(
     filter: Arc<dyn BatchFilter + Send + Sync>,
 ) -> Result<Vec<RecordBatch>> {
     // Read the file
-    let batches =
-        crate::utils::read_parquet::<std::collections::hash_map::RandomState>(path, None, None)
-            .with_context(|| {
-                format!(
-                    "Failed to read Parquet file for filtering (path: {})",
-                    path.display()
-                )
-            })?;
+    let batches = crate::utils::read_parquet::<std::collections::hash_map::RandomState>(
+        path, None, None, None, None,
+    )
+    .with_context(|| {
+        format!(
+            "Failed to read Parquet file for filtering (path: {})",
+            path.display()
+        )
+    })?;
 
     // Filter each batch
     let mut filtered_batches = Vec::new();

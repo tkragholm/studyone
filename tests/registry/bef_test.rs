@@ -9,14 +9,17 @@ use par_reader::{RegistryManager, load_parquet_files_parallel, read_parquet};
 #[tokio::test]
 async fn test_bef_basic_read() -> par_reader::Result<()> {
     let path = registry_file("bef", "2020.parquet");
-    
+
     if !path.exists() {
-        println!("BEF test file not found at {}. Skipping test.", path.display());
+        println!(
+            "BEF test file not found at {}. Skipping test.",
+            path.display()
+        );
         return Ok(());
     }
-    
+
     let (elapsed, result) = timed_execution(|| {
-        read_parquet::<std::collections::hash_map::RandomState>(&path, None, None)
+        read_parquet::<std::collections::hash_map::RandomState>(&path, None, None, None, None)
     });
 
     let batches = result?;
@@ -36,7 +39,9 @@ async fn test_bef_parallel_read() -> par_reader::Result<()> {
     ensure_path_exists(&bef_dir)?;
 
     let (elapsed, result) = timed_execution(|| {
-        load_parquet_files_parallel::<std::collections::hash_map::RandomState>(&bef_dir, None, None)
+        load_parquet_files_parallel::<std::collections::hash_map::RandomState>(
+            &bef_dir, None, None, None, None,
+        )
     });
 
     let batches = result?;
@@ -67,7 +72,10 @@ async fn test_bef_registry_manager() -> par_reader::Result<()> {
     println!("Loaded {} record batches", batches.len());
     println!(
         "Total rows: {}",
-        batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
+        batches
+            .iter()
+            .map(par_reader::RecordBatch::num_rows)
+            .sum::<usize>()
     );
 
     // Print schema of first batch if available
@@ -108,7 +116,10 @@ async fn test_bef_pnr_filter() -> par_reader::Result<()> {
         println!(
             "{registry}: {} batches with {} total rows",
             batches.len(),
-            batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
+            batches
+                .iter()
+                .map(par_reader::RecordBatch::num_rows)
+                .sum::<usize>()
         );
 
         // Print schema of first batch if available

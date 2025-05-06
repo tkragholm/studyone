@@ -10,7 +10,7 @@ async fn test_lpr_adm_basic_read() -> par_reader::Result<()> {
     ensure_path_exists(&path)?;
 
     let (elapsed, result) = timed_execution(|| {
-        read_parquet::<std::collections::hash_map::RandomState>(&path, None, None)
+        read_parquet::<std::collections::hash_map::RandomState>(&path, None, None, None, None)
     });
 
     let batches = result?;
@@ -34,6 +34,8 @@ async fn test_lpr_adm_parallel_read() -> par_reader::Result<()> {
             &lpr_adm_dir,
             None,
             None,
+            None,
+            None,
         )
     });
 
@@ -53,7 +55,8 @@ async fn test_lpr_adm_date_transformation() -> par_reader::Result<()> {
     let path = registry_file("lpr_adm", "2020.parquet");
     ensure_path_exists(&path)?;
 
-    let result = read_parquet::<std::collections::hash_map::RandomState>(&path, None, None)?;
+    let result =
+        read_parquet::<std::collections::hash_map::RandomState>(&path, None, None, None, None)?;
 
     if let Some(first_batch) = result.first() {
         // Check if the file has the expected date column (assuming INDLÆGGELSESDATO is the date)
@@ -108,7 +111,10 @@ async fn test_lpr_adm_registry_manager() -> par_reader::Result<()> {
     println!("Loaded {} record batches", batches.len());
     println!(
         "Total rows: {}",
-        batches.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
+        batches
+            .iter()
+            .map(par_reader::RecordBatch::num_rows)
+            .sum::<usize>()
     );
 
     // Print schema of first batch if available
