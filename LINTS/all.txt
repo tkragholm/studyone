@@ -1,0 +1,13 @@
+par-reader on  main is 📦 v0.1.0 via 🦀 v1.86.0
+❯ cargo clippy --fix --message-format=short -- -W clippy::all
+    Checking par-reader v0.1.0 (/Users/tobiaskragholm/par-reader)
+src/algorithm/population/core.rs:220:13: warning: value assigned to `progress` is never read
+src/models/adapters/bef_adapter.rs:357:10: warning: very complex type used. Consider factoring parts into `type` definitions
+src/models/adapters/bef_adapter.rs:358:32: warning: very complex type used. Consider factoring parts into `type` definitions
+src/models/adapters/mfr_adapter.rs:35:10: warning: very complex type used. Consider factoring parts into `type` definitions
+warning: `par-reader` (lib) generated 4 warnings
+warning: `par-reader` (lib test) generated 4 warnings (4 duplicates)
+tests/algorithm/population/population_test.rs:39:9: warning: unused variable: `builder`: help: if this is intentional, prefix it with an underscore: `_builder`
+tests/algorithm/population/population_test.rs:52:5: warning: `assert!(true)` will be optimized out by the compiler
+warning: `par-reader` (test "lib") generated 2 warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.30s
