@@ -55,7 +55,7 @@ impl Default for LprConfig {
     }
 }
 
-/// Integrate LPR2 components (LPR_ADM, LPR_DIAG, and optionally LPR_BES)
+/// Integrate LPR2 components (`LPR_ADM`, `LPR_DIAG`, and optionally `LPR_BES`)
 pub fn integrate_lpr2_components(
     lpr_adm: &RecordBatch,
     lpr_diag: &RecordBatch,
@@ -254,7 +254,7 @@ pub fn integrate_lpr2_components(
     Ok(diagnosis_collection)
 }
 
-/// Integrate LPR3 components (LPR3_KONTAKTER and LPR3_DIAGNOSER)
+/// Integrate LPR3 components (`LPR3_KONTAKTER` and `LPR3_DIAGNOSER`)
 pub fn integrate_lpr3_components(
     lpr3_kontakter: &RecordBatch,
     lpr3_diagnoser: &RecordBatch,
@@ -482,13 +482,13 @@ pub fn process_lpr_data(
     combine_diagnosis_collections(lpr2_collection, lpr3_collection)
 }
 
-/// Convert Arrow Date32 value to NaiveDate
+/// Convert Arrow Date32 value to `NaiveDate`
 fn arrow_date_to_naive_date(days_since_epoch: i32) -> NaiveDate {
     let epoch = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap();
     epoch + chrono::Days::new(days_since_epoch as u64)
 }
 
-/// Extension trait for DiagnosisCollection
+/// Extension trait for `DiagnosisCollection`
 pub trait DiagnosisCollectionExt {
     /// Get all PNRs in the collection
     fn get_all_pnrs(&self) -> Vec<String>;

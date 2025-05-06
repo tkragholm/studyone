@@ -32,7 +32,7 @@ pub enum ScdCategory {
 }
 
 impl ScdCategory {
-    /// Convert a numeric category ID to ScdCategory
+    /// Convert a numeric category ID to `ScdCategory`
     #[must_use]
     pub const fn from_u8(id: u8) -> Self {
         match id {

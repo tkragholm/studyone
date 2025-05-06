@@ -65,7 +65,7 @@ pub struct BalanceReport {
 
 impl BalanceReport {
     /// Generate a string representation of the report
-    pub fn to_string(&self) -> String {
+    #[must_use] pub fn to_string(&self) -> String {
         let mut output = String::new();
 
         // Add summary information
@@ -271,8 +271,8 @@ impl BalanceCalculator {
     ///
     /// # Arguments
     ///
-    /// * `case_batch` - RecordBatch containing case records
-    /// * `control_batch` - RecordBatch containing control records
+    /// * `case_batch` - `RecordBatch` containing case records
+    /// * `control_batch` - `RecordBatch` containing control records
     ///
     /// # Returns
     ///
@@ -329,8 +329,7 @@ impl BalanceCalculator {
                     match self.calculate_numeric_balance(case_batch, control_batch, column_name) {
                         Ok(metric) => metrics.push(metric),
                         Err(e) => warn!(
-                            "Failed to calculate balance for numeric column {}: {}",
-                            column_name, e
+                            "Failed to calculate balance for numeric column {column_name}: {e}"
                         ),
                     }
                 }
@@ -339,8 +338,7 @@ impl BalanceCalculator {
                     {
                         Ok(metric) => metrics.push(metric),
                         Err(e) => warn!(
-                            "Failed to calculate balance for categorical column {}: {}",
-                            column_name, e
+                            "Failed to calculate balance for categorical column {column_name}: {e}"
                         ),
                     }
                 }
@@ -348,15 +346,13 @@ impl BalanceCalculator {
                     match self.calculate_boolean_balance(case_batch, control_batch, column_name) {
                         Ok(metric) => metrics.push(metric),
                         Err(e) => warn!(
-                            "Failed to calculate balance for boolean column {}: {}",
-                            column_name, e
+                            "Failed to calculate balance for boolean column {column_name}: {e}"
                         ),
                     }
                 }
                 DataType::Date32 | DataType::Date64 => {
                     warn!(
-                        "Date column {} not supported yet for balance calculation",
-                        column_name
+                        "Date column {column_name} not supported yet for balance calculation"
                     );
                 }
                 _ => {
@@ -503,8 +499,7 @@ impl BalanceCalculator {
         // Skip if too few values
         if case_total < self.min_observations || control_total < self.min_observations {
             return Err(ParquetReaderError::ValidationError(format!(
-                "Too few non-missing values for categorical column {column_name} (case: {}, control: {})",
-                case_total, control_total
+                "Too few non-missing values for categorical column {column_name} (case: {case_total}, control: {control_total})"
             )).into());
         }
 
@@ -525,10 +520,10 @@ impl BalanceCalculator {
 
         // Calculate proportion with most common category
         let case_count = case_categories.get(&most_common_category).unwrap_or(&0);
-        let case_proportion = *case_count as f64 / case_total as f64;
+        let case_proportion = f64::from(*case_count) / case_total as f64;
 
         let control_count = control_categories.get(&most_common_category).unwrap_or(&0);
-        let control_proportion = *control_count as f64 / control_total as f64;
+        let control_proportion = f64::from(*control_count) / control_total as f64;
 
         // For proportions, using special formula for standardized difference
         let case_std = (case_proportion * (1.0 - case_proportion)).sqrt();
@@ -620,14 +615,13 @@ impl BalanceCalculator {
         // Skip if too few values
         if case_total < self.min_observations || control_total < self.min_observations {
             return Err(ParquetReaderError::ValidationError(format!(
-                "Too few non-missing values for boolean column {column_name} (case: {}, control: {})",
-                case_total, control_total
+                "Too few non-missing values for boolean column {column_name} (case: {case_total}, control: {control_total})"
             )).into());
         }
 
         // Calculate proportions
-        let case_proportion = case_true_count as f64 / case_total as f64;
-        let control_proportion = control_true_count as f64 / control_total as f64;
+        let case_proportion = f64::from(case_true_count) / case_total as f64;
+        let control_proportion = f64::from(control_true_count) / control_total as f64;
 
         // For proportions, using special formula for standardized difference
         let case_std = (case_proportion * (1.0 - case_proportion)).sqrt();
@@ -700,7 +694,7 @@ fn extract_numeric_values(array: &arrow::array::ArrayRef, values: &mut Vec<f64>)
             if let Some(int_array) = array.as_any().downcast_ref::<Int32Array>() {
                 for i in 0..int_array.len() {
                     if !int_array.is_null(i) {
-                        values.push(int_array.value(i) as f64);
+                        values.push(f64::from(int_array.value(i)));
                     }
                 }
             }
@@ -718,7 +712,7 @@ fn extract_numeric_values(array: &arrow::array::ArrayRef, values: &mut Vec<f64>)
             if let Some(float_array) = array.as_any().downcast_ref::<Float32Array>() {
                 for i in 0..float_array.len() {
                     if !float_array.is_null(i) {
-                        let val = float_array.value(i) as f64;
+                        let val = f64::from(float_array.value(i));
                         if val.is_finite() {
                             values.push(val);
                         }

@@ -17,7 +17,7 @@ pub enum SeverityLevel {
 }
 
 impl SeverityLevel {
-    /// Convert a numeric severity level (1-3) to SeverityLevel
+    /// Convert a numeric severity level (1-3) to `SeverityLevel`
     #[must_use]
     pub const fn from_i32(level: i32) -> Self {
         match level {

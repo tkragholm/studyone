@@ -226,8 +226,8 @@ impl Matcher {
     ///
     /// # Arguments
     ///
-    /// * `cases` - RecordBatch containing case records
-    /// * `controls` - RecordBatch containing control records
+    /// * `cases` - `RecordBatch` containing case records
+    /// * `controls` - `RecordBatch` containing control records
     ///
     /// # Returns
     ///
@@ -378,7 +378,7 @@ impl Matcher {
         Ok(())
     }
 
-    /// Extract attributes from a RecordBatch with indices
+    /// Extract attributes from a `RecordBatch` with indices
     fn extract_attributes_with_indices(&self, batch: &RecordBatch) -> Result<ExtractedAttributes> {
         let pnr_idx = batch
             .schema()
@@ -398,12 +398,9 @@ impl Matcher {
 
         // Family size is optional based on criteria
         let family_size_idx = if self.config.criteria.match_family_size {
-            match batch.schema().index_of("ANTAL_BOERN") {
-                Ok(idx) => Some(idx),
-                Err(_) => {
-                    warn!("ANTAL_BOERN column not found but family size matching is enabled");
-                    None
-                }
+            if let Ok(idx) = batch.schema().index_of("ANTAL_BOERN") { Some(idx) } else {
+                warn!("ANTAL_BOERN column not found but family size matching is enabled");
+                None
             }
         } else {
             None
@@ -879,7 +876,7 @@ impl Matcher {
         Ok(())
     }
 
-    /// Filter a RecordBatch by row indices
+    /// Filter a `RecordBatch` by row indices
     fn filter_batch_by_indices(
         &self,
         batch: &RecordBatch,

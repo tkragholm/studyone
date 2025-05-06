@@ -184,7 +184,7 @@ impl RegistryIntegration {
                     let updated = self.collection.update_child(&child_pnr, child_with_details);
 
                     if updated {
-                        log::debug!("Updated child {} with birth details", child_pnr);
+                        log::debug!("Updated child {child_pnr} with birth details");
                     }
                 }
             }
@@ -368,7 +368,7 @@ impl RegistryIntegration {
                             let updated = self.collection.update_child(child_pnr, child_with_scd);
 
                             if updated {
-                                log::debug!("Updated child {} with SCD status", child_pnr);
+                                log::debug!("Updated child {child_pnr} with SCD status");
                             }
 
                             scd_count += 1;
@@ -420,7 +420,7 @@ impl RegistryIntegration {
                         // Update the parent in the collection
                         let updated = self.collection.update_parent(mother_pnr, updated_mother);
                         if updated {
-                            log::debug!("Updated mother {} with income data", mother_pnr);
+                            log::debug!("Updated mother {mother_pnr} with income data");
                         }
 
                         // Count the records
@@ -449,7 +449,7 @@ impl RegistryIntegration {
                         // Update the parent in the collection
                         let updated = self.collection.update_parent(father_pnr, updated_father);
                         if updated {
-                            log::debug!("Updated father {} with income data", father_pnr);
+                            log::debug!("Updated father {father_pnr} with income data");
                         }
 
                         // Count the records
@@ -741,8 +741,7 @@ impl RegistryIntegration {
                         let updated = self.collection.update_family(&family_id, updated_family);
                         if updated {
                             log::debug!(
-                                "Updated family {} with enhanced sibling information",
-                                family_id
+                                "Updated family {family_id} with enhanced sibling information"
                             );
                         }
                     }

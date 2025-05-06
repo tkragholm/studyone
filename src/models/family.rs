@@ -322,7 +322,7 @@ impl FamilyCollection {
 
     /// Update a family in the collection with a new version
     /// 
-    /// This replaces the existing family with the given family_id with a new version.
+    /// This replaces the existing family with the given `family_id` with a new version.
     /// Returns true if the family was found and updated, false otherwise.
     pub fn update_family(&mut self, family_id: &str, updated_family: Family) -> bool {
         if self.families.contains_key(family_id) {

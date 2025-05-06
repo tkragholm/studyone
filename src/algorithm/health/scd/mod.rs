@@ -107,13 +107,13 @@ fn process_diagnosis(
         let age_at_diagnosis = (date - *birth_date).num_days() / 365;
 
         if let Some(min_age) = config.min_age_years {
-            if age_at_diagnosis < min_age as i64 {
+            if age_at_diagnosis < i64::from(min_age) {
                 return Ok(());
             }
         }
 
         if let Some(max_age) = config.max_age_years {
-            if age_at_diagnosis > max_age as i64 {
+            if age_at_diagnosis > i64::from(max_age) {
                 return Ok(());
             }
         }
@@ -136,7 +136,7 @@ fn process_diagnosis(
 }
 
 /// Categorize a diagnosis based on ICD-10 code
-/// Returns (category, is_congenital, severity) if it's an SCD diagnosis, None otherwise
+/// Returns (category, `is_congenital`, severity) if it's an SCD diagnosis, None otherwise
 fn categorize_diagnosis(diagnosis_code: &str) -> Option<(ScdCategory, bool, SeverityLevel)> {
     // Clean and normalize the diagnosis code
     let clean_code = diagnosis_code.trim().to_uppercase();
@@ -406,7 +406,7 @@ fn categorize_diagnosis(diagnosis_code: &str) -> Option<(ScdCategory, bool, Seve
 }
 
 /// Get all individuals with SCD from the results
-pub fn get_individuals_with_scd(scd_results: &HashMap<String, ScdResult>) -> Vec<String> {
+#[must_use] pub fn get_individuals_with_scd(scd_results: &HashMap<String, ScdResult>) -> Vec<String> {
     scd_results
         .iter()
         .filter(|(_, result)| result.has_scd)
@@ -415,7 +415,7 @@ pub fn get_individuals_with_scd(scd_results: &HashMap<String, ScdResult>) -> Vec
 }
 
 /// Get individuals with a specific SCD category
-pub fn get_individuals_by_category(
+#[must_use] pub fn get_individuals_by_category(
     scd_results: &HashMap<String, ScdResult>,
     category: ScdCategory,
 ) -> Vec<String> {
@@ -427,7 +427,7 @@ pub fn get_individuals_by_category(
 }
 
 /// Get individuals by severity level
-pub fn get_individuals_by_severity(
+#[must_use] pub fn get_individuals_by_severity(
     scd_results: &HashMap<String, ScdResult>,
     min_severity: SeverityLevel,
 ) -> Vec<String> {
@@ -438,7 +438,7 @@ pub fn get_individuals_by_severity(
         .collect()
 }
 
-/// Extension trait for DiagnosisCollection
+/// Extension trait for `DiagnosisCollection`
 pub trait DiagnosisCollectionExt {
     /// Get all individuals who have any diagnoses
     fn individuals_with_diagnoses(&self) -> Vec<String>;
