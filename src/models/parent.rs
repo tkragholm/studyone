@@ -87,7 +87,7 @@ impl Parent {
     /// Get a reference to the underlying Individual
     #[must_use]
     pub fn individual(&self) -> &Individual {
-        &self.individual
+        self.individual.as_ref()
     }
 
     /// Set the employment status
