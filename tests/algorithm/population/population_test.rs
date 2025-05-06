@@ -1,9 +1,8 @@
 //! Tests for population generation functionality
 
-use std::path::Path;
 use chrono::NaiveDate;
 use par_reader::algorithm::population::{
-    Population, PopulationBuilder, PopulationConfig, PopulationFilter, FilterCriteria
+    PopulationBuilder, PopulationConfig
 };
 
 #[test]
@@ -11,8 +10,8 @@ fn test_population_config() {
     // Test default configuration
     let config = PopulationConfig::default();
     assert_eq!(config.index_date, NaiveDate::from_ymd_opt(2015, 1, 1).unwrap());
-    assert_eq!(config.resident_only, true);
-    assert_eq!(config.two_parent_only, false);
+    assert!(config.resident_only);
+    assert!(!config.two_parent_only);
     
     // Test custom configuration
     let custom_config = PopulationConfig {
@@ -28,8 +27,8 @@ fn test_population_config() {
     assert_eq!(custom_config.index_date, NaiveDate::from_ymd_opt(2020, 1, 1).unwrap());
     assert_eq!(custom_config.min_age, Some(5));
     assert_eq!(custom_config.max_age, Some(18));
-    assert_eq!(custom_config.resident_only, true);
-    assert_eq!(custom_config.two_parent_only, true);
+    assert!(custom_config.resident_only);
+    assert!(custom_config.two_parent_only);
     assert_eq!(custom_config.study_start_date, Some(NaiveDate::from_ymd_opt(2018, 1, 1).unwrap()));
     assert_eq!(custom_config.study_end_date, Some(NaiveDate::from_ymd_opt(2022, 12, 31).unwrap()));
 }
@@ -59,7 +58,7 @@ fn test_population_builder() {
 // This macro is included to allow these tests to be discovered by the test runner
 #[cfg(test)]
 mod tests {
-    use super::*;
+    
 
     // Add any additional test-specific helper functions here
 }
