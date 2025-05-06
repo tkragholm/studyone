@@ -10,6 +10,7 @@ pub mod error;
 #[doc(inline)]
 pub use error::ResultExt;
 pub mod filter;
+pub mod models;
 pub mod pnr_filter;
 pub mod reader;
 pub mod registry;
@@ -28,6 +29,16 @@ pub use schema::{SchemaCompatibilityReport, SchemaIssue};
 pub use arrow::datatypes::Schema as ArrowSchema;
 pub use arrow::datatypes::SchemaRef;
 pub use arrow::record_batch::RecordBatch;
+
+// Domain models
+pub use models::{
+    Individual,
+    Family,
+    Parent,
+    Child,
+    Diagnosis,
+    Income,
+};
 
 // Filtering capabilities
 pub use filter::{Expr, LiteralValue};
