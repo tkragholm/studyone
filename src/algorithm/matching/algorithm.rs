@@ -391,10 +391,7 @@ impl Matcher {
 
         // Gender is optional based on criteria
         let gender_idx = if self.config.criteria.require_same_gender {
-            match batch.schema().index_of("KOEN") {
-                Ok(idx) => Some(idx),
-                Err(_) => None,
-            }
+            batch.schema().index_of("KOEN").ok()
         } else {
             None
         };
@@ -443,7 +440,7 @@ impl Matcher {
             }
 
             // Extract birth date
-            let birth_date = match arrow_array_to_date(&birth_date_col, i) {
+            let birth_date = match arrow_array_to_date(birth_date_col, i) {
                 Some(date) => date,
                 None => continue, // Skip if birth date is missing
             };

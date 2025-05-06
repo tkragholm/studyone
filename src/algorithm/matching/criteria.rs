@@ -125,6 +125,12 @@ pub struct MatchingCriteriaBuilder {
     criteria: MatchingCriteria,
 }
 
+impl Default for MatchingCriteriaBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MatchingCriteriaBuilder {
     /// Create a new builder with default criteria
     #[must_use]
@@ -260,6 +266,12 @@ impl MatchingConfig {
 #[derive(Debug, Clone)]
 pub struct MatchingConfigBuilder {
     config: MatchingConfig,
+}
+
+impl Default for MatchingConfigBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl MatchingConfigBuilder {
