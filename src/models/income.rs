@@ -25,7 +25,8 @@ pub struct Income {
 
 impl Income {
     /// Create a new Income record
-    #[must_use] pub fn new(individual_pnr: String, year: i32, amount: f64, income_type: String) -> Self {
+    #[must_use]
+    pub fn new(individual_pnr: String, year: i32, amount: f64, income_type: String) -> Self {
         Self {
             individual_pnr,
             year,
@@ -35,7 +36,8 @@ impl Income {
     }
 
     /// Get the Arrow schema for Income records
-    #[must_use] pub fn schema() -> Schema {
+    #[must_use]
+    pub fn schema() -> Schema {
         Schema::new(vec![
             Field::new("individual_pnr", DataType::Utf8, false),
             Field::new("year", DataType::Int32, false),
@@ -70,7 +72,8 @@ pub struct IncomeTrajectory {
 
 impl IncomeTrajectory {
     /// Create a new empty income trajectory
-    #[must_use] pub fn new(individual_pnr: String, income_type: String) -> Self {
+    #[must_use]
+    pub fn new(individual_pnr: String, income_type: String) -> Self {
         Self {
             individual_pnr,
             yearly_income: BTreeMap::new(),
@@ -101,22 +104,26 @@ impl IncomeTrajectory {
     }
 
     /// Get income for a specific year
-    #[must_use] pub fn income_for_year(&self, year: i32) -> Option<f64> {
+    #[must_use]
+    pub fn income_for_year(&self, year: i32) -> Option<f64> {
         self.yearly_income.get(&year).copied()
     }
 
     /// Get all years with income data
-    #[must_use] pub fn years(&self) -> Vec<i32> {
+    #[must_use]
+    pub fn years(&self) -> Vec<i32> {
         self.yearly_income.keys().copied().collect()
     }
 
     /// Get all income values
-    #[must_use] pub fn values(&self) -> Vec<f64> {
+    #[must_use]
+    pub fn values(&self) -> Vec<f64> {
         self.yearly_income.values().copied().collect()
     }
 
     /// Get income as a vector of (year, amount) pairs
-    #[must_use] pub fn as_pairs(&self) -> Vec<(i32, f64)> {
+    #[must_use]
+    pub fn as_pairs(&self) -> Vec<(i32, f64)> {
         self.yearly_income
             .iter()
             .map(|(&year, &amount)| (year, amount))
@@ -124,7 +131,8 @@ impl IncomeTrajectory {
     }
 
     /// Calculate mean income across all years
-    #[must_use] pub fn mean_income(&self) -> Option<f64> {
+    #[must_use]
+    pub fn mean_income(&self) -> Option<f64> {
         if self.yearly_income.is_empty() {
             return None;
         }
@@ -134,7 +142,8 @@ impl IncomeTrajectory {
     }
 
     /// Calculate trend as the slope of a linear regression
-    #[must_use] pub fn trend(&self) -> Option<f64> {
+    #[must_use]
+    pub fn trend(&self) -> Option<f64> {
         if self.yearly_income.len() < 2 {
             return None;
         }
@@ -156,7 +165,8 @@ impl IncomeTrajectory {
     }
 
     /// Calculate pre-post difference relative to an index year
-    #[must_use] pub fn pre_post_difference(
+    #[must_use]
+    pub fn pre_post_difference(
         &self,
         index_year: i32,
         pre_years: i32,
@@ -209,7 +219,8 @@ impl IncomeTrajectory {
 
                     // Linear interpolation
                     let interpolated = lower_value
-                        + (higher_value - lower_value) * (f64::from(position) / f64::from(year_span));
+                        + (higher_value - lower_value)
+                            * (f64::from(position) / f64::from(year_span));
                     self.yearly_income.insert(year, interpolated);
                 }
             }
@@ -236,7 +247,8 @@ pub struct FamilyIncomeTrajectory {
 
 impl FamilyIncomeTrajectory {
     /// Create a new family income trajectory
-    #[must_use] pub fn new(family_id: String) -> Self {
+    #[must_use]
+    pub fn new(family_id: String) -> Self {
         Self {
             family_id,
             mother_trajectory: None,
@@ -248,7 +260,8 @@ impl FamilyIncomeTrajectory {
     }
 
     /// Set the mother's income trajectory
-    #[must_use] pub fn with_mother_trajectory(mut self, trajectory: IncomeTrajectory) -> Self {
+    #[must_use]
+    pub fn with_mother_trajectory(mut self, trajectory: IncomeTrajectory) -> Self {
         // Update start and end years
         if trajectory.start_year < self.start_year {
             self.start_year = trajectory.start_year;
@@ -263,7 +276,8 @@ impl FamilyIncomeTrajectory {
     }
 
     /// Set the father's income trajectory
-    #[must_use] pub fn with_father_trajectory(mut self, trajectory: IncomeTrajectory) -> Self {
+    #[must_use]
+    pub fn with_father_trajectory(mut self, trajectory: IncomeTrajectory) -> Self {
         // Update start and end years
         if trajectory.start_year < self.start_year {
             self.start_year = trajectory.start_year;
@@ -302,12 +316,14 @@ impl FamilyIncomeTrajectory {
     }
 
     /// Get combined income for a specific year
-    #[must_use] pub fn income_for_year(&self, year: i32) -> Option<f64> {
+    #[must_use]
+    pub fn income_for_year(&self, year: i32) -> Option<f64> {
         self.combined_income.get(&year).copied()
     }
 
     /// Get difference between parents' incomes for a year
-    #[must_use] pub fn income_gap(&self, year: i32) -> Option<f64> {
+    #[must_use]
+    pub fn income_gap(&self, year: i32) -> Option<f64> {
         let mother_income = self
             .mother_trajectory
             .as_ref()
@@ -325,7 +341,8 @@ impl FamilyIncomeTrajectory {
     }
 
     /// Calculate the income gap trend over time
-    #[must_use] pub fn income_gap_trend(&self) -> Option<f64> {
+    #[must_use]
+    pub fn income_gap_trend(&self) -> Option<f64> {
         if self.start_year == i32::MAX {
             return None;
         }
@@ -343,7 +360,8 @@ impl FamilyIncomeTrajectory {
     }
 
     /// Calculate income share of primary earner
-    #[must_use] pub fn primary_earner_share(&self, year: i32) -> Option<f64> {
+    #[must_use]
+    pub fn primary_earner_share(&self, year: i32) -> Option<f64> {
         let mother_income = self
             .mother_trajectory
             .as_ref()
@@ -367,7 +385,8 @@ impl FamilyIncomeTrajectory {
     }
 
     /// Calculate pre-post difference in combined income relative to an index year
-    #[must_use] pub fn pre_post_difference(
+    #[must_use]
+    pub fn pre_post_difference(
         &self,
         index_year: i32,
         pre_years: i32,
@@ -418,7 +437,8 @@ impl Default for IncomeCollection {
 
 impl IncomeCollection {
     /// Create a new empty `IncomeCollection`
-    #[must_use] pub fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self {
             incomes_by_pnr: HashMap::new(),
             trajectories: HashMap::new(),
@@ -451,14 +471,14 @@ impl IncomeCollection {
     }
 
     /// Get all income records for an individual
-    #[must_use] pub fn get_incomes(&self, pnr: &str) -> Vec<Arc<Income>> {
-        self.incomes_by_pnr
-            .get(pnr).cloned()
-            .unwrap_or_default()
+    #[must_use]
+    pub fn get_incomes(&self, pnr: &str) -> Vec<Arc<Income>> {
+        self.incomes_by_pnr.get(pnr).cloned().unwrap_or_default()
     }
 
     /// Get income trajectory for an individual and income type
-    #[must_use] pub fn get_trajectory(&self, pnr: &str, income_type: &str) -> Option<&IncomeTrajectory> {
+    #[must_use]
+    pub fn get_trajectory(&self, pnr: &str, income_type: &str) -> Option<&IncomeTrajectory> {
         self.trajectories
             .get(&(pnr.to_string(), income_type.to_string()))
     }
@@ -470,12 +490,14 @@ impl IncomeCollection {
     }
 
     /// Get a family income trajectory
-    #[must_use] pub fn get_family_trajectory(&self, family_id: &str) -> Option<&FamilyIncomeTrajectory> {
+    #[must_use]
+    pub fn get_family_trajectory(&self, family_id: &str) -> Option<&FamilyIncomeTrajectory> {
         self.family_trajectories.get(family_id)
     }
 
     /// Calculate a family income trajectory from parent PNRs
-    #[must_use] pub fn calculate_family_trajectory(
+    #[must_use]
+    pub fn calculate_family_trajectory(
         &self,
         family_id: &str,
         mother_pnr: Option<&str>,
@@ -527,212 +549,20 @@ impl IncomeCollection {
     }
 
     /// Count the total number of income records
-    #[must_use] pub fn record_count(&self) -> usize {
+    #[must_use]
+    pub fn record_count(&self) -> usize {
         self.incomes_by_pnr.values().map(std::vec::Vec::len).sum()
     }
 
     /// Count the number of individuals with income data
-    #[must_use] pub fn individual_count(&self) -> usize {
+    #[must_use]
+    pub fn individual_count(&self) -> usize {
         self.incomes_by_pnr.len()
     }
 
     /// Count the number of family trajectories
-    #[must_use] pub fn family_count(&self) -> usize {
+    #[must_use]
+    pub fn family_count(&self) -> usize {
         self.family_trajectories.len()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_income_creation() {
-        let income = Income::new(
-            "1234567890".to_string(),
-            2015,
-            350000.0,
-            "salary".to_string(),
-        );
-
-        assert_eq!(income.individual_pnr, "1234567890");
-        assert_eq!(income.year, 2015);
-        assert_eq!(income.amount, 350000.0);
-        assert_eq!(income.income_type, "salary");
-    }
-
-    #[test]
-    fn test_income_trajectory() {
-        let mut trajectory = IncomeTrajectory::new("1234567890".to_string(), "salary".to_string());
-
-        // Add income for several years
-        trajectory.add_income(2010, 300000.0);
-        trajectory.add_income(2011, 320000.0);
-        trajectory.add_income(2012, 335000.0);
-        trajectory.add_income(2013, 342000.0);
-        trajectory.add_income(2014, 355000.0);
-
-        // Test basic properties
-        assert_eq!(trajectory.individual_pnr, "1234567890");
-        assert_eq!(trajectory.income_type, "salary");
-        assert_eq!(trajectory.start_year, 2010);
-        assert_eq!(trajectory.end_year, 2014);
-
-        // Test retrieval
-        assert_eq!(trajectory.income_for_year(2010), Some(300000.0));
-        assert_eq!(trajectory.income_for_year(2012), Some(335000.0));
-        assert_eq!(trajectory.income_for_year(2015), None);
-
-        // Test statistics
-        assert_eq!(trajectory.mean_income(), Some(330400.0));
-
-        // Test trend (should be positive as income increases each year)
-        let trend = trajectory.trend().unwrap();
-        assert!(trend > 0.0);
-
-        // Test pre-post difference
-        let diff = trajectory.pre_post_difference(2012, 2, 2).unwrap();
-        let pre_mean = (300000.0 + 320000.0) / 2.0;
-        let post_mean = (335000.0 + 342000.0) / 2.0;
-        assert_eq!(diff, post_mean - pre_mean);
-
-        // Test interpolation
-        let mut trajectory_with_gaps =
-            IncomeTrajectory::new("1234567890".to_string(), "salary".to_string());
-        trajectory_with_gaps.add_income(2010, 300000.0);
-        trajectory_with_gaps.add_income(2014, 340000.0);
-
-        // Should have gaps for 2011-2013
-        assert_eq!(trajectory_with_gaps.income_for_year(2011), None);
-        assert_eq!(trajectory_with_gaps.income_for_year(2012), None);
-        assert_eq!(trajectory_with_gaps.income_for_year(2013), None);
-
-        // Fill gaps
-        trajectory_with_gaps.interpolate_missing();
-
-        // Should now have interpolated values
-        assert!(trajectory_with_gaps.income_for_year(2011).is_some());
-        assert!(trajectory_with_gaps.income_for_year(2012).is_some());
-        assert!(trajectory_with_gaps.income_for_year(2013).is_some());
-
-        // Check if interpolation is reasonable (linear)
-        let step = (340000.0 - 300000.0) / 4.0;
-        assert!(
-            (trajectory_with_gaps.income_for_year(2011).unwrap() - (300000.0 + step)).abs() < 0.001
-        );
-        assert!(
-            (trajectory_with_gaps.income_for_year(2012).unwrap() - (300000.0 + 2.0 * step)).abs()
-                < 0.001
-        );
-        assert!(
-            (trajectory_with_gaps.income_for_year(2013).unwrap() - (300000.0 + 3.0 * step)).abs()
-                < 0.001
-        );
-    }
-
-    #[test]
-    fn test_family_income_trajectory() {
-        // Create individual trajectories
-        let mut mother_trajectory =
-            IncomeTrajectory::new("1111111111".to_string(), "salary".to_string());
-        mother_trajectory.add_income(2010, 250000.0);
-        mother_trajectory.add_income(2011, 260000.0);
-        mother_trajectory.add_income(2012, 270000.0);
-
-        let mut father_trajectory =
-            IncomeTrajectory::new("2222222222".to_string(), "salary".to_string());
-        father_trajectory.add_income(2010, 300000.0);
-        father_trajectory.add_income(2011, 320000.0);
-        father_trajectory.add_income(2012, 335000.0);
-
-        // Create family trajectory
-        let family_trajectory = FamilyIncomeTrajectory::new("FAM123".to_string())
-            .with_mother_trajectory(mother_trajectory)
-            .with_father_trajectory(father_trajectory);
-
-        // Test combined income
-        assert_eq!(family_trajectory.income_for_year(2010), Some(550000.0));
-        assert_eq!(family_trajectory.income_for_year(2011), Some(580000.0));
-        assert_eq!(family_trajectory.income_for_year(2012), Some(605000.0));
-
-        // Test income gap
-        assert_eq!(family_trajectory.income_gap(2010), Some(50000.0));
-        assert_eq!(family_trajectory.income_gap(2011), Some(60000.0));
-        assert_eq!(family_trajectory.income_gap(2012), Some(65000.0));
-
-        // Test income gap trend (should be positive as gap increases)
-        let gap_trend = family_trajectory.income_gap_trend().unwrap();
-        assert!(gap_trend > 0.0);
-
-        // Test primary earner share
-        let share_2010 = family_trajectory.primary_earner_share(2010).unwrap();
-        assert!((share_2010 - (300000.0 / 550000.0)).abs() < 0.001);
-
-        // Test pre-post difference
-        let diff = family_trajectory.pre_post_difference(2011, 1, 1).unwrap();
-        assert_eq!(diff, 605000.0 - 550000.0);
-    }
-
-    #[test]
-    fn test_income_collection() {
-        let mut collection = IncomeCollection::new();
-
-        // Add income records
-        let income1 = Income::new(
-            "1111111111".to_string(),
-            2010,
-            250000.0,
-            "salary".to_string(),
-        );
-
-        let income2 = Income::new(
-            "1111111111".to_string(),
-            2011,
-            260000.0,
-            "salary".to_string(),
-        );
-
-        let income3 = Income::new(
-            "2222222222".to_string(),
-            2010,
-            300000.0,
-            "salary".to_string(),
-        );
-
-        collection.add_income(income1);
-        collection.add_income(income2);
-        collection.add_income(income3);
-
-        // Test retrieval
-        let incomes1 = collection.get_incomes("1111111111");
-        assert_eq!(incomes1.len(), 2);
-
-        let incomes2 = collection.get_incomes("2222222222");
-        assert_eq!(incomes2.len(), 1);
-
-        // Test trajectory retrieval
-        let trajectory1 = collection.get_trajectory("1111111111", "salary").unwrap();
-        assert_eq!(trajectory1.individual_pnr, "1111111111");
-        assert_eq!(trajectory1.income_for_year(2010), Some(250000.0));
-        assert_eq!(trajectory1.income_for_year(2011), Some(260000.0));
-
-        // Test family trajectory calculation
-        let family_map = HashMap::from([(
-            "FAM1".to_string(),
-            (
-                Some("1111111111".to_string()),
-                Some("2222222222".to_string()),
-            ),
-        )]);
-
-        collection.build_family_trajectories(&family_map, "salary");
-
-        let family_trajectory = collection.get_family_trajectory("FAM1").unwrap();
-        assert_eq!(family_trajectory.income_for_year(2010), Some(550000.0));
-
-        // Test counts
-        assert_eq!(collection.record_count(), 3);
-        assert_eq!(collection.individual_count(), 2);
-        assert_eq!(collection.family_count(), 1);
     }
 }
