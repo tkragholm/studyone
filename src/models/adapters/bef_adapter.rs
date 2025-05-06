@@ -153,7 +153,9 @@ impl RegistryAdapter<Individual> for BefIndividualAdapter {
             let pnr = pnr_array.value(i).to_string();
 
             // Determine gender based on PNR or KOEN field
-            let gender = if !gender_array.is_null(i) {
+            let gender = if gender_array.is_null(i) {
+                Gender::Unknown
+            } else {
                 match gender_array.value(i) {
                     "M" => Gender::Male,
                     "F" => Gender::Female,
@@ -178,8 +180,6 @@ impl RegistryAdapter<Individual> for BefIndividualAdapter {
                         }
                     }
                 }
-            } else {
-                Gender::Unknown
             };
 
             // Convert birth date
@@ -331,7 +331,7 @@ impl RegistryAdapter<Family> for BefFamilyAdapter {
 }
 
 /// Helper function to create a lookup of Individual objects by PNR
-pub fn create_individual_lookup(individuals: &[Individual]) -> HashMap<String, Arc<Individual>> {
+#[must_use] pub fn create_individual_lookup(individuals: &[Individual]) -> HashMap<String, Arc<Individual>> {
     let mut lookup = HashMap::new();
     for individual in individuals {
         lookup.insert(individual.pnr.clone(), Arc::new(individual.clone()));
@@ -351,7 +351,7 @@ impl BefCombinedAdapter {
     }
 
     /// Extract unique family relationships from BEF data
-    pub fn extract_relationships(
+    #[must_use] pub fn extract_relationships(
         individuals: &[Individual],
     ) -> HashMap<String, (Option<String>, Option<String>, Vec<String>)> {
         let mut relationships: HashMap<String, (Option<String>, Option<String>, Vec<String>)> =

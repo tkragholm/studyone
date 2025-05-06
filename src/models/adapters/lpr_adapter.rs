@@ -140,7 +140,7 @@ impl LprBaseAdapter {
     }
 
     /// Process SCD results from a list of diagnoses
-    pub fn process_scd_results(&self, diagnoses: &[Diagnosis]) -> HashMap<String, ScdResult> {
+    #[must_use] pub fn process_scd_results(&self, diagnoses: &[Diagnosis]) -> HashMap<String, ScdResult> {
         // Group diagnoses by individual
         let mut diagnoses_by_pnr: HashMap<String, Vec<Arc<Diagnosis>>> = HashMap::new();
 
@@ -157,7 +157,7 @@ impl LprBaseAdapter {
         for (pnr, diags) in diagnoses_by_pnr {
             let mut result = ScdResult::new(pnr);
 
-            for diagnosis in diags.iter() {
+            for diagnosis in &diags {
                 if diagnosis.is_scd {
                     // Add SCD diagnosis to result
                     let category = self.get_category_for_code(&diagnosis.diagnosis_code);
@@ -329,28 +329,28 @@ impl Lpr2DiagAdapter {
 
             // Skip if we don't have this record in our PNR lookup
             if let Some(pnr) = self.pnr_lookup.get(&record_id) {
-                let diagnosis_code = if !diag_array.is_null(i) {
-                    diag_array.value(i).to_string()
-                } else {
+                let diagnosis_code = if diag_array.is_null(i) {
                     continue; // Skip rows without a diagnosis code
+                } else {
+                    diag_array.value(i).to_string()
                 };
 
-                let diagnosis_type = if !diag_type_array.is_null(i) {
-                    DiagnosisType::from(diag_type_array.value(i))
-                } else {
+                let diagnosis_type = if diag_type_array.is_null(i) {
                     DiagnosisType::Other
+                } else {
+                    DiagnosisType::from(diag_type_array.value(i))
                 };
 
                 let diagnosis_date = if let Some(array) = &date_array {
-                    if !array.is_null(i) {
+                    if array.is_null(i) {
+                        None
+                    } else {
                         Some(
                             NaiveDate::from_ymd_opt(1970, 1, 1)
                                 .unwrap()
                                 .checked_add_days(chrono::Days::new(array.value(i) as u64))
                                 .unwrap(),
                         )
-                    } else {
-                        None
                     }
                 } else {
                     None
@@ -493,20 +493,20 @@ impl Lpr3DiagnoserAdapter {
                     }
                 }
 
-                let diagnosis_code = if !diag_array.is_null(i) {
-                    diag_array.value(i).to_string()
-                } else {
+                let diagnosis_code = if diag_array.is_null(i) {
                     continue; // Skip rows without a diagnosis code
+                } else {
+                    diag_array.value(i).to_string()
                 };
 
-                let diagnosis_type = if !diag_type_array.is_null(i) {
+                let diagnosis_type = if diag_type_array.is_null(i) {
+                    DiagnosisType::Other
+                } else {
                     match diag_type_array.value(i) {
                         "A" => DiagnosisType::Primary,
                         "B" => DiagnosisType::Secondary,
                         _ => DiagnosisType::Other,
                     }
-                } else {
-                    DiagnosisType::Other
                 };
 
                 // LPR3 doesn't have direct date fields, we would need to join with kontakter table
@@ -571,7 +571,7 @@ impl LprCombinedAdapter {
     }
 
     /// Combine diagnoses from multiple sources and create SCD results
-    pub fn process_scd_results(&self, diagnoses: &[Diagnosis]) -> HashMap<String, ScdResult> {
+    #[must_use] pub fn process_scd_results(&self, diagnoses: &[Diagnosis]) -> HashMap<String, ScdResult> {
         self.base.process_scd_results(diagnoses)
     }
 }

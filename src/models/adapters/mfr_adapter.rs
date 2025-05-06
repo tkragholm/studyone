@@ -67,14 +67,13 @@ impl MfrChildAdapter {
                         .column(idx)
                         .as_any()
                         .downcast_ref::<arrow::array::Int32Array>()
-                        .map(|array| {
+                        .and_then(|array| {
                             if array.is_null(i) {
                                 None
                             } else {
                                 Some(array.value(i))
                             }
                         })
-                        .unwrap_or(None)
                 } else {
                     None
                 };
@@ -84,14 +83,13 @@ impl MfrChildAdapter {
                         .column(idx)
                         .as_any()
                         .downcast_ref::<arrow::array::Int32Array>()
-                        .map(|array| {
+                        .and_then(|array| {
                             if array.is_null(i) {
                                 None
                             } else {
                                 Some(array.value(i))
                             }
                         })
-                        .unwrap_or(None)
                 } else {
                     None
                 };
@@ -101,14 +99,13 @@ impl MfrChildAdapter {
                         .column(idx)
                         .as_any()
                         .downcast_ref::<arrow::array::Int32Array>()
-                        .map(|array| {
+                        .and_then(|array| {
                             if array.is_null(i) {
                                 None
                             } else {
                                 Some(array.value(i))
                             }
                         })
-                        .unwrap_or(None)
                 } else {
                     None
                 };
