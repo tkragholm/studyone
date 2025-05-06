@@ -377,12 +377,10 @@ impl BefCombinedAdapter {
             for member in &members {
                 // Check if this individual is a parent of any other individual in the family
                 let is_parent = members.iter().any(|m| {
-                    m.mother_pnr
-                        .as_ref()
-                        .map_or(false, |pnr| pnr == &member.pnr)
-                        || m.father_pnr
-                            .as_ref()
-                            .map_or(false, |pnr| pnr == &member.pnr)
+                    (m.mother_pnr
+                        .as_ref() == Some(&member.pnr))
+                        || (m.father_pnr
+                            .as_ref() == Some(&member.pnr))
                 });
 
                 if is_parent {
