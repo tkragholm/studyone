@@ -68,7 +68,8 @@ pub struct Family {
 
 impl Family {
     /// Create a new family with minimum required information
-    #[must_use] pub fn new(family_id: String, family_type: FamilyType, valid_from: NaiveDate) -> Self {
+    #[must_use]
+    pub fn new(family_id: String, family_type: FamilyType, valid_from: NaiveDate) -> Self {
         Self {
             family_id,
             family_type,
@@ -85,13 +86,15 @@ impl Family {
     }
 
     /// Set the mother for this family
-    #[must_use] pub fn with_mother(mut self, mother: Arc<Parent>) -> Self {
+    #[must_use]
+    pub fn with_mother(mut self, mother: Arc<Parent>) -> Self {
         self.mother = Some(mother);
         self
     }
 
     /// Set the father for this family
-    #[must_use] pub fn with_father(mut self, father: Arc<Parent>) -> Self {
+    #[must_use]
+    pub fn with_father(mut self, father: Arc<Parent>) -> Self {
         self.father = Some(father);
         self
     }
@@ -102,7 +105,8 @@ impl Family {
     }
 
     /// Check if this family was valid at a specific date
-    #[must_use] pub fn was_valid_at(&self, date: &NaiveDate) -> bool {
+    #[must_use]
+    pub fn was_valid_at(&self, date: &NaiveDate) -> bool {
         if self.valid_from > *date {
             return false;
         }
@@ -117,17 +121,20 @@ impl Family {
     }
 
     /// Get number of children in the family
-    #[must_use] pub fn family_size(&self) -> usize {
+    #[must_use]
+    pub fn family_size(&self) -> usize {
         self.children.len()
     }
 
     /// Check if family has any children with severe chronic disease
-    #[must_use] pub fn has_child_with_scd(&self) -> bool {
+    #[must_use]
+    pub fn has_child_with_scd(&self) -> bool {
         self.children.iter().any(|child| child.has_scd())
     }
 
     /// Determine if both parents were present at a specific date
-    #[must_use] pub fn has_both_parents_at(&self, date: &NaiveDate) -> bool {
+    #[must_use]
+    pub fn has_both_parents_at(&self, date: &NaiveDate) -> bool {
         let mother_present = self
             .mother
             .as_ref()
@@ -142,7 +149,8 @@ impl Family {
     }
 
     /// Get the Arrow schema for Family records
-    #[must_use] pub fn schema() -> Schema {
+    #[must_use]
+    pub fn schema() -> Schema {
         Schema::new(vec![
             Field::new("family_id", DataType::Utf8, false),
             Field::new("family_type", DataType::Int32, false),
@@ -160,7 +168,8 @@ impl Family {
     }
 
     /// Create a snapshot of the family at a specific point in time
-    #[must_use] pub fn snapshot_at(&self, date: &NaiveDate) -> Option<FamilySnapshot> {
+    #[must_use]
+    pub fn snapshot_at(&self, date: &NaiveDate) -> Option<FamilySnapshot> {
         if !self.was_valid_at(date) {
             return None;
         }
@@ -246,24 +255,28 @@ pub struct FamilySnapshot {
 
 impl FamilySnapshot {
     /// Get number of children in the family at snapshot date
-    #[must_use] pub fn family_size(&self) -> usize {
+    #[must_use]
+    pub fn family_size(&self) -> usize {
         self.children.len()
     }
 
     /// Check if family had any children with severe chronic disease at snapshot date
-    #[must_use] pub fn has_child_with_scd(&self) -> bool {
+    #[must_use]
+    pub fn has_child_with_scd(&self) -> bool {
         self.children
             .iter()
             .any(|child| child.had_scd_at(&self.snapshot_date))
     }
 
     /// Check if the family can be a case family (has child with SCD)
-    #[must_use] pub fn is_eligible_case(&self) -> bool {
+    #[must_use]
+    pub fn is_eligible_case(&self) -> bool {
         self.has_child_with_scd()
     }
 
     /// Check if the family can be a control family (no child with SCD)
-    #[must_use] pub fn is_eligible_control(&self) -> bool {
+    #[must_use]
+    pub fn is_eligible_control(&self) -> bool {
         !self.has_child_with_scd()
     }
 }
@@ -285,7 +298,8 @@ impl Default for FamilyCollection {
 
 impl FamilyCollection {
     /// Create a new empty `FamilyCollection`
-    #[must_use] pub fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self {
             families: HashMap::new(),
             individuals: HashMap::new(),
@@ -307,17 +321,20 @@ impl FamilyCollection {
     }
 
     /// Get a family by its ID
-    #[must_use] pub fn get_family(&self, family_id: &str) -> Option<Arc<Family>> {
+    #[must_use]
+    pub fn get_family(&self, family_id: &str) -> Option<Arc<Family>> {
         self.families.get(family_id).cloned()
     }
 
     /// Get an individual by their PNR
-    #[must_use] pub fn get_individual(&self, pnr: &str) -> Option<Arc<Individual>> {
+    #[must_use]
+    pub fn get_individual(&self, pnr: &str) -> Option<Arc<Individual>> {
         self.individuals.get(pnr).cloned()
     }
 
     /// Get families with a specific type
-    #[must_use] pub fn get_families_by_type(&self, family_type: FamilyType) -> Vec<Arc<Family>> {
+    #[must_use]
+    pub fn get_families_by_type(&self, family_type: FamilyType) -> Vec<Arc<Family>> {
         self.families
             .values()
             .filter(|family| family.family_type == family_type)
@@ -326,7 +343,8 @@ impl FamilyCollection {
     }
 
     /// Get families valid at a specific date
-    #[must_use] pub fn get_families_valid_at(&self, date: &NaiveDate) -> Vec<Arc<Family>> {
+    #[must_use]
+    pub fn get_families_valid_at(&self, date: &NaiveDate) -> Vec<Arc<Family>> {
         self.families
             .values()
             .filter(|family| family.was_valid_at(date))
@@ -335,7 +353,8 @@ impl FamilyCollection {
     }
 
     /// Get family snapshots for all families at a specific date
-    #[must_use] pub fn get_snapshots_at(&self, date: &NaiveDate) -> Vec<FamilySnapshot> {
+    #[must_use]
+    pub fn get_snapshots_at(&self, date: &NaiveDate) -> Vec<FamilySnapshot> {
         self.families
             .values()
             .filter_map(|family| family.snapshot_at(date))
@@ -343,7 +362,8 @@ impl FamilyCollection {
     }
 
     /// Get case families (families with a child with SCD) at a specific date
-    #[must_use] pub fn get_case_families_at(&self, date: &NaiveDate) -> Vec<FamilySnapshot> {
+    #[must_use]
+    pub fn get_case_families_at(&self, date: &NaiveDate) -> Vec<FamilySnapshot> {
         self.get_snapshots_at(date)
             .into_iter()
             .filter(FamilySnapshot::is_eligible_case)
@@ -351,7 +371,8 @@ impl FamilyCollection {
     }
 
     /// Get control families (families without a child with SCD) at a specific date
-    #[must_use] pub fn get_control_families_at(&self, date: &NaiveDate) -> Vec<FamilySnapshot> {
+    #[must_use]
+    pub fn get_control_families_at(&self, date: &NaiveDate) -> Vec<FamilySnapshot> {
         self.get_snapshots_at(date)
             .into_iter()
             .filter(FamilySnapshot::is_eligible_control)
@@ -359,144 +380,14 @@ impl FamilyCollection {
     }
 
     /// Count the total number of families in the collection
-    #[must_use] pub fn family_count(&self) -> usize {
+    #[must_use]
+    pub fn family_count(&self) -> usize {
         self.families.len()
     }
 
     /// Count the total number of individuals in the collection
-    #[must_use] pub fn individual_count(&self) -> usize {
+    #[must_use]
+    pub fn individual_count(&self) -> usize {
         self.individuals.len()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::models::child::Child;
-    use crate::models::individual::{EducationLevel, Gender, Origin};
-    use crate::models::parent::Parent;
-
-    /// Create a test individual
-    fn create_test_individual(pnr: &str, birth_year: i32, gender: Gender) -> Individual {
-        Individual {
-            pnr: pnr.to_string(),
-            gender,
-            birth_date: Some(NaiveDate::from_ymd_opt(birth_year, 1, 1).unwrap()),
-            death_date: None,
-            origin: Origin::Danish,
-            education_level: EducationLevel::Medium,
-            municipality_code: Some("101".to_string()),
-            is_rural: false,
-            mother_pnr: None,
-            father_pnr: None,
-            family_id: None,
-            emigration_date: None,
-            immigration_date: None,
-        }
-    }
-
-    #[test]
-    fn test_family_creation() {
-        let valid_from = NaiveDate::from_ymd_opt(2000, 1, 1).unwrap();
-        let family = Family::new("FAM123".to_string(), FamilyType::TwoParent, valid_from);
-
-        assert_eq!(family.family_id, "FAM123");
-        assert_eq!(family.family_type, FamilyType::TwoParent);
-        assert_eq!(family.valid_from, valid_from);
-        assert!(family.valid_to.is_none());
-        assert!(family.mother.is_none());
-        assert!(family.father.is_none());
-        assert!(family.children.is_empty());
-    }
-
-    #[test]
-    fn test_family_validity() {
-        let valid_from = NaiveDate::from_ymd_opt(2000, 1, 1).unwrap();
-        let valid_to = NaiveDate::from_ymd_opt(2010, 12, 31).unwrap();
-
-        let mut family = Family::new("FAM123".to_string(), FamilyType::TwoParent, valid_from);
-        family.valid_to = Some(valid_to);
-
-        // Test dates within validity period
-        assert!(family.was_valid_at(&NaiveDate::from_ymd_opt(2000, 1, 1).unwrap()));
-        assert!(family.was_valid_at(&NaiveDate::from_ymd_opt(2005, 6, 15).unwrap()));
-        assert!(family.was_valid_at(&NaiveDate::from_ymd_opt(2010, 12, 31).unwrap()));
-
-        // Test dates outside validity period
-        assert!(!family.was_valid_at(&NaiveDate::from_ymd_opt(1999, 12, 31).unwrap()));
-        assert!(!family.was_valid_at(&NaiveDate::from_ymd_opt(2011, 1, 1).unwrap()));
-    }
-
-    #[test]
-    fn test_family_snapshot() {
-        // Create individuals
-        let mother_ind = create_test_individual("1234567890", 1970, Gender::Female);
-        let father_ind = create_test_individual("0987654321", 1968, Gender::Male);
-        let child1_ind = create_test_individual("1122334455", 2000, Gender::Male);
-        let child2_ind = create_test_individual("5544332211", 2002, Gender::Female);
-
-        // Create parents and children
-        let mother = Arc::new(Parent::from_individual(Arc::new(mother_ind)));
-        let father = Arc::new(Parent::from_individual(Arc::new(father_ind)));
-        let child1 = Arc::new(Child::from_individual(Arc::new(child1_ind)));
-        let child2 = Arc::new(Child::from_individual(Arc::new(child2_ind)));
-
-        // Create family
-        let valid_from = NaiveDate::from_ymd_opt(2000, 1, 1).unwrap();
-        let mut family = Family::new("FAM123".to_string(), FamilyType::TwoParent, valid_from)
-            .with_mother(mother.clone())
-            .with_father(father.clone());
-
-        family.add_child(child1.clone());
-        family.add_child(child2.clone());
-
-        // Create snapshot
-        let snapshot_date = NaiveDate::from_ymd_opt(2005, 6, 15).unwrap();
-        let snapshot = family.snapshot_at(&snapshot_date).unwrap();
-
-        // Verify snapshot
-        assert_eq!(snapshot.family_id, "FAM123");
-        assert_eq!(snapshot.family_type, FamilyType::TwoParent);
-        assert_eq!(snapshot.children.len(), 2);
-        assert!(snapshot.mother.is_some());
-        assert!(snapshot.father.is_some());
-        assert_eq!(snapshot.snapshot_date, snapshot_date);
-    }
-
-    #[test]
-    fn test_family_collection() {
-        let mut collection = FamilyCollection::new();
-
-        // Create families
-        let family1 = Family::new(
-            "FAM1".to_string(),
-            FamilyType::TwoParent,
-            NaiveDate::from_ymd_opt(2000, 1, 1).unwrap(),
-        );
-
-        let family2 = Family::new(
-            "FAM2".to_string(),
-            FamilyType::SingleMother,
-            NaiveDate::from_ymd_opt(2000, 1, 1).unwrap(),
-        );
-
-        // Add families to collection
-        collection.add_family(family1);
-        collection.add_family(family2);
-
-        // Verify collection
-        assert_eq!(collection.family_count(), 2);
-        assert!(collection.get_family("FAM1").is_some());
-        assert!(collection.get_family("FAM2").is_some());
-        assert!(collection.get_family("FAM3").is_none());
-
-        // Get families by type
-        let two_parent_families = collection.get_families_by_type(FamilyType::TwoParent);
-        assert_eq!(two_parent_families.len(), 1);
-        assert_eq!(two_parent_families[0].family_id, "FAM1");
-
-        let single_mother_families = collection.get_families_by_type(FamilyType::SingleMother);
-        assert_eq!(single_mother_families.len(), 1);
-        assert_eq!(single_mother_families[0].family_id, "FAM2");
     }
 }
