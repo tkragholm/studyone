@@ -25,16 +25,12 @@ use std::time::Instant;
 pub struct MatchingResult {
     /// Matched cases batch
     pub matched_cases: RecordBatch,
-
     /// Matched controls batch
     pub matched_controls: RecordBatch,
-
     /// Number of cases matched
     pub matched_case_count: usize,
-
     /// Number of controls matched
     pub matched_control_count: usize,
-
     /// Time taken for matching
     pub matching_time: std::time::Duration,
 }
@@ -44,16 +40,12 @@ pub struct MatchingResult {
 pub struct MatchedPair {
     /// Case PNR (personal identification number)
     pub case_pnr: String,
-
     /// Case birth date
     pub case_birth_date: NaiveDate,
-
     /// Control PNR
     pub control_pnr: String,
-
     /// Control birth date
     pub control_birth_date: NaiveDate,
-
     /// Date when the match was made
     pub match_date: NaiveDate,
 }
@@ -63,19 +55,14 @@ pub struct MatchedPair {
 struct ControlData {
     /// Array of control PNRs
     pnrs: Vec<String>,
-
     /// Array of birth dates stored as days since epoch for faster comparison
     birth_days: Vec<i32>,
-
     /// Original birth dates for output
     birth_dates: Vec<NaiveDate>,
-
     /// Array of genders
     genders: Vec<Option<String>>,
-
     /// Array of family sizes
     family_sizes: Vec<Option<i32>>,
-
     /// Record batch indices for the controls
     indices: Vec<usize>,
 }
@@ -398,7 +385,9 @@ impl Matcher {
 
         // Family size is optional based on criteria
         let family_size_idx = if self.config.criteria.match_family_size {
-            if let Ok(idx) = batch.schema().index_of("ANTAL_BOERN") { Some(idx) } else {
+            if let Ok(idx) = batch.schema().index_of("ANTAL_BOERN") {
+                Some(idx)
+            } else {
                 warn!("ANTAL_BOERN column not found but family size matching is enabled");
                 None
             }
