@@ -13,7 +13,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 /// Type of family based on composition
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum FamilyType {
     /// Two-parent family with both parents present
     TwoParent,
@@ -282,7 +282,7 @@ impl FamilySnapshot {
 }
 
 /// A collection of families that can be efficiently queried
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FamilyCollection {
     /// Families indexed by `family_id`
     families: HashMap<String, Arc<Family>>,

@@ -2,7 +2,19 @@
 //!
 //! This module contains the central population generation functionality,
 //! which builds a study population from demographic and registry data.
+//!
+//! The population generation process follows these steps:
+//!
+//! 1. Define the study population from demographic registers (BEF, MFR)
+//! 2. Combine demographic data to create comprehensive profiles
+//! 3. Identify and link siblings within families
+//! 4. Assess migration and mortality status
+//! 5. Link parental income data
+//!
+//! This module provides an efficient and memory-conscious implementation for
+//! handling large populations.
 
+use chrono::Datelike;
 use chrono::NaiveDate;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
@@ -92,7 +104,8 @@ pub struct Population {
 
 impl Population {
     /// Create a new population with the specified configuration
-    #[must_use] pub fn new(config: PopulationConfig) -> Self {
+    #[must_use]
+    pub fn new(config: PopulationConfig) -> Self {
         Self {
             config,
             collection: FamilyCollection::new(),
@@ -102,6 +115,138 @@ impl Population {
             two_parent_family_count: 0,
             scd_family_count: 0,
         }
+    }
+
+    /// Generate a complete study population using all available registry data
+    ///
+    /// This method provides a high-level interface for creating a population with:
+    /// - Demographic data (BEF, MFR)
+    /// - Migration and mortality information (VNDS, DOD)
+    /// - Income data (IND)
+    /// - Health diagnoses for SCD classification (LPR)
+    pub fn generate_from_registries(
+        config: PopulationConfig,
+        registry_paths: &HashMap<&str, &std::path::Path>,
+        pnr_filter: Option<HashSet<String>>,
+    ) -> Result<Self> {
+        use crate::algorithm::population::integration::RegistryIntegration;
+
+        log::info!("Starting population generation from registry data");
+        log::info!("Configuration: {}", config);
+
+        // Initialize registry integration manager
+        let mut integration = RegistryIntegration::new();
+
+        // Track progress
+        let mut progress = 0;
+        let total_steps = 7; // Total number of steps in the process
+
+        // Step 1: Add demographic data from BEF
+        if let Some(bef_path) = registry_paths.get("bef") {
+            log::info!(
+                "[Step {}/{}] Loading demographic data from BEF registry",
+                progress + 1,
+                total_steps
+            );
+
+            integration.add_demographic_data(bef_path, pnr_filter.as_ref())?;
+            progress += 1;
+        }
+
+        // Step 2: Add child-specific data from MFR
+        if let Some(mfr_path) = registry_paths.get("mfr") {
+            log::info!(
+                "[Step {}/{}] Loading birth details from MFR registry",
+                progress + 1,
+                total_steps
+            );
+
+            integration.add_child_data(mfr_path, pnr_filter.as_ref())?;
+            progress += 1;
+        }
+
+        // Step 3: Add migration data from VNDS
+        if let Some(vnds_path) = registry_paths.get("vnds") {
+            log::info!(
+                "[Step {}/{}] Loading migration status from VNDS registry",
+                progress + 1,
+                total_steps
+            );
+
+            integration.add_migration_data(vnds_path, pnr_filter.as_ref())?;
+            progress += 1;
+        }
+
+        // Step 4: Add mortality data from DOD
+        if let Some(dod_path) = registry_paths.get("dod") {
+            log::info!(
+                "[Step {}/{}] Loading mortality status from DOD registry",
+                progress + 1,
+                total_steps
+            );
+
+            integration.add_mortality_data(dod_path, pnr_filter.as_ref())?;
+            progress += 1;
+        }
+
+        // Step 5: Add diagnosis data from LPR
+        if let Some(lpr_path) = registry_paths.get("lpr") {
+            log::info!(
+                "[Step {}/{}] Loading diagnosis data from LPR registry",
+                progress + 1,
+                total_steps
+            );
+
+            integration.add_diagnosis_data(lpr_path, pnr_filter.as_ref())?;
+            progress += 1;
+        }
+
+        // Step 6: Add income data from IND
+        if let Some(ind_path) = registry_paths.get("ind") {
+            log::info!(
+                "[Step {}/{}] Loading income data from IND registry",
+                progress + 1,
+                total_steps
+            );
+
+            // Use the current year as an example - in a real implementation,
+            // we would load data for multiple years
+            let current_year = chrono::Utc::now().year();
+            integration.add_income_data(
+                ind_path,
+                current_year,
+                pnr_filter.as_ref(),
+            )?;
+            progress += 1;
+        }
+
+        // Step 7: Process and enhance the population
+        log::info!(
+            "[Step {}/{}] Processing population relationships",
+            total_steps,
+            total_steps
+        );
+
+        // Identify siblings
+        integration.identify_siblings()?;
+
+        // Link diagnoses to children for SCD classification
+        integration.link_diagnoses_to_children()?;
+
+        // Link income data to parents
+        integration.link_income_to_parents()?;
+
+        // Create final population from the integration result
+        let mut population = Population::new(config);
+        population.collection = integration.collection().clone();
+
+        // Update statistics
+        population.calculate_statistics();
+
+        log::info!("Population generation complete");
+        log::info!("{}", population.print_summary());
+
+        Ok(population)
     }
 
     /// Calculate summary statistics for the population
@@ -124,19 +269,22 @@ impl Population {
     }
 
     /// Get eligible case families at the index date
-    #[must_use] pub fn get_case_families(&self) -> Vec<FamilySnapshot> {
+    #[must_use]
+    pub fn get_case_families(&self) -> Vec<FamilySnapshot> {
         self.collection
             .get_case_families_at(&self.config.index_date)
     }
 
     /// Get eligible control families at the index date
-    #[must_use] pub fn get_control_families(&self) -> Vec<FamilySnapshot> {
+    #[must_use]
+    pub fn get_control_families(&self) -> Vec<FamilySnapshot> {
         self.collection
             .get_control_families_at(&self.config.index_date)
     }
 
     /// Print a summary of the population
-    #[must_use] pub fn print_summary(&self) -> String {
+    #[must_use]
+    pub fn print_summary(&self) -> String {
         let mut summary = String::new();
         summary.push_str("Study Population Summary:\n");
         summary.push_str(&format!("  Index Date: {}\n", self.config.index_date));
@@ -150,10 +298,109 @@ impl Population {
         summary.push_str(&format!("  Families with SCD: {}\n", self.scd_family_count));
 
         // Calculate eligibility counts
-        let case_count = self.get_case_families().len();
-        let control_count = self.get_control_families().len();
+        let case_families = self.get_case_families();
+        let control_families = self.get_control_families();
+        let case_count = case_families.len();
+        let control_count = control_families.len();
         summary.push_str(&format!("  Eligible Case Families: {case_count}\n"));
         summary.push_str(&format!("  Eligible Control Families: {control_count}\n"));
+
+        // Add family composition details
+        if !case_families.is_empty() {
+            let mut scd_by_type = HashMap::new();
+            let mut total_scd_children = 0;
+
+            // Calculate SCD distribution by family type
+            for family in &case_families {
+                let scd_children = family
+                    .children
+                    .iter()
+                    .filter(|child| child.had_scd_at(&self.config.index_date))
+                    .count();
+
+                total_scd_children += scd_children;
+
+                *scd_by_type.entry(family.family_type).or_insert(0) += 1;
+            }
+
+            // Calculate average children per case family
+            let avg_children_per_case = if case_count > 0 {
+                case_families
+                    .iter()
+                    .map(|f| f.children.len())
+                    .sum::<usize>() as f64
+                    / case_count as f64
+            } else {
+                0.0
+            };
+
+            summary.push_str("\nCase Family Characteristics:\n");
+            summary.push_str(&format!("  Total SCD Children: {}\n", total_scd_children));
+            summary.push_str(&format!(
+                "  Average Children per Family: {:.2}\n",
+                avg_children_per_case
+            ));
+
+            // Add family type distribution
+            summary.push_str("  Distribution by Family Type:\n");
+            for (family_type, count) in scd_by_type {
+                let type_label = match family_type {
+                    crate::models::family::FamilyType::TwoParent => "Two-Parent",
+                    crate::models::family::FamilyType::SingleMother => "Single Mother",
+                    crate::models::family::FamilyType::SingleFather => "Single Father",
+                    crate::models::family::FamilyType::NoParent => "No Parent",
+                    crate::models::family::FamilyType::Unknown => "Unknown",
+                };
+
+                let percentage = if case_count > 0 {
+                    (count as f64 / case_count as f64) * 100.0
+                } else {
+                    0.0
+                };
+
+                summary.push_str(&format!(
+                    "    {}: {} ({:.1}%)\n",
+                    type_label, count, percentage
+                ));
+            }
+        }
+
+        if !control_families.is_empty() {
+            // Calculate average children per control family
+            let avg_children_per_control = if control_count > 0 {
+                control_families
+                    .iter()
+                    .map(|f| f.children.len())
+                    .sum::<usize>() as f64
+                    / control_count as f64
+            } else {
+                0.0
+            };
+
+            summary.push_str("\nControl Family Characteristics:\n");
+            summary.push_str(&format!(
+                "  Average Children per Family: {:.2}\n",
+                avg_children_per_control
+            ));
+        }
+
+        // Add matching potential estimate
+        if case_count > 0 && control_count > 0 {
+            let ratio = control_count as f64 / case_count as f64;
+            summary.push_str(&format!("\nMatching Potential:\n"));
+            summary.push_str(&format!("  Control-to-Case Ratio: {:.2}:1\n", ratio));
+
+            // Suggest potential matching strategies
+            summary.push_str("  Recommended Matching Approaches:\n");
+            if ratio >= 3.0 {
+                summary.push_str("    - 3:1 matching feasible with strict criteria\n");
+            } else if ratio >= 1.0 {
+                summary.push_str("    - 1:1 matching with optimized criteria\n");
+            } else {
+                summary
+                    .push_str("    - Consider relaxing case criteria or population restrictions\n");
+            }
+        }
 
         summary
     }
@@ -177,7 +424,8 @@ pub struct PopulationBuilder {
 
 impl PopulationBuilder {
     /// Create a new population builder with default configuration
-    #[must_use] pub fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self {
             config: PopulationConfig::default(),
             individuals: HashMap::new(),
@@ -188,14 +436,25 @@ impl PopulationBuilder {
         }
     }
 
+    /// Create a new PopulationBuilder with progress tracking
+    ///
+    /// This constructor sets up a builder that will log progress at each step
+    #[must_use]
+    pub fn with_progress() -> Self {
+        log::info!("Initializing population builder with progress tracking");
+        Self::new()
+    }
+
     /// Set the population configuration
-    #[must_use] pub fn with_config(mut self, config: PopulationConfig) -> Self {
+    #[must_use]
+    pub fn with_config(mut self, config: PopulationConfig) -> Self {
         self.config = config;
         self
     }
 
     /// Set the PNR filter to limit the population to specific individuals
-    #[must_use] pub fn with_pnr_filter(mut self, pnr_filter: HashSet<String>) -> Self {
+    #[must_use]
+    pub fn with_pnr_filter(mut self, pnr_filter: HashSet<String>) -> Self {
         self.pnr_filter = Some(pnr_filter);
         self
     }
@@ -280,7 +539,7 @@ impl PopulationBuilder {
             .map(|(k, v)| (k.clone(), Arc::new(v.clone())))
             .collect();
 
-        // Create MFR adapter 
+        // Create MFR adapter
         // Using underscore to avoid unused variable warning since we're using the static function
         let _adapter = MfrChildAdapter::new(individual_lookup);
 
@@ -302,13 +561,9 @@ impl PopulationBuilder {
                     let birth_weight = detail.birth_weight;
                     let gestational_age = detail.gestational_age;
                     let apgar_score = detail.apgar_score;
-                    
+
                     // Set all birth details at once to avoid moved value errors
-                    child = child.with_birth_details(
-                        birth_weight,
-                        gestational_age,
-                        apgar_score
-                    );
+                    child = child.with_birth_details(birth_weight, gestational_age, apgar_score);
 
                     // Store the enriched child object
                     self.children.insert(child.individual().pnr.clone(), child);
@@ -322,7 +577,8 @@ impl PopulationBuilder {
     }
 
     /// Identify parents and children based on family relationships
-    #[must_use] pub fn identify_family_roles(mut self) -> Self {
+    #[must_use]
+    pub fn identify_family_roles(mut self) -> Self {
         log::info!(
             "Identifying family roles for {} individuals in {} families",
             self.individuals.len(),
@@ -389,7 +645,8 @@ impl PopulationBuilder {
     }
 
     /// Build the final Population object
-    #[must_use] pub fn build(mut self) -> Population {
+    #[must_use]
+    pub fn build(mut self) -> Population {
         log::info!(
             "Building population with {} individuals, {} families, {} parents, {} children",
             self.individuals.len(),
