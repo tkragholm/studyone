@@ -48,39 +48,62 @@ pub enum TypeCompatibility {
 }
 
 /// Check if two Arrow data types are compatible for conversion
-#[must_use] pub fn check_type_compatibility(from: &DataType, to: &DataType) -> TypeCompatibility {
+#[must_use]
+pub fn check_type_compatibility(from: &DataType, to: &DataType) -> TypeCompatibility {
     if from == to {
         return TypeCompatibility::Exact;
     }
 
     match (from, to) {
         // Numeric type conversions (widening)
-        (DataType::Int8, DataType::Int16 | DataType::Int32 | DataType::Int64) |
-(DataType::Int16, DataType::Int32 | DataType::Int64) |
-(DataType::Int32, DataType::Int64) |
-(DataType::UInt8, DataType::UInt16 | DataType::UInt32 | DataType::UInt64) |
-(DataType::UInt16, DataType::UInt32 | DataType::UInt64) |
-(DataType::UInt32, DataType::UInt64) | (DataType::Float32, DataType::Float64) => TypeCompatibility::Compatible,
+        (DataType::Int8, DataType::Int16 | DataType::Int32 | DataType::Int64)
+        | (DataType::Int16, DataType::Int32 | DataType::Int64)
+        | (DataType::Int32, DataType::Int64)
+        | (DataType::UInt8, DataType::UInt16 | DataType::UInt32 | DataType::UInt64)
+        | (DataType::UInt16, DataType::UInt32 | DataType::UInt64)
+        | (DataType::UInt32, DataType::UInt64)
+        | (DataType::Float32, DataType::Float64) => TypeCompatibility::Compatible,
 
         // Integer to float conversions
-        (DataType::Int8 | DataType::Int16 | DataType::Int32 | DataType::UInt8 |
-DataType::UInt16 | DataType::UInt32, DataType::Float32) |
-(DataType::Int8 | DataType::Int16 | DataType::Int32 | DataType::Int64 |
-DataType::UInt8 | DataType::UInt16 | DataType::UInt32 | DataType::UInt64,
-DataType::Float64) => TypeCompatibility::Compatible,
+        (
+            DataType::Int8
+            | DataType::Int16
+            | DataType::Int32
+            | DataType::UInt8
+            | DataType::UInt16
+            | DataType::UInt32,
+            DataType::Float32,
+        )
+        | (
+            DataType::Int8
+            | DataType::Int16
+            | DataType::Int32
+            | DataType::Int64
+            | DataType::UInt8
+            | DataType::UInt16
+            | DataType::UInt32
+            | DataType::UInt64,
+            DataType::Float64,
+        ) => TypeCompatibility::Compatible,
 
         // String-convertible types
-        (DataType::Utf8 | DataType::LargeUtf8,
-DataType::Date32 | DataType::Date64 | DataType::Timestamp(_, _)) => TypeCompatibility::Compatible,
+        (
+            DataType::Utf8 | DataType::LargeUtf8,
+            DataType::Date32 | DataType::Date64 | DataType::Timestamp(_, _),
+        ) => TypeCompatibility::Compatible,
 
         // Date/Timestamp to String conversions
-        (DataType::Date32 | DataType::Date64 | DataType::Timestamp(_, _),
-DataType::Utf8 | DataType::LargeUtf8) => TypeCompatibility::Compatible,
+        (
+            DataType::Date32 | DataType::Date64 | DataType::Timestamp(_, _),
+            DataType::Utf8 | DataType::LargeUtf8,
+        ) => TypeCompatibility::Compatible,
 
         // Date and timestamp interconversions
-        (DataType::Date32 | DataType::Timestamp(_, _), DataType::Date64) |
-(DataType::Date32 | DataType::Date64, DataType::Timestamp(_, _)) |
-(DataType::Date64 | DataType::Timestamp(_, _), DataType::Date32) => TypeCompatibility::Compatible,
+        (DataType::Date32 | DataType::Timestamp(_, _), DataType::Date64)
+        | (DataType::Date32 | DataType::Date64, DataType::Timestamp(_, _))
+        | (DataType::Date64 | DataType::Timestamp(_, _), DataType::Date32) => {
+            TypeCompatibility::Compatible
+        }
 
         // Between string types
         (DataType::Utf8, DataType::LargeUtf8) | (DataType::LargeUtf8, DataType::Utf8) => {
@@ -88,10 +111,19 @@ DataType::Utf8 | DataType::LargeUtf8) => TypeCompatibility::Compatible,
         }
 
         // Boolean conversions
-        (DataType::Boolean,
-DataType::Int8 | DataType::Int16 | DataType::Int32 | DataType::Int64 |
-DataType::UInt8 | DataType::UInt16 | DataType::UInt32 | DataType::UInt64 |
-DataType::Utf8 | DataType::LargeUtf8) => TypeCompatibility::Compatible,
+        (
+            DataType::Boolean,
+            DataType::Int8
+            | DataType::Int16
+            | DataType::Int32
+            | DataType::Int64
+            | DataType::UInt8
+            | DataType::UInt16
+            | DataType::UInt32
+            | DataType::UInt64
+            | DataType::Utf8
+            | DataType::LargeUtf8,
+        ) => TypeCompatibility::Compatible,
 
         // Default - Incompatible
         _ => TypeCompatibility::Incompatible,
@@ -99,7 +131,8 @@ DataType::Utf8 | DataType::LargeUtf8) => TypeCompatibility::Compatible,
 }
 
 /// Identifies whether a data type is numeric
-#[must_use] pub const fn is_numeric(data_type: &DataType) -> bool {
+#[must_use]
+pub const fn is_numeric(data_type: &DataType) -> bool {
     matches!(
         data_type,
         DataType::Int8
@@ -117,12 +150,14 @@ DataType::Utf8 | DataType::LargeUtf8) => TypeCompatibility::Compatible,
 }
 
 /// Identifies whether a data type is a string type
-#[must_use] pub const fn is_string(data_type: &DataType) -> bool {
+#[must_use]
+pub const fn is_string(data_type: &DataType) -> bool {
     matches!(data_type, DataType::Utf8 | DataType::LargeUtf8)
 }
 
 /// Identifies whether a data type is a date or timestamp type
-#[must_use] pub const fn is_temporal(data_type: &DataType) -> bool {
+#[must_use]
+pub const fn is_temporal(data_type: &DataType) -> bool {
     matches!(
         data_type,
         DataType::Date32 | DataType::Date64 | DataType::Timestamp(_, _)
@@ -184,7 +219,8 @@ pub enum AdaptationStrategy {
 }
 
 /// Check schema compatibility with adaptation options
-#[must_use] pub fn check_schema_with_adaptation(
+#[must_use]
+pub fn check_schema_with_adaptation(
     source_schema: &Schema,
     target_schema: &Schema,
 ) -> EnhancedSchemaCompatibilityReport {
@@ -442,7 +478,8 @@ impl Default for DateFormatConfig {
 }
 
 /// Parse a date string with multiple format attempts
-#[must_use] pub fn parse_date_string(s: &str, config: &DateFormatConfig) -> Option<NaiveDate> {
+#[must_use]
+pub fn parse_date_string(s: &str, config: &DateFormatConfig) -> Option<NaiveDate> {
     // Try all the provided formats
     for format in &config.date_formats {
         if let Ok(date) = NaiveDate::parse_from_str(s, format) {
@@ -640,9 +677,7 @@ fn convert_date32_to_string(array: &ArrayRef, date_config: &DateFormatConfig) ->
         let date = NaiveDate::from_ymd_opt(1970, 1, 1)
             .unwrap()
             .checked_add_signed(chrono::Duration::days(i64::from(days)))
-            .ok_or_else(|| {
-                AdapterError::ConversionError(format!("Invalid date value: {days}"))
-            })?;
+            .ok_or_else(|| AdapterError::ConversionError(format!("Invalid date value: {days}")))?;
 
         let formatted = date.format(format).to_string();
         string_builder.append_value(&formatted);
