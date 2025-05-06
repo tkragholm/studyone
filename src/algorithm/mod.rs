@@ -5,3 +5,4 @@
 //! health data processing, and analysis.
 
 pub mod population;
+pub mod health;

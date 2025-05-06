@@ -218,6 +218,7 @@ impl Population {
                 pnr_filter.as_ref(),
             )?;
             progress += 1;
+            log::debug!("Completed {}/{} steps of population generation", progress, total_steps);
         }
 
         // Step 7: Process and enhance the population

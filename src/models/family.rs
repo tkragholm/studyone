@@ -320,6 +320,135 @@ impl FamilyCollection {
             .insert(individual_arc.pnr.clone(), individual_arc);
     }
 
+    /// Update a family in the collection with a new version
+    /// 
+    /// This replaces the existing family with the given family_id with a new version.
+    /// Returns true if the family was found and updated, false otherwise.
+    pub fn update_family(&mut self, family_id: &str, updated_family: Family) -> bool {
+        if self.families.contains_key(family_id) {
+            let family_arc = Arc::new(updated_family);
+            self.families.insert(family_id.to_string(), family_arc);
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Update a child in a family
+    /// 
+    /// Finds the family containing the child with the given PNR and updates it with
+    /// the modified child. Returns true if the child was found and updated, false otherwise.
+    pub fn update_child(&mut self, child_pnr: &str, updated_child: Child) -> bool {
+        // Find all families that contain this child
+        let mut updated = false;
+        
+        // We need to collect family_ids first to avoid borrowing issues
+        let family_ids: Vec<String> = self.families
+            .values()
+            .filter(|family| family.children.iter().any(|child| child.individual().pnr == child_pnr))
+            .map(|family| family.family_id.clone())
+            .collect();
+
+        for family_id in family_ids {
+            if let Some(family) = self.families.get(&family_id).cloned() {
+                // Create a mutable version
+                let mut new_family = Family {
+                    family_id: family.family_id.clone(),
+                    family_type: family.family_type,
+                    mother: family.mother.clone(),
+                    father: family.father.clone(),
+                    children: Vec::new(), // Will be replaced
+                    municipality_code: family.municipality_code.clone(),
+                    is_rural: family.is_rural,
+                    valid_from: family.valid_from,
+                    valid_to: family.valid_to,
+                    has_parental_comorbidity: family.has_parental_comorbidity,
+                    has_support_network: family.has_support_network,
+                };
+                
+                // Create a new children vector with the updated child
+                let new_children: Vec<Arc<Child>> = family.children
+                    .iter()
+                    .map(|child| {
+                        if child.individual().pnr == child_pnr {
+                            // Replace with updated child
+                            Arc::new(updated_child.clone())
+                        } else {
+                            // Keep the original child
+                            child.clone()
+                        }
+                    })
+                    .collect();
+                
+                // Replace the children vector
+                new_family.children = new_children;
+                
+                // Update the family in the collection
+                self.families.insert(family_id.clone(), Arc::new(new_family));
+                updated = true;
+            }
+        }
+        
+        updated
+    }
+
+    /// Update a parent in a family
+    /// 
+    /// Finds the family containing the parent with the given PNR and updates it with
+    /// the modified parent. Returns true if the parent was found and updated, false otherwise.
+    pub fn update_parent(&mut self, parent_pnr: &str, updated_parent: Parent) -> bool {
+        // Find all families where this person is a parent
+        let mut updated = false;
+        
+        // We need to collect family_ids first to avoid borrowing issues
+        let family_ids: Vec<String> = self.families
+            .values()
+            .filter(|family| {
+                (family.mother.is_some() && family.mother.as_ref().unwrap().individual().pnr == parent_pnr) || 
+                (family.father.is_some() && family.father.as_ref().unwrap().individual().pnr == parent_pnr)
+            })
+            .map(|family| family.family_id.clone())
+            .collect();
+
+        for family_id in family_ids {
+            if let Some(family) = self.families.get(&family_id).cloned() {
+                // Create a mutable version
+                let mut new_family = Family {
+                    family_id: family.family_id.clone(),
+                    family_type: family.family_type,
+                    mother: family.mother.clone(),
+                    father: family.father.clone(),
+                    children: family.children.clone(),
+                    municipality_code: family.municipality_code.clone(),
+                    is_rural: family.is_rural,
+                    valid_from: family.valid_from,
+                    valid_to: family.valid_to,
+                    has_parental_comorbidity: family.has_parental_comorbidity,
+                    has_support_network: family.has_support_network,
+                };
+                
+                // Update mother if PNR matches
+                if new_family.mother.is_some() && new_family.mother.as_ref().unwrap().individual().pnr == parent_pnr {
+                    new_family.mother = Some(Arc::new(updated_parent.clone()));
+                    updated = true;
+                }
+                
+                // Update father if PNR matches
+                if new_family.father.is_some() && new_family.father.as_ref().unwrap().individual().pnr == parent_pnr {
+                    new_family.father = Some(Arc::new(updated_parent.clone()));
+                    updated = true;
+                }
+                
+                // Update the family in the collection
+                if updated {
+                    self.families.insert(family_id.clone(), Arc::new(new_family));
+                }
+            }
+        }
+        
+        updated
+    }
+
     /// Get a family by its ID
     #[must_use]
     pub fn get_family(&self, family_id: &str) -> Option<Arc<Family>> {
