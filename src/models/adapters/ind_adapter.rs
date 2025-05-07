@@ -30,7 +30,7 @@ pub enum IncomeType {
 
 impl IncomeType {
     /// Convert income type to string representation
-    const fn as_str(&self) -> &'static str {
+    pub const fn as_str(&self) -> &'static str {
         match self {
             Self::TotalPersonal => "total_personal",
             Self::Salary => "salary",
@@ -79,7 +79,10 @@ impl IndIncomeAdapter {
     }
 
     /// Extract job situation from employment status code
-    const fn extract_job_situation(&self, employment_code: i8) -> crate::models::parent::JobSituation {
+    const fn extract_job_situation(
+        &self,
+        employment_code: i8,
+    ) -> crate::models::parent::JobSituation {
         use crate::models::parent::JobSituation;
 
         match employment_code {

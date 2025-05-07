@@ -1,8 +1,13 @@
 #[cfg(test)]
 mod tests {
-    use super::*;
     use arrow::array::{ArrayRef, Date32Builder, StringBuilder};
     use arrow::datatypes::{DataType, Field, Schema};
+    use arrow::record_batch::RecordBatch;
+    use chrono::NaiveDate;
+    use par_reader::models::adapters::lpr_adapter::*;
+    use par_reader::models::diagnosis::*;
+    use std::collections::HashMap;
+    use std::sync::Arc;
 
     fn create_test_lpr2_batch() -> RecordBatch {
         // Create schema

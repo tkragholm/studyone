@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use par_reader::models::income::*;
+    use std::collections::HashMap;
 
     #[test]
     fn test_income_creation() {

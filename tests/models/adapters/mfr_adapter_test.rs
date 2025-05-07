@@ -1,9 +1,14 @@
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::models::individual::Gender;
     use arrow::array::{ArrayRef, Date32Builder, StringBuilder};
     use arrow::datatypes::{DataType, Field, Schema};
+    use arrow::record_batch::RecordBatch;
+    use chrono::NaiveDate;
+    use par_reader::models::adapters::*;
+    use par_reader::models::individual::Gender;
+    use par_reader::models::*;
+    use std::collections::HashMap;
+    use std::sync::Arc;
 
     fn create_test_batch() -> RecordBatch {
         // Create schema

@@ -1,6 +1,8 @@
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use chrono::NaiveDate;
+    use par_reader::models::diagnosis::*;
+    use std::sync::Arc;
 
     #[test]
     fn test_diagnosis_creation() {

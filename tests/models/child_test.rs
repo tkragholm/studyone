@@ -1,8 +1,10 @@
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::models::diagnosis::{Diagnosis, DiagnosisType};
-    use crate::models::individual::{EducationLevel, Gender, Individual, Origin};
+    use par_reader::models::child::{Child, ChildCollection, DiseaseSeverity, DiseaseOrigin, ScdCategory};
+    use par_reader::models::diagnosis::{Diagnosis, DiagnosisType};
+    use par_reader::models::individual::{EducationLevel, Gender, Individual, Origin};
+    use std::sync::Arc;
+    use chrono::NaiveDate;
 
     /// Create a test individual for a child
     fn create_test_individual() -> Individual {

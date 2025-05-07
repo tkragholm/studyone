@@ -1,11 +1,20 @@
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::models::individual::{Gender, Individual};
-    use crate::models::parent::JobSituation;
+
     use arrow::array::{ArrayRef, Float64Builder, Int8Builder, StringBuilder};
     use arrow::datatypes::{DataType, Field, Schema};
+    use arrow::record_batch::RecordBatch;
     use chrono::NaiveDate;
+    use par_reader::models::Parent;
+    use par_reader::models::adapters::IncomeType;
+    use std::collections::HashMap;
+
+    use par_reader::RegistryAdapter;
+    use par_reader::models::adapters::IndIncomeAdapter;
+    use par_reader::models::income::*;
+    use par_reader::models::individual::{Gender, Individual};
+    use par_reader::models::parent::*;
+    use std::sync::Arc;
 
     fn create_test_batch() -> RecordBatch {
         // Create schema
@@ -83,7 +92,7 @@ mod tests {
 
         // Create adapter for year 2020
         let adapter = IndIncomeAdapter::new_without_cpi(2020);
-        let result = adapter.from_record_batch(&batch);
+        let result = IndIncomeAdapter::from_record_batch(&batch);
 
         assert!(result.is_ok());
         let incomes = result.unwrap();
