@@ -1,13 +1,20 @@
-//! Filtering capabilities for Parquet files
+//! Filtering capabilities for Parquet files and domain entities
 //!
 //! This module provides a flexible expression-based filtering system
-//! for Parquet files, allowing you to filter rows based on column values.
+//! for Parquet files and domain entities, allowing you to filter data based on various criteria.
 
+// Core modules
 pub mod core;
 pub mod expr;
 pub mod pnr;
 pub mod date;
 pub mod error;
+
+// Generic filtering framework
+pub mod generic;
+pub mod adapter;
+
+// Async filtering
 pub mod async_filtering {
     //! Async filtering functionality
     //! 
@@ -47,4 +54,18 @@ pub use self::date::{
 pub use self::error::{
     FilterResultExt, filter_err, with_filter_context, filter_path_err,
     column_not_found, column_type_error, invalid_expr,
+};
+
+// Re-export generic filtering framework
+pub use self::generic::{
+    Filter, IncludeAllFilter as GenericIncludeAllFilter, 
+    ExcludeAllFilter as GenericExcludeAllFilter,
+    AndFilter as GenericAndFilter, OrFilter as GenericOrFilter,
+    NotFilter as GenericNotFilter, FilterAdapter, FilterExpressionBuilder,
+};
+
+// Re-export adapter implementations
+pub use self::adapter::{
+    BatchFilterAdapter, EntityFilterAdapter, EntityToBatchAdapter,
+    IndividualFilter, FamilyFilter,
 };

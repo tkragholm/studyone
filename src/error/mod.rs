@@ -63,6 +63,10 @@ pub enum ParquetReaderError {
     /// Custom error message
     #[error("Error: {message}")]
     Custom { message: String },
+    
+    /// Error for when a filter excludes an entity
+    #[error("Filter excluded entity: {message}")]
+    FilterExcluded { message: String },
 
     /// Any other error
     #[error("{0}")]
@@ -260,6 +264,11 @@ impl ParquetReaderError {
     pub fn custom<S: Into<String>>(message: S) -> Self {
         Self::Custom { message: message.into() }
     }
+    
+    /// Create a filter excluded error
+    pub fn filter_excluded<S: Into<String>>(message: S) -> Self {
+        Self::FilterExcluded { message: message.into() }
+    }
 
     /// Add path context to an error message (for backward compatibility)
     ///
@@ -294,6 +303,9 @@ impl ParquetReaderError {
             Self::Custom { message } => Self::Custom { 
                 message: format!("{message} (path: {path_str})") 
             },
+            Self::FilterExcluded { message } => Self::FilterExcluded { 
+                message: format!("{message} (path: {path_str})") 
+            },
             Self::Other(msg) => Self::Other(format!("{msg} (path: {path_str})")),
         }
     }
@@ -323,6 +335,9 @@ impl ParquetReaderError {
                 expected
             },
             Self::Custom { message } => Self::Custom { 
+                message: format!("{ctx}: {message}") 
+            },
+            Self::FilterExcluded { message } => Self::FilterExcluded { 
                 message: format!("{ctx}: {message}") 
             },
             Self::Other(msg) => Self::Other(format!("{ctx}: {msg}")),
