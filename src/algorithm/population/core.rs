@@ -26,7 +26,8 @@ use crate::models::adapters::{BefCombinedAdapter, MfrChildAdapter};
 use crate::models::family::FamilyCollection;
 use crate::models::family::FamilySnapshot;
 use crate::models::{Child, Family, Individual, Parent};
-use crate::registry::RegisterLoader;
+use crate::registry::{RegisterLoader, factory};
+use crate::utils::test_utils::{ensure_path_exists, registry_dir};
 
 /// Configuration for population generation
 #[derive(Debug, Clone)]
@@ -764,4 +765,49 @@ impl Default for PopulationBuilder {
     fn default() -> Self {
         Self::new()
     }
+}
+
+/// Generate a test population from the test data
+/// 
+/// This is a utility function to easily create a test population
+/// for development and testing purposes using test data directories.
+pub fn generate_test_population() -> Result<Population> {
+    // Create a population configuration
+    let config = PopulationConfig {
+        index_date: NaiveDate::from_ymd_opt(2018, 1, 1).unwrap(),
+        min_age: Some(0),
+        max_age: Some(18),
+        resident_only: true,
+        two_parent_only: false,
+        study_start_date: Some(NaiveDate::from_ymd_opt(2000, 1, 1).unwrap()),
+        study_end_date: Some(NaiveDate::from_ymd_opt(2022, 12, 31).unwrap()),
+    };
+
+    // Initialize the population builder
+    let builder = PopulationBuilder::new().with_config(config);
+
+    // Create registry loaders
+    let bef_registry = factory::registry_from_name("bef")?;
+    let mfr_registry = factory::registry_from_name("mfr")?;
+
+    // Get paths to the test data
+    let bef_path = registry_dir("bef");
+    let mfr_path = registry_dir("mfr");
+
+    ensure_path_exists(&bef_path)?;
+    ensure_path_exists(&mfr_path)?;
+
+    // Build population step by step
+    let builder = builder
+        .add_bef_data(&*bef_registry, &bef_path)?
+        .add_mfr_data(&*mfr_registry, &mfr_path)?
+        .identify_family_roles();
+
+    // Create the final population
+    let mut population = builder.build();
+
+    // Calculate statistics
+    population.calculate_statistics();
+
+    Ok(population)
 }
