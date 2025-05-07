@@ -33,7 +33,7 @@ fn test_filter_combinators() -> Result<()> {
     let gt_five_filter = GreaterThanFilter { threshold: 5 };
 
     // Test data
-    let values = vec![2, 4, 5, 7, 8, 10];
+    let values = [2, 4, 5, 7, 8, 10];
 
     // Test AND filter using BoxedFilter to handle heterogeneous filter types
     let boxed_even = BoxedFilter::new(even_filter.clone());
@@ -74,7 +74,7 @@ fn test_filter_builder() -> Result<()> {
     let gt_eight_filter = GreaterThanFilter { threshold: 8 };
 
     // Test data
-    let values = vec![2, 4, 5, 7, 8, 10, 12];
+    let values = [2, 4, 5, 7, 8, 10, 12];
 
     // Test building an AND filter using BoxedFilter for consistent types
     let boxed_even = BoxedFilter::new(even_filter.clone());
@@ -130,7 +130,7 @@ fn test_filter_extension_methods() -> Result<()> {
     let gt_eight_filter = GreaterThanFilter { threshold: 8 };
 
     // Test data
-    let values = vec![2, 4, 5, 7, 8, 10, 12];
+    let values = [2, 4, 5, 7, 8, 10, 12];
 
     // Test AND extension method
     let and_filter = even_filter1.and(gt_five_filter.clone());
@@ -180,7 +180,7 @@ fn test_boxed_filter() -> Result<()> {
     let boxed_filter = BoxedFilter::new(even_filter);
 
     // Test data
-    let values = vec![2, 3, 4, 5, 6];
+    let values = [2, 3, 4, 5, 6];
 
     // Apply the boxed filter
     let results: Vec<i32> = values
