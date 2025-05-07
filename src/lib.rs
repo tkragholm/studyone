@@ -19,6 +19,9 @@ pub mod registry_manager;
 pub mod schema;
 pub mod utils;
 
+// Examples
+// pub mod examples;
+
 // Re-export the most common types for easier use
 // Core types
 pub use config::ParquetReaderConfig;
@@ -32,27 +35,13 @@ pub use arrow::datatypes::SchemaRef;
 pub use arrow::record_batch::RecordBatch;
 
 // Domain models
-pub use models::{
-    Individual,
-    Family,
-    Parent,
-    Child,
-    Diagnosis,
-    Income,
-};
+pub use models::{Child, Diagnosis, Family, Income, Individual, Parent};
 
 // Adapter models for registry data
 pub use models::adapters::{
-    RegistryAdapter,
-    BefIndividualAdapter, 
-    BefFamilyAdapter,
-    BefCombinedAdapter,
-    MfrChildAdapter,
-    Lpr2DiagAdapter, 
-    Lpr3DiagnoserAdapter,
-    LprCombinedAdapter,
-    IndIncomeAdapter,
-    IndMultiYearAdapter,
+    BefCombinedAdapter, BefFamilyAdapter, BefIndividualAdapter, IndIncomeAdapter,
+    IndMultiYearAdapter, Lpr2DiagAdapter, Lpr3DiagnoserAdapter, LprCombinedAdapter,
+    MfrChildAdapter, RegistryAdapter,
 };
 
 // Filtering capabilities
@@ -114,10 +103,6 @@ pub use registry_manager::RegistryManager;
 
 // Algorithm modules
 pub use algorithm::population::{
-    Population, 
-    PopulationBuilder, 
-    PopulationConfig,
-    PopulationFilter,
-    FilterCriteria,
+    FilterCriteria, Population, PopulationBuilder, PopulationConfig, PopulationFilter,
     RegistryIntegration,
 };

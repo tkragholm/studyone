@@ -1,5 +1,14 @@
 use crate::utils::{expr_to_filter, print_schema_info, registry_file};
-use par_reader::{Expr, LiteralValue, read_parquet, read_parquet_with_filter_async};
+use par_reader::{
+    Expr, LiteralValue,
+    filter::{
+        adapter::BatchFilterAdapter,
+        expr::ExpressionFilter,
+        generic::{BoxedFilter, FilterBuilder, FilterExt},
+    },
+    read_parquet, read_parquet_with_filter_async,
+};
+use std::sync::Arc;
 
 /// Test simple filtering expressions
 #[tokio::test]
@@ -39,9 +48,120 @@ async fn test_simple_filters() -> par_reader::Result<()> {
     Ok(())
 }
 
-/// Test complex filtering with AND, OR, NOT expressions
+/// Test complex filtering with AND, OR, NOT expressions using the new generic filter framework
 #[tokio::test]
-async fn test_complex_filters() -> par_reader::Result<()> {
+async fn test_complex_filters_with_generic_framework() -> par_reader::Result<()> {
+    let path = registry_file("akm", "2020.parquet");
+    if !path.exists() {
+        println!("AKM test file not found. Skipping test.");
+        return Ok(());
+    }
+
+    // Load data without filtering to get total row count for comparison
+    let full_batches =
+        read_parquet::<std::collections::hash_map::RandomState>(&path, None, None, None, None)?;
+
+    let total_rows = full_batches
+        .iter()
+        .map(par_reader::RecordBatch::num_rows)
+        .sum::<usize>();
+    println!("Total rows without filtering: {total_rows}");
+
+    // Create base filters using ExpressionFilter with the generic Filter trait
+    let socio_gt_200 = BoxedFilter::new(BatchFilterAdapter::new(ExpressionFilter::new(Expr::Gt(
+        "SOCIO".to_string(),
+        LiteralValue::Int(200),
+    ))));
+
+    let cprtype_eq_5 = BoxedFilter::new(BatchFilterAdapter::new(ExpressionFilter::new(Expr::Eq(
+        "CPRTYPE".to_string(),
+        LiteralValue::Int(5),
+    ))));
+
+    let socio_gt_300 = BoxedFilter::new(BatchFilterAdapter::new(ExpressionFilter::new(Expr::Gt(
+        "SOCIO".to_string(),
+        LiteralValue::Int(300),
+    ))));
+
+    let cprtype_eq_1 = BoxedFilter::new(BatchFilterAdapter::new(ExpressionFilter::new(Expr::Eq(
+        "CPRTYPE".to_string(),
+        LiteralValue::Int(1),
+    ))));
+
+    // Use FilterExt to combine filters
+    let and_filter = socio_gt_200.clone().and(cprtype_eq_5.clone());
+
+    // Apply AND filter using adapter
+    let batch_filter = BatchFilterAdapter::new(and_filter);
+    let and_filtered = read_parquet_with_filter_async(&path, Arc::new(batch_filter), None).await?;
+    let and_rows = and_filtered
+        .iter()
+        .map(par_reader::RecordBatch::num_rows)
+        .sum::<usize>();
+    println!("Rows after AND filter (SOCIO > 200 AND CPRTYPE = 5): {and_rows}");
+    println!(
+        "AND filter selectivity: {:.2}%",
+        (and_rows as f64 / total_rows as f64) * 100.0
+    );
+
+    // Use FilterExt to create OR filter
+    let or_filter = socio_gt_300.clone().or(cprtype_eq_1.clone());
+
+    // Apply OR filter using adapter
+    let batch_filter = BatchFilterAdapter::new(or_filter);
+    let or_filtered = read_parquet_with_filter_async(&path, Arc::new(batch_filter), None).await?;
+    let or_rows = or_filtered
+        .iter()
+        .map(par_reader::RecordBatch::num_rows)
+        .sum::<usize>();
+    println!("Rows after OR filter (SOCIO > 300 OR CPRTYPE = 1): {or_rows}");
+    println!(
+        "OR filter selectivity: {:.2}%",
+        (or_rows as f64 / total_rows as f64) * 100.0
+    );
+
+    // Use FilterExt to create NOT filter
+    let not_filter = socio_gt_200.clone().not();
+
+    // Apply NOT filter using adapter
+    let batch_filter = BatchFilterAdapter::new(not_filter);
+    let not_filtered = read_parquet_with_filter_async(&path, Arc::new(batch_filter), None).await?;
+    let not_rows = not_filtered
+        .iter()
+        .map(par_reader::RecordBatch::num_rows)
+        .sum::<usize>();
+    println!("Rows after NOT filter (NOT (SOCIO > 200)): {not_rows}");
+    println!(
+        "NOT filter selectivity: {:.2}%",
+        (not_rows as f64 / total_rows as f64) * 100.0
+    );
+
+    // Use FilterBuilder to create a complex filter
+    let builder_filter = FilterBuilder::new()
+        .add_filter(socio_gt_200)
+        .add_filter(cprtype_eq_5)
+        .build_and();
+
+    // Apply builder filter using adapter
+    let batch_filter = BatchFilterAdapter::new(builder_filter);
+    let builder_filtered =
+        read_parquet_with_filter_async(&path, Arc::new(batch_filter), None).await?;
+    let builder_rows = builder_filtered
+        .iter()
+        .map(par_reader::RecordBatch::num_rows)
+        .sum::<usize>();
+    println!("Rows after FilterBuilder filter (SOCIO > 200 AND CPRTYPE = 5): {builder_rows}");
+    println!(
+        "FilterBuilder selectivity: {:.2}%",
+        (builder_rows as f64 / total_rows as f64) * 100.0
+    );
+
+    Ok(())
+}
+
+/// Test complex filtering with original method (for comparison)
+#[tokio::test]
+async fn test_complex_filters_original() -> par_reader::Result<()> {
     let path = registry_file("akm", "2020.parquet");
     if !path.exists() {
         println!("AKM test file not found. Skipping test.");
@@ -98,7 +218,10 @@ async fn test_complex_filters() -> par_reader::Result<()> {
 
     // Test NOT filter: SOCIO > 200 (equivalent to NOT (SOCIO <= 200))
     // Using Gt instead of Not(LtEq) since LtEq appears to be unsupported
-    let not_filter = Expr::Gt("SOCIO".to_string(), LiteralValue::Int(200));
+    let not_filter = Expr::Not(Box::new(Expr::Gt(
+        "SOCIO".to_string(),
+        LiteralValue::Int(200),
+    )));
 
     // Apply the filter
     let not_filtered =
@@ -107,9 +230,9 @@ async fn test_complex_filters() -> par_reader::Result<()> {
         .iter()
         .map(par_reader::RecordBatch::num_rows)
         .sum::<usize>();
-    println!("Rows after filter (SOCIO > 200): {not_rows}");
+    println!("Rows after NOT filter (NOT (SOCIO > 200)): {not_rows}");
     println!(
-        "Filter selectivity: {:.2}%",
+        "NOT filter selectivity: {:.2}%",
         (not_rows as f64 / total_rows as f64) * 100.0
     );
 
@@ -198,7 +321,61 @@ async fn test_filter_data_types() -> par_reader::Result<()> {
     Ok(())
 }
 
-/// Test filter performance comparison
+/// Test filter performance comparison between original and generic framework
+#[tokio::test]
+async fn test_filter_performance_comparison() -> par_reader::Result<()> {
+    let path = registry_file("akm", "2020.parquet");
+    if !path.exists() {
+        println!("AKM test file not found. Skipping test.");
+        return Ok(());
+    }
+
+    // Define test filters
+    let simple_filter = Expr::Gt("SOCIO".to_string(), LiteralValue::Int(200));
+
+    // Create traditional filter
+    let traditional_filter = expr_to_filter(&simple_filter);
+
+    // Create generic framework filter
+    let generic_filter = BoxedFilter::new(BatchFilterAdapter::new(ExpressionFilter::new(
+        simple_filter.clone(),
+    )));
+    let generic_batch_filter = Arc::new(BatchFilterAdapter::new(generic_filter));
+
+    // Test traditional filter performance
+    let traditional_start = std::time::Instant::now();
+    let traditional_result =
+        read_parquet_with_filter_async(&path, traditional_filter, None).await?;
+    let traditional_duration = traditional_start.elapsed();
+    let traditional_rows = traditional_result
+        .iter()
+        .map(par_reader::RecordBatch::num_rows)
+        .sum::<usize>();
+
+    // Test generic filter performance
+    let generic_start = std::time::Instant::now();
+    let generic_result = read_parquet_with_filter_async(&path, generic_batch_filter, None).await?;
+    let generic_duration = generic_start.elapsed();
+    let generic_rows = generic_result
+        .iter()
+        .map(par_reader::RecordBatch::num_rows)
+        .sum::<usize>();
+
+    // Compare results
+    println!("Performance comparison - Traditional vs Generic Filter Framework:");
+    println!("Traditional filter: {traditional_rows} rows in {traditional_duration:?}");
+    println!("Generic framework: {generic_rows} rows in {generic_duration:?}");
+
+    // Validate results match
+    assert_eq!(
+        traditional_rows, generic_rows,
+        "Row counts should match between implementations"
+    );
+
+    Ok(())
+}
+
+/// Test filter performance with different selectivity levels
 #[tokio::test]
 async fn test_filter_performance() -> par_reader::Result<()> {
     let path = registry_file("akm", "2020.parquet");

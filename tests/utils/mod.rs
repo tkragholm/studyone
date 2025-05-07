@@ -4,23 +4,29 @@ use std::time::Instant;
 
 use arrow::record_batch::RecordBatch;
 use par_reader::{
-    filter::expr::{Expr, ExpressionFilter},
+    ParquetReaderConfig, Result,
     filter::core::BatchFilter,
-    ParquetReaderConfig, Result
+    filter::expr::{Expr, ExpressionFilter},
 };
 
+pub mod families;
+pub mod individuals;
+
 /// Base path for test data files
-#[must_use] pub fn test_data_dir() -> PathBuf {
+#[must_use]
+pub fn test_data_dir() -> PathBuf {
     PathBuf::from("/Users/tobiaskragholm/generated_data/parquet")
 }
 
 /// Create a path to a specific registry folder
-#[must_use] pub fn registry_dir(registry: &str) -> PathBuf {
+#[must_use]
+pub fn registry_dir(registry: &str) -> PathBuf {
     test_data_dir().join(registry)
 }
 
 /// Create a path to a specific file in a registry folder
-#[must_use] pub fn registry_file(registry: &str, filename: &str) -> PathBuf {
+#[must_use]
+pub fn registry_file(registry: &str, filename: &str) -> PathBuf {
     registry_dir(registry).join(filename)
 }
 
@@ -33,7 +39,8 @@ pub fn ensure_path_exists(path: &Path) -> Result<()> {
 }
 
 /// Get default test configuration for parquet reading
-#[must_use] pub fn test_config() -> ParquetReaderConfig {
+#[must_use]
+pub fn test_config() -> ParquetReaderConfig {
     ParquetReaderConfig {
         read_page_indexes: true,
         validate_schema: true,
@@ -94,7 +101,8 @@ where
 }
 
 /// Get all available year files from a registry directory
-#[must_use] pub fn get_available_year_files(registry: &str) -> Vec<PathBuf> {
+#[must_use]
+pub fn get_available_year_files(registry: &str) -> Vec<PathBuf> {
     let dir = registry_dir(registry);
     if !dir.exists() {
         return Vec::new();
@@ -123,6 +131,7 @@ where
 ///
 /// Helper function to convert an Expr to an Arc<dyn `BatchFilter` + Send + Sync>
 /// for use with the `read_parquet_with_filter_async` function.
-#[must_use] pub fn expr_to_filter(expr: &Expr) -> Arc<dyn BatchFilter + Send + Sync> {
+#[must_use]
+pub fn expr_to_filter(expr: &Expr) -> Arc<dyn BatchFilter + Send + Sync> {
     Arc::new(ExpressionFilter::new(expr.clone()))
 }

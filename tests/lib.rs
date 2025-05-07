@@ -15,6 +15,7 @@ pub mod integration {
     pub mod async_test;
     pub mod filtering_test;
     pub mod registry_integration_test;
+    pub mod type_adaptation_test;
 }
 
 pub mod algorithm {
@@ -22,6 +23,9 @@ pub mod algorithm {
         pub mod population_test;
     }
 }
+
+// New filter framework tests
+pub mod filter;
 
 // pub mod models {
 //     pub mod child_test;

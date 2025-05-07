@@ -62,6 +62,7 @@ pub use self::generic::{
     ExcludeAllFilter as GenericExcludeAllFilter,
     AndFilter as GenericAndFilter, OrFilter as GenericOrFilter,
     NotFilter as GenericNotFilter, FilterAdapter, FilterExpressionBuilder,
+    FilterBuilder, FilterExt, BoxedFilter,
 };
 
 // Re-export adapter implementations

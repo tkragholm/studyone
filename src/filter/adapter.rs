@@ -13,7 +13,7 @@ use arrow::record_batch::RecordBatch;
 
 use crate::error::{ParquetReaderError, Result};
 use crate::filter::core::{BatchFilter, filter_record_batch};
-use crate::filter::generic::Filter;
+use crate::filter::generic::{Filter, BoxedFilter, AndFilter as GenericAndFilter};
 use crate::models::{Family, Individual};
 
 /// Adapter for converting entity filters to record batch filters
@@ -164,6 +164,56 @@ impl<F: BatchFilter> Filter<RecordBatch> for BatchFilterAdapter<F> {
     }
 
     fn required_resources(&self) -> HashSet<String> {
+        self.batch_filter.required_columns()
+    }
+}
+
+// Implementation of BatchFilter for BoxedFilter<RecordBatch>
+impl BatchFilter for BoxedFilter<RecordBatch> {
+    fn filter(&self, batch: &RecordBatch) -> Result<RecordBatch> {
+        self.apply(batch)
+    }
+
+    fn required_columns(&self) -> HashSet<String> {
+        self.required_resources()
+    }
+}
+
+// Implementation of BatchFilter for BatchFilterAdapter<BoxedFilter<RecordBatch>>
+impl BatchFilter for BatchFilterAdapter<BoxedFilter<RecordBatch>> {
+    fn filter(&self, batch: &RecordBatch) -> Result<RecordBatch> {
+        self.batch_filter.filter(batch)
+    }
+
+    fn required_columns(&self) -> HashSet<String> {
+        self.batch_filter.required_columns()
+    }
+}
+
+// Implementation of BatchFilter for GenericAndFilter with RecordBatch
+impl<F: Filter<RecordBatch> + Send + Sync + Clone + 'static> BatchFilter for GenericAndFilter<RecordBatch, F>
+where 
+    RecordBatch: Clone + Debug + Send + Sync
+{
+    fn filter(&self, batch: &RecordBatch) -> Result<RecordBatch> {
+        self.apply(batch)
+    }
+
+    fn required_columns(&self) -> HashSet<String> {
+        self.required_resources()
+    }
+}
+
+// Implementation of BatchFilter for BatchFilterAdapter<GenericAndFilter<RecordBatch, F>>
+impl<F: Filter<RecordBatch> + Send + Sync + Clone + 'static> BatchFilter for BatchFilterAdapter<GenericAndFilter<RecordBatch, F>> 
+where 
+    RecordBatch: Clone + Debug + Send + Sync
+{
+    fn filter(&self, batch: &RecordBatch) -> Result<RecordBatch> {
+        self.batch_filter.filter(batch)
+    }
+
+    fn required_columns(&self) -> HashSet<String> {
         self.batch_filter.required_columns()
     }
 }

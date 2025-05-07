@@ -1,0 +1,71 @@
+use chrono::NaiveDate;
+use par_reader::models::{
+    Individual,
+    individual::{EducationLevel, Gender, Origin},
+};
+
+// Helper function to create test individuals
+pub fn create_test_individuals() -> Vec<Individual> {
+    vec![
+        Individual {
+            pnr: "12345".to_string(),
+            birth_date: Some(NaiveDate::from_ymd_opt(1980, 1, 1).unwrap()),
+            gender: Gender::Male,
+            is_rural: true,
+            death_date: None,
+            origin: Origin::Danish,
+            education_level: EducationLevel::Medium,
+            municipality_code: Some("101".to_string()),
+            mother_pnr: None,
+            father_pnr: None,
+            family_id: None,
+            emigration_date: None,
+            immigration_date: None,
+        },
+        Individual {
+            pnr: "23456".to_string(),
+            birth_date: Some(NaiveDate::from_ymd_opt(1990, 6, 15).unwrap()),
+            gender: Gender::Female,
+            is_rural: false,
+            death_date: None,
+            origin: Origin::Danish,
+            education_level: EducationLevel::High,
+            municipality_code: Some("101".to_string()),
+            mother_pnr: None,
+            father_pnr: None,
+            family_id: None,
+            emigration_date: None,
+            immigration_date: None,
+        },
+        Individual {
+            pnr: "34567".to_string(),
+            birth_date: Some(NaiveDate::from_ymd_opt(2010, 3, 10).unwrap()),
+            gender: Gender::Male,
+            is_rural: false,
+            death_date: None,
+            origin: Origin::Danish,
+            education_level: EducationLevel::Low,
+            municipality_code: Some("101".to_string()),
+            mother_pnr: None,
+            father_pnr: None,
+            family_id: None,
+            emigration_date: None,
+            immigration_date: None,
+        },
+        Individual {
+            pnr: "45678".to_string(),
+            birth_date: Some(NaiveDate::from_ymd_opt(1995, 9, 20).unwrap()),
+            gender: Gender::Female,
+            is_rural: true,
+            death_date: None,
+            origin: Origin::Danish,
+            education_level: EducationLevel::Medium,
+            municipality_code: Some("101".to_string()),
+            mother_pnr: None,
+            father_pnr: None,
+            family_id: None,
+            emigration_date: None,
+            immigration_date: None,
+        },
+    ]
+}

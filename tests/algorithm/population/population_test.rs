@@ -36,7 +36,7 @@ fn test_population_config() {
 #[test]
 fn test_population_builder() {
     // Create a builder with custom configuration
-    let builder = PopulationBuilder::new()
+    let _builder = PopulationBuilder::new()
         .with_config(PopulationConfig {
             index_date: NaiveDate::from_ymd_opt(2020, 1, 1).unwrap(),
             min_age: Some(0),
