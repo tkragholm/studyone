@@ -151,9 +151,69 @@ fn categorize_diagnosis(diagnosis_code: &str) -> Option<(ScdCategory, bool, Seve
     #[allow(unused_variables)]
     let is_congenital = clean_code.starts_with('Q');
 
+    // Special handling for specific codes that require additional parsing (4-character codes)
+    if clean_code.len() >= 4 {
+        let diag4 = &clean_code[..4];
+
+        // Specific 4-character codes from the R reference implementation
+        match diag4 {
+            // Aplastic anemias
+            "D610" | "D613" | "D618" | "D619" => {
+                return Some((ScdCategory::BloodDisorder, false, SeverityLevel::Moderate));
+            }
+            // Hemophagocytic syndrome
+            "D762" => {
+                return Some((ScdCategory::BloodDisorder, false, SeverityLevel::Moderate));
+            }
+            // Degenerative disorders of the nervous system
+            "G310" | "G318" | "G319" => {
+                return Some((ScdCategory::NeurologicalDisorder, false, SeverityLevel::Moderate));
+            }
+            // Myasthenia
+            "G702" => {
+                return Some((ScdCategory::NeurologicalDisorder, false, SeverityLevel::Moderate));
+            }
+            // Myopathies
+            "G710" | "G711" | "G712" | "G713" | "G736" => {
+                return Some((ScdCategory::NeurologicalDisorder, false, SeverityLevel::Severe));
+            }
+            // Spastic conditions
+            "G811" | "G821" | "G824" => {
+                return Some((ScdCategory::NeurologicalDisorder, false, SeverityLevel::Moderate));
+            }
+            // Hydrocephalus in neoplastic disease
+            "G941" => {
+                return Some((ScdCategory::NeurologicalDisorder, false, SeverityLevel::Moderate));
+            }
+            // COPD specific code
+            "J448" => {
+                return Some((ScdCategory::RespiratoryDisorder, false, SeverityLevel::Severe));
+            }
+            // Disturbances of cerebral status of newborn
+            "P910" | "P911" | "P912" => {
+                return Some((ScdCategory::NeurologicalDisorder, true, SeverityLevel::Moderate));
+            }
+            // Disorders of muscle tone of newborns
+            "P941" | "P942" | "P943" | "P944" | "P945" | "P946" | "P947" | "P948" | "P949" => {
+                return Some((ScdCategory::NeurologicalDisorder, true, SeverityLevel::Moderate));
+            }
+            // Congenital malformations
+            "Q790" => {
+                return Some((ScdCategory::RespiratoryDisorder, true, SeverityLevel::Moderate));
+            }
+            "Q792" | "Q793" => {
+                return Some((ScdCategory::GastrointestinalDisorder, true, SeverityLevel::Moderate));
+            }
+            "Q860" => {
+                return Some((ScdCategory::CongenitalDisorder, true, SeverityLevel::Moderate));
+            }
+            _ => { /* Continue to main categorization */ }
+        }
+    }
+
     // Categorize by first characters
     match &clean_code[..1] {
-        // C codes are cancer and are considered severe
+        // C codes are cancer and are considered severe (C00-C99)
         "C" => Some((ScdCategory::BloodDisorder, false, SeverityLevel::Severe)),
 
         // D codes cover blood and immune disorders
@@ -181,9 +241,16 @@ fn categorize_diagnosis(diagnosis_code: &str) -> Option<(ScdCategory, bool, Seve
         // E codes cover endocrine disorders
         "E" => {
             match &clean_code[..3] {
-                "E22" | "E23" | "E24" | "E25" | "E26" | "E27" | "E31" | "E34" | "E70" | "E71"
-                | "E72" | "E73" | "E74" | "E75" | "E76" | "E77" | "E78" | "E79" | "E80" | "E83"
-                | "E84" | "E85" | "E88" => {
+                // Insulin-dependent diabetes mellitus
+                "E10" => Some((ScdCategory::EndocrineDisorder, false, SeverityLevel::Moderate)),
+                // Adrenogenital disorders
+                "E25" => Some((ScdCategory::EndocrineDisorder, false, SeverityLevel::Moderate)),
+                // Disorders of amino-acid metabolism
+                "E70" | "E71" | "E72" | "E730" => {
+                    Some((ScdCategory::EndocrineDisorder, false, SeverityLevel::Moderate))
+                }
+                // Disorders of metabolism and cystic fibrosis (E74-E84)
+                "E74" | "E75" | "E76" | "E77" | "E78" | "E79" | "E80" | "E83" | "E84" => {
                     let severity = if clean_code.starts_with("E84") {
                         // Cystic fibrosis
                         SeverityLevel::Severe
@@ -191,6 +258,10 @@ fn categorize_diagnosis(diagnosis_code: &str) -> Option<(ScdCategory, bool, Seve
                         SeverityLevel::Moderate
                     };
                     Some((ScdCategory::EndocrineDisorder, false, severity))
+                }
+                // Other endocrine disorders
+                "E22" | "E23" | "E24" | "E26" | "E27" | "E31" | "E34" | "E85" | "E88" => {
+                    Some((ScdCategory::EndocrineDisorder, false, SeverityLevel::Moderate))
                 }
                 _ => None,
             }
@@ -213,8 +284,21 @@ fn categorize_diagnosis(diagnosis_code: &str) -> Option<(ScdCategory, bool, Seve
         // G codes cover neurological disorders
         "G" => {
             match &clean_code[..3] {
-                "G11" | "G12" | "G13" | "G23" | "G24" | "G25" | "G31" | "G40" | "G41" | "G70"
-                | "G71" | "G72" | "G80" | "G81" | "G82" => {
+                // Spinal muscular atrophy and related syndromes
+                "G12" => Some((ScdCategory::NeurologicalDisorder, false, SeverityLevel::Severe)),
+                // Demyelinating diseases
+                "G37" => Some((ScdCategory::NeurologicalDisorder, false, SeverityLevel::Moderate)),
+                // Epilepsy
+                "G40" => Some((ScdCategory::NeurologicalDisorder, false, SeverityLevel::Moderate)),
+                // Hereditary and idiopathic neuropathy
+                "G60" => Some((ScdCategory::NeurologicalDisorder, false, SeverityLevel::Moderate)),
+                // Cerebral palsy
+                "G80" => Some((ScdCategory::NeurologicalDisorder, false, SeverityLevel::Moderate)),
+                // Hydrocephalus
+                "G91" => Some((ScdCategory::NeurologicalDisorder, false, SeverityLevel::Moderate)),
+                // Other neurological disorders
+                "G11" | "G13" | "G23" | "G24" | "G25" | "G31" | "G41" | "G70" | "G71" | "G72" | 
+                "G81" | "G82" => {
                     let severity = if clean_code.starts_with("G12") || // Motor neuron disease
                                      clean_code.starts_with("G71")
                     {
@@ -232,7 +316,14 @@ fn categorize_diagnosis(diagnosis_code: &str) -> Option<(ScdCategory, bool, Seve
         // I codes cover cardiovascular disorders
         "I" => {
             match &clean_code[..3] {
-                "I27" | "I42" | "I43" | "I50" | "I81" | "I82" | "I83" => {
+                // Hypertensive renal disease
+                "I12" => Some((ScdCategory::CardiovascularDisorder, false, SeverityLevel::Moderate)),
+                // Pulmonary heart disease
+                "I27" => Some((ScdCategory::CardiovascularDisorder, false, SeverityLevel::Moderate)),
+                // Heart diseases (I30-I52)
+                "I30" | "I31" | "I32" | "I33" | "I34" | "I35" | "I36" | "I37" | "I38" | "I39" |
+                "I40" | "I41" | "I42" | "I43" | "I44" | "I45" | "I46" | "I47" | "I48" | "I49" |
+                "I50" | "I51" | "I52" => {
                     let severity = if clean_code.starts_with("I50") {
                         // Heart failure
                         SeverityLevel::Severe
@@ -241,6 +332,10 @@ fn categorize_diagnosis(diagnosis_code: &str) -> Option<(ScdCategory, bool, Seve
                     };
                     Some((ScdCategory::CardiovascularDisorder, false, severity))
                 }
+                // Other vascular disorders
+                "I81" | "I82" | "I83" => {
+                    Some((ScdCategory::CardiovascularDisorder, false, SeverityLevel::Moderate))
+                }
                 _ => None,
             }
         }
@@ -248,11 +343,14 @@ fn categorize_diagnosis(diagnosis_code: &str) -> Option<(ScdCategory, bool, Seve
         // J codes cover respiratory disorders
         "J" => {
             match &clean_code[..3] {
-                "J41" | "J42" | "J43" | "J44" | "J45" | "J47" | "J60" | "J61" | "J62" | "J63"
-                | "J64" | "J65" | "J66" | "J67" | "J68" | "J69" | "J70" | "J84" | "J96" => {
-                    let severity = if clean_code.starts_with("J44") || // COPD
-                                     clean_code.starts_with("J96")
-                    {
+                // COPD
+                "J44" => Some((ScdCategory::RespiratoryDisorder, false, SeverityLevel::Severe)),
+                // Other interstitial pulmonary disease
+                "J84" => Some((ScdCategory::RespiratoryDisorder, false, SeverityLevel::Moderate)),
+                // Other respiratory disorders
+                "J41" | "J42" | "J43" | "J45" | "J47" | "J60" | "J61" | "J62" | "J63"
+                | "J64" | "J65" | "J66" | "J67" | "J68" | "J69" | "J70" | "J96" => {
+                    let severity = if clean_code.starts_with("J96") {
                         // Respiratory failure
                         SeverityLevel::Severe
                     } else if clean_code.starts_with("J45") {
@@ -270,7 +368,12 @@ fn categorize_diagnosis(diagnosis_code: &str) -> Option<(ScdCategory, bool, Seve
         // K codes cover gastrointestinal disorders
         "K" => {
             match &clean_code[..3] {
-                "K50" | "K51" | "K73" | "K74" | "K86" | "K87" | "K90" => {
+                // Gastro-esophageal reflux disease
+                "K21" => Some((ScdCategory::GastrointestinalDisorder, false, SeverityLevel::Mild)),
+                // Crohn's disease and ulcerative colitis
+                "K50" | "K51" => Some((ScdCategory::GastrointestinalDisorder, false, SeverityLevel::Moderate)),
+                // Diseases of the liver (K70-K77)
+                "K70" | "K71" | "K72" | "K73" | "K74" | "K75" | "K76" | "K77" => {
                     let severity = if clean_code.starts_with("K74") {
                         // Fibrosis/cirrhosis of liver
                         SeverityLevel::Severe
@@ -279,6 +382,10 @@ fn categorize_diagnosis(diagnosis_code: &str) -> Option<(ScdCategory, bool, Seve
                     };
                     Some((ScdCategory::GastrointestinalDisorder, false, severity))
                 }
+                // Intestinal malabsorption
+                "K90" => Some((ScdCategory::GastrointestinalDisorder, false, SeverityLevel::Moderate)),
+                // Other gastrointestinal disorders
+                "K86" | "K87" => Some((ScdCategory::GastrointestinalDisorder, false, SeverityLevel::Moderate)),
                 _ => None,
             }
         }
@@ -286,8 +393,8 @@ fn categorize_diagnosis(diagnosis_code: &str) -> Option<(ScdCategory, bool, Seve
         // M codes cover musculoskeletal disorders
         "M" => {
             match &clean_code[..3] {
-                "M05" | "M06" | "M07" | "M08" | "M09" | "M30" | "M31" | "M32" | "M33" | "M34"
-                | "M35" | "M40" | "M41" | "M42" | "M43" | "M45" | "M46" => {
+                // Systematic involvement of connective tissue (M30-M35)
+                "M30" | "M31" | "M32" | "M33" | "M34" | "M35" => {
                     let severity = if clean_code.starts_with("M32") || // Systemic lupus erythematosus
                                      clean_code.starts_with("M34")
                     {
@@ -298,6 +405,10 @@ fn categorize_diagnosis(diagnosis_code: &str) -> Option<(ScdCategory, bool, Seve
                     };
                     Some((ScdCategory::MusculoskeletalDisorder, false, severity))
                 }
+                // Other musculoskeletal disorders
+                "M05" | "M06" | "M07" | "M08" | "M09" | "M40" | "M41" | "M42" | "M43" | "M45" | "M46" => {
+                    Some((ScdCategory::MusculoskeletalDisorder, false, SeverityLevel::Moderate))
+                }
                 _ => None,
             }
         }
@@ -305,12 +416,15 @@ fn categorize_diagnosis(diagnosis_code: &str) -> Option<(ScdCategory, bool, Seve
         // N codes cover renal disorders
         "N" => {
             match &clean_code[..3] {
-                "N01" | "N02" | "N03" | "N04" | "N05" | "N06" | "N07" | "N08" | "N11" | "N12"
-                | "N13" | "N14" | "N15" | "N16" | "N18" | "N19" | "N20" | "N21" | "N22" | "N23"
-                | "N24" | "N25" | "N26" | "N27" | "N28" | "N29" => {
-                    let severity = if clean_code.starts_with("N18") || // Chronic kidney disease
-                                     clean_code.starts_with("N19")
-                    {
+                // Nephritic syndrome (N03-N05)
+                "N03" | "N04" | "N05" => Some((ScdCategory::RenalDisorder, false, SeverityLevel::Moderate)),
+                // Hereditary nephropathy
+                "N07" => Some((ScdCategory::RenalDisorder, false, SeverityLevel::Moderate)),
+                // Obstructive and reflux uropathy
+                "N13" => Some((ScdCategory::RenalDisorder, false, SeverityLevel::Moderate)),
+                // Chronic kidney disease (N18-N19, N25-N27)
+                "N18" | "N19" | "N25" | "N26" | "N27" => {
+                    let severity = if clean_code.starts_with("N18") || clean_code.starts_with("N19") {
                         // Kidney failure
                         // Check for specific stages of CKD
                         if clean_code.len() > 3 && clean_code.chars().nth(3).unwrap().is_ascii_digit() {
@@ -329,58 +443,64 @@ fn categorize_diagnosis(diagnosis_code: &str) -> Option<(ScdCategory, bool, Seve
                     };
                     Some((ScdCategory::RenalDisorder, false, severity))
                 }
+                // Other renal disorders
+                "N01" | "N02" | "N06" | "N08" | "N11" | "N12" | "N14" | "N15" | "N16" | 
+                "N20" | "N21" | "N22" | "N23" | "N24" | "N28" | "N29" => {
+                    Some((ScdCategory::RenalDisorder, false, SeverityLevel::Moderate))
+                }
                 _ => None,
             }
         }
 
         // P codes cover perinatal conditions
         "P" => {
-            if clean_code.starts_with("P27") {
+            match &clean_code[..3] {
                 // Chronic respiratory disease originating in the perinatal period
-                Some((
-                    ScdCategory::RespiratoryDisorder,
-                    true,
-                    SeverityLevel::Moderate,
-                ))
-            } else {
-                None
+                "P27" => Some((ScdCategory::RespiratoryDisorder, true, SeverityLevel::Moderate)),
+                // Kernicterus
+                "P57" => Some((ScdCategory::NeurologicalDisorder, true, SeverityLevel::Moderate)),
+                // Disturbances of cerebral status of newborn
+                "P91" => Some((ScdCategory::NeurologicalDisorder, true, SeverityLevel::Moderate)),
+                // Disorders of muscle tone of newborns
+                "P94" => Some((ScdCategory::NeurologicalDisorder, true, SeverityLevel::Moderate)),
+                _ => None,
             }
         }
 
         // Q codes cover congenital malformations
         "Q" => {
             match &clean_code[..3] {
-                // Nervous system congenital
+                // Congenital malformations of the nervous system (Q01-Q07)
                 "Q01" | "Q02" | "Q03" | "Q04" | "Q05" | "Q06" | "Q07" => Some((
                     ScdCategory::NeurologicalDisorder,
                     true,
                     SeverityLevel::Severe,
                 )),
-                // Cardiovascular congenital
+                // Congenital malformations of the circulatory system (Q20-Q26)
                 "Q20" | "Q21" | "Q22" | "Q23" | "Q24" | "Q25" | "Q26" | "Q27" | "Q28" => Some((
                     ScdCategory::CardiovascularDisorder,
                     true,
                     SeverityLevel::Severe,
                 )),
-                // Respiratory congenital
-                "Q30" | "Q31" | "Q32" | "Q33" | "Q34" => Some((
+                // Congenital malformations of respiratory system (Q30-Q33)
+                "Q30" | "Q31" | "Q32" | "Q33" => Some((
                     ScdCategory::RespiratoryDisorder,
                     true,
                     SeverityLevel::Moderate,
                 )),
-                // Cleft lip and palate
-                "Q35" | "Q36" | "Q37" => Some((
-                    ScdCategory::CongenitalDisorder,
+                // Other congenital malformations of respiratory system, cleft lip and cleft palate (Q34-Q37)
+                "Q34" | "Q35" | "Q36" | "Q37" => Some((
+                    ScdCategory::RespiratoryDisorder,
                     true,
                     SeverityLevel::Moderate,
                 )),
-                // Digestive congenital
+                // Congenital malformations of upper alimentary tract and intestines (Q38-Q45)
                 "Q38" | "Q39" | "Q40" | "Q41" | "Q42" | "Q43" | "Q44" | "Q45" => Some((
                     ScdCategory::GastrointestinalDisorder,
                     true,
                     SeverityLevel::Moderate,
                 )),
-                // Genitourinary congenital
+                // Congenital malformations of the urinary system (Q60-Q64)
                 "Q60" | "Q61" | "Q62" | "Q63" | "Q64" => {
                     Some((ScdCategory::RenalDisorder, true, SeverityLevel::Moderate))
                 }
@@ -390,8 +510,20 @@ fn categorize_diagnosis(diagnosis_code: &str) -> Option<(ScdCategory, bool, Seve
                     true,
                     SeverityLevel::Moderate,
                 )),
+                // Congenital malformation syndromes
+                "Q87" => Some((
+                    ScdCategory::CongenitalDisorder,
+                    true,
+                    SeverityLevel::Moderate,
+                )),
+                // Chromosomal abnormalities (Q90-Q99)
+                "Q90" | "Q91" | "Q92" | "Q93" | "Q94" | "Q95" | "Q96" | "Q97" | "Q98" | "Q99" => Some((
+                    ScdCategory::CongenitalDisorder,
+                    true,
+                    SeverityLevel::Severe,
+                )),
                 // Other congenital
-                "Q80" | "Q81" | "Q82" | "Q83" | "Q84" | "Q85" | "Q86" | "Q87" | "Q89" => Some((
+                "Q80" | "Q81" | "Q82" | "Q83" | "Q84" | "Q85" | "Q86" | "Q88" | "Q89" => Some((
                     ScdCategory::CongenitalDisorder,
                     true,
                     SeverityLevel::Moderate,
