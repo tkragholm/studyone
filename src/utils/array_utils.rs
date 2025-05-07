@@ -1,7 +1,7 @@
-//! Utilities for adapting registry data to domain models
+//! Utilities for working with Arrow arrays.
 //!
-//! This module provides utility functions to help adapt registry data to domain models,
-//! particularly for handling type conversions between different arrow data types.
+//! This module provides utility functions for safely extracting and converting
+//! data from Arrow arrays, handling type conversion and error handling.
 
 use arrow::array::{Array, ArrayRef};
 use arrow::datatypes::DataType;
@@ -10,21 +10,9 @@ use log::{info, warn};
 use std::sync::Arc;
 
 use crate::error::{Error, Result};
-use crate::schema::adapt::{compatibility, conversions, types::DateFormatConfig};
-
-/// Default date format configuration for date conversions
-#[must_use] pub fn default_date_config() -> DateFormatConfig {
-    DateFormatConfig {
-        date_formats: vec![
-            "%Y-%m-%d".to_string(),
-            "%d-%m-%Y".to_string(),
-            "%d/%m/%Y".to_string(),
-            "%Y/%m/%d".to_string(),
-        ],
-        enable_format_detection: true,
-        default_format: "%Y-%m-%d".to_string(),
-    }
-}
+use crate::schema::adapt::{
+    compatibility, conversions, DateFormatConfig
+};
 
 /// Get a column from a record batch with automatic type adaptation
 ///
@@ -77,10 +65,10 @@ pub fn get_column(
     );
 
     // Use appropriate conversion based on the target type
+    let date_config = DateFormatConfig::default();
     let converted = match expected_type {
         DataType::Date32 | DataType::Date64 => {
             // Date conversions need special handling
-            let date_config = default_date_config();
             match conversions::convert_array(column, expected_type, &date_config) {
                 Ok(converted) => converted,
                 Err(err) => {
@@ -88,7 +76,10 @@ pub fn get_column(
                         "Failed to convert column '{column_name}' to {expected_type:?}: {err}"
                     );
                     // Create a null array as fallback
-                    Arc::new(arrow::array::NullArray::new(batch.num_rows()))
+                    match conversions::create_null_array(expected_type, batch.num_rows()) {
+                        Ok(null_array) => null_array,
+                        Err(_) => Arc::new(arrow::array::NullArray::new(batch.num_rows()))
+                    }
                 }
             }
         }
@@ -101,20 +92,26 @@ pub fn get_column(
                         "Failed to convert column '{column_name}' from {actual_type:?} to {expected_type:?}: {err}"
                     );
                     // Create a null array as fallback
-                    Arc::new(arrow::array::NullArray::new(batch.num_rows()))
+                    match conversions::create_null_array(expected_type, batch.num_rows()) {
+                        Ok(null_array) => null_array,
+                        Err(_) => Arc::new(arrow::array::NullArray::new(batch.num_rows()))
+                    }
                 }
             }
         }
         _ => {
             // Try generic conversion with our adapter system
-            match conversions::convert_array(column, expected_type, &default_date_config()) {
+            match conversions::convert_array(column, expected_type, &date_config) {
                 Ok(converted) => converted,
                 Err(err) => {
                     warn!(
                         "Failed to convert column '{column_name}' to {expected_type:?}: {err}"
                     );
                     // Create a null array as fallback
-                    Arc::new(arrow::array::NullArray::new(batch.num_rows()))
+                    match conversions::create_null_array(expected_type, batch.num_rows()) {
+                        Ok(null_array) => null_array,
+                        Err(_) => Arc::new(arrow::array::NullArray::new(batch.num_rows()))
+                    }
                 }
             }
         }

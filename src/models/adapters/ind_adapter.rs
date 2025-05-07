@@ -3,10 +3,11 @@
 //! This module contains the adapter that maps IND registry data to Income domain models.
 //! The IND (Indkomst) registry contains income and tax information.
 
-use super::{RegistryAdapter, adapter_utils};
+use super::RegistryAdapter;
 use crate::error::Result;
 use crate::models::income::{FamilyIncomeTrajectory, Income, IncomeTrajectory};
 use crate::models::parent::Parent;
+use crate::utils::array_utils::{downcast_array, get_column};
 use arrow::array::{Array, Float64Array, Int8Array, StringArray};
 use arrow::datatypes::DataType;
 use arrow::record_batch::RecordBatch;
@@ -31,7 +32,8 @@ pub enum IncomeType {
 
 impl IncomeType {
     /// Convert income type to string representation
-    #[must_use] pub const fn as_str(&self) -> &'static str {
+    #[must_use]
+    pub const fn as_str(&self) -> &'static str {
         match self {
             Self::TotalPersonal => "total_personal",
             Self::Salary => "salary",
@@ -208,29 +210,25 @@ impl IndIncomeAdapter {
         base_year: i32,
     ) -> Result<()> {
         // Get columns with automatic type adaptation
-        let pnr_array_opt = adapter_utils::get_column(batch, "PNR", &DataType::Utf8, true)?;
+        let pnr_array_opt = get_column(batch, "PNR", &DataType::Utf8, true)?;
 
         // We need to get the column array directly
         let pnr_array = match &pnr_array_opt {
-            Some(array) => adapter_utils::downcast_array::<StringArray>(array, "PNR", "String")?,
+            Some(array) => downcast_array::<StringArray>(array, "PNR", "String")?,
             None => unreachable!(), // This can't happen because we specified required=true
         };
 
-        let income_array_opt =
-            adapter_utils::get_column(batch, "PERINDKIALT_13", &DataType::Float64, true)?;
+        let income_array_opt = get_column(batch, "PERINDKIALT_13", &DataType::Float64, true)?;
 
         let income_array = match &income_array_opt {
-            Some(array) => {
-                adapter_utils::downcast_array::<Float64Array>(array, "PERINDKIALT_13", "Float64")?
-            }
+            Some(array) => downcast_array::<Float64Array>(array, "PERINDKIALT_13", "Float64")?,
             None => unreachable!(), // This can't happen because we specified required=true
         };
 
-        let employment_array_opt =
-            adapter_utils::get_column(batch, "BESKST13", &DataType::Int8, true)?;
+        let employment_array_opt = get_column(batch, "BESKST13", &DataType::Int8, true)?;
 
         let employment_array = match &employment_array_opt {
-            Some(array) => adapter_utils::downcast_array::<Int8Array>(array, "BESKST13", "Int8")?,
+            Some(array) => downcast_array::<Int8Array>(array, "BESKST13", "Int8")?,
             None => unreachable!(), // This can't happen because we specified required=true
         };
 
@@ -291,33 +289,31 @@ impl IndIncomeAdapter {
     /// Convert an IND `RecordBatch` to a vector of Income objects with the year from this instance
     pub fn from_record_batch_with_year(&self, batch: &RecordBatch) -> Result<Vec<Income>> {
         // Get columns with automatic type adaptation
-        let pnr_array_opt = adapter_utils::get_column(batch, "PNR", &DataType::Utf8, true)?;
+        let pnr_array_opt = get_column(batch, "PNR", &DataType::Utf8, true)?;
 
         // We need to get the column array directly
         let pnr_array = match &pnr_array_opt {
-            Some(array) => adapter_utils::downcast_array::<StringArray>(array, "PNR", "String")?,
+            Some(array) => downcast_array::<StringArray>(array, "PNR", "String")?,
             None => unreachable!(), // This can't happen because we specified required=true
         };
 
-        let total_income_array_opt = adapter_utils::get_column(
-            batch,
-            "PERINDKIALT_13",
-            &DataType::Float64,
-            true,
-        )?;
+        let total_income_array_opt = get_column(batch, "PERINDKIALT_13", &DataType::Float64, true)?;
 
         let total_income_array = match &total_income_array_opt {
-            Some(array) => adapter_utils::downcast_array::<Float64Array>(array, "PERINDKIALT_13", "Float64")?,
+            Some(array) => downcast_array::<Float64Array>(array, "PERINDKIALT_13", "Float64")?,
             None => unreachable!(), // This can't happen because we specified required=true
         };
 
         // Get salary column (optional)
-        let salary_array_opt =
-            adapter_utils::get_column(batch, "LOENMV_13", &DataType::Float64, false)?;
+        let salary_array_opt = get_column(batch, "LOENMV_13", &DataType::Float64, false)?;
 
         let salary_array: Option<&Float64Array> = match &salary_array_opt {
             Some(array) => {
-                if let Ok(float_array) = adapter_utils::downcast_array::<Float64Array>(array, "LOENMV_13", "Float64") { Some(float_array) } else {
+                if let Ok(float_array) =
+                    downcast_array::<Float64Array>(array, "LOENMV_13", "Float64")
+                {
+                    Some(float_array)
+                } else {
                     log::warn!("Column 'LOENMV_13' has unexpected data type, expected Float64");
                     None
                 }

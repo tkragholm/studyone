@@ -21,11 +21,9 @@ pub mod bef_adapter; // Map BEF registry to Individual/Family models
 pub mod ind_adapter;
 pub mod lpr_adapter; // Map LPR registry to Diagnosis models
 pub mod mfr_adapter; // Map MFR registry to Child models // Map IND registry to Income models
-pub mod adapter_utils; // Utility functions for adapters
 
 // Re-export commonly used types
 pub use bef_adapter::{BefCombinedAdapter, BefFamilyAdapter, BefIndividualAdapter};
 pub use ind_adapter::{IncomeType, IndIncomeAdapter, IndMultiYearAdapter};
 pub use lpr_adapter::{Lpr2DiagAdapter, Lpr3DiagnoserAdapter, LprCombinedAdapter};
 pub use mfr_adapter::MfrChildAdapter;
-pub use adapter_utils::{get_column, downcast_array, default_date_config};

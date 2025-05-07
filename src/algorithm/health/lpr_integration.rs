@@ -3,11 +3,14 @@
 //! This module implements functions to harmonize and combine data from
 //! the Danish National Patient Registry (LPR) across different versions (LPR2 and LPR3).
 
+use crate::RegistryManager;
+use crate::algorithm::population::Population;
 use crate::error::{ParquetReaderError, Result};
 use crate::models::diagnosis::{Diagnosis, DiagnosisCollection, DiagnosisType};
-use crate::RegistryManager;
+use crate::utils::array_utils::get_column;
+use crate::utils::arrow_utils::{arrow_array_to_date, arrow_date_to_naive_date};
 use crate::utils::test_utils::{get_available_year_files, registry_dir};
-use crate::algorithm::population::Population;
+use arrow::datatypes::DataType;
 use chrono::NaiveDate;
 
 use arrow::array::{Array, Date32Array, StringArray};
@@ -66,21 +69,12 @@ pub fn integrate_lpr2_components(
     lpr_bes: Option<&RecordBatch>,
     config: &LprConfig,
 ) -> Result<DiagnosisCollection> {
-    use crate::models::adapters::adapter_utils;
-    use crate::utils::arrow_utils;
-    use arrow::datatypes::DataType;
-
     let mut diagnosis_collection = DiagnosisCollection::new();
 
-    // Extract required columns from LPR_ADM using adapter_utils for better type handling
+    // Extract required columns from LPR_ADM using schema adaptation utilities for better type handling
     // This automatically handles type conversions using the schema adaptation system
-    let pnr_col_opt = adapter_utils::get_column(
-        lpr_adm, 
-        "PNR", 
-        &DataType::Utf8, 
-        true
-    )?;
-    
+    let pnr_col_opt = get_column(lpr_adm, "PNR", &DataType::Utf8, true)?;
+
     let pnr_array = pnr_col_opt
         .as_ref()
         .and_then(|col| col.as_any().downcast_ref::<StringArray>())
@@ -89,39 +83,27 @@ pub fn integrate_lpr2_components(
             expected: "StringArray".to_string(),
         })?;
 
-    let primary_diag_col_opt = adapter_utils::get_column(
-        lpr_adm, 
-        "C_ADIAG", 
-        &DataType::Utf8, 
-        false
-    )?;
-    
-    let primary_diag_array = if let Some(col) = &primary_diag_col_opt { col.as_any().downcast_ref::<StringArray>().ok_or_else(|| 
-    ParquetReaderError::InvalidDataType {
-        column: "C_ADIAG".to_string(),
-        expected: "StringArray".to_string(),
-    })? } else {
+    let primary_diag_col_opt = get_column(lpr_adm, "C_ADIAG", &DataType::Utf8, false)?;
+
+    let primary_diag_array = if let Some(col) = &primary_diag_col_opt {
+        col.as_any().downcast_ref::<StringArray>().ok_or_else(|| {
+            ParquetReaderError::InvalidDataType {
+                column: "C_ADIAG".to_string(),
+                expected: "StringArray".to_string(),
+            }
+        })?
+    } else {
         log::warn!("C_ADIAG column not found in LPR_ADM data");
         // Create an empty array as fallback
         &StringArray::from(Vec::<Option<&str>>::new())
     };
 
-    // For date columns, use adapter_utils which will handle conversion if needed
-    let date_col_opt = adapter_utils::get_column(
-        lpr_adm, 
-        "D_INDDTO", 
-        &DataType::Date32, 
-        false
-    )?;
+    // For date columns, use schema adaptation utilities which will handle conversion if needed
+    let date_col_opt = get_column(lpr_adm, "D_INDDTO", &DataType::Date32, false)?;
 
-    // Extract required columns from LPR_DIAG using adapter_utils
-    let diag_recnum_col_opt = adapter_utils::get_column(
-        lpr_diag, 
-        "RECNUM", 
-        &DataType::Utf8, 
-        true
-    )?;
-    
+    // Extract required columns from LPR_DIAG using schema adaptation utilities
+    let diag_recnum_col_opt = get_column(lpr_diag, "RECNUM", &DataType::Utf8, true)?;
+
     let diag_recnum_array = diag_recnum_col_opt
         .as_ref()
         .and_then(|col| col.as_any().downcast_ref::<StringArray>())
@@ -130,13 +112,8 @@ pub fn integrate_lpr2_components(
             expected: "StringArray".to_string(),
         })?;
 
-    let diag_col_opt = adapter_utils::get_column(
-        lpr_diag, 
-        "C_DIAG", 
-        &DataType::Utf8, 
-        true
-    )?;
-    
+    let diag_col_opt = get_column(lpr_diag, "C_DIAG", &DataType::Utf8, true)?;
+
     let diag_array = diag_col_opt
         .as_ref()
         .and_then(|col| col.as_any().downcast_ref::<StringArray>())
@@ -145,31 +122,24 @@ pub fn integrate_lpr2_components(
             expected: "StringArray".to_string(),
         })?;
 
-    let diag_type_col_opt = adapter_utils::get_column(
-        lpr_diag, 
-        "C_DIAGTYPE", 
-        &DataType::Utf8, 
-        false
-    )?;
-    
-    let diag_type_array = if let Some(col) = &diag_type_col_opt { col.as_any().downcast_ref::<StringArray>().ok_or_else(|| 
-    ParquetReaderError::InvalidDataType {
-        column: "C_DIAGTYPE".to_string(),
-        expected: "StringArray".to_string(),
-    })? } else {
+    let diag_type_col_opt = get_column(lpr_diag, "C_DIAGTYPE", &DataType::Utf8, false)?;
+
+    let diag_type_array = if let Some(col) = &diag_type_col_opt {
+        col.as_any().downcast_ref::<StringArray>().ok_or_else(|| {
+            ParquetReaderError::InvalidDataType {
+                column: "C_DIAGTYPE".to_string(),
+                expected: "StringArray".to_string(),
+            }
+        })?
+    } else {
         log::warn!("C_DIAGTYPE column not found in LPR_DIAG data");
         // Create an empty array as fallback
         &StringArray::from(Vec::<Option<&str>>::new())
     };
 
     // Get record number column from LPR_ADM to link with LPR_DIAG
-    let adm_recnum_col_opt = adapter_utils::get_column(
-        lpr_adm, 
-        "RECNUM", 
-        &DataType::Utf8, 
-        true
-    )?;
-    
+    let adm_recnum_col_opt = get_column(lpr_adm, "RECNUM", &DataType::Utf8, true)?;
+
     let adm_recnum_array = adm_recnum_col_opt
         .as_ref()
         .and_then(|col| col.as_any().downcast_ref::<StringArray>())
@@ -210,10 +180,8 @@ pub fn integrate_lpr2_components(
 
         // Extract date using arrow_utils which handles null values and type conversion better
         let diagnosis_date = match &date_col_opt {
-            Some(date_col) => {
-                arrow_utils::arrow_array_to_date(date_col, i)
-            },
-            None => None
+            Some(date_col) => arrow_array_to_date(date_col, i),
+            None => None,
         };
 
         // Skip if outside date range
@@ -236,7 +204,7 @@ pub fn integrate_lpr2_components(
         // Add primary diagnosis if available
         if i < primary_diag_array.len() && !primary_diag_array.is_null(i) {
             let primary_diagnosis = primary_diag_array.value(i).to_string();
-            
+
             let diagnosis = Diagnosis::new(
                 pnr.clone(),
                 primary_diagnosis,
@@ -254,7 +222,8 @@ pub fn integrate_lpr2_components(
             if let Some(diagnoses) = diagnoses_by_recnum.get(&recnum) {
                 for (diagnosis_code, diagnosis_type) in diagnoses {
                     // Skip if it's already the primary diagnosis
-                    if i < primary_diag_array.len() && !primary_diag_array.is_null(i)
+                    if i < primary_diag_array.len()
+                        && !primary_diag_array.is_null(i)
                         && primary_diag_array.value(i) == diagnosis_code
                     {
                         continue;
@@ -511,14 +480,6 @@ pub fn process_lpr_data(
     combine_diagnosis_collections(lpr2_collection, lpr3_collection)
 }
 
-/// Convert Arrow Date32 value to `NaiveDate`
-fn arrow_date_to_naive_date(days_since_epoch: i32) -> NaiveDate {
-    // Using a non-const approach for the date calculation
-    let epoch = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap();
-    epoch.checked_add_days(chrono::Days::new(days_since_epoch as u64))
-        .unwrap_or(epoch)
-}
-
 /// Extension trait for `DiagnosisCollection`
 pub trait DiagnosisCollectionExt {
     /// Get all PNRs in the collection
@@ -682,9 +643,7 @@ pub fn load_real_diagnoses(population: &Population) -> Result<DiagnosisCollectio
             }
         }
 
-        log::info!(
-            "Added {diagnoses_count} diagnoses from year {diag_year}"
-        );
+        log::info!("Added {diagnoses_count} diagnoses from year {diag_year}");
     }
 
     // Count total diagnoses by iterating through all PNRs

@@ -3,9 +3,10 @@
 //! This module contains adapters that map LPR registry data to Diagnosis domain models.
 //! Supports both LPR2 and LPR3 registry formats.
 
-use super::{RegistryAdapter, adapter_utils};
+use super::RegistryAdapter;
 use crate::error::Result;
 use crate::models::diagnosis::{Diagnosis, DiagnosisType, ScdResult};
+use crate::utils::array_utils::{downcast_array, get_column};
 use arrow::array::{Array, Date32Array, StringArray};
 use arrow::record_batch::RecordBatch;
 use chrono::NaiveDate;
@@ -257,35 +258,30 @@ impl Lpr2DiagAdapter {
     pub fn process_batch(&self, batch: &RecordBatch) -> Result<Vec<Diagnosis>> {
         // Get columns with automatic type adaptation
         let record_array_opt =
-            adapter_utils::get_column(batch, "RECNUM", &arrow::datatypes::DataType::Utf8, true)?;
+            get_column(batch, "RECNUM", &arrow::datatypes::DataType::Utf8, true)?;
 
         let record_array = match &record_array_opt {
-            Some(array) => adapter_utils::downcast_array::<StringArray>(array, "RECNUM", "String")?,
+            Some(array) => downcast_array::<StringArray>(array, "RECNUM", "String")?,
             None => unreachable!(), // This can't happen because we specified required=true
         };
 
-        let diag_array_opt =
-            adapter_utils::get_column(batch, "C_DIAG", &arrow::datatypes::DataType::Utf8, true)?;
+        let diag_array_opt = get_column(batch, "C_DIAG", &arrow::datatypes::DataType::Utf8, true)?;
 
         let diag_array = match &diag_array_opt {
-            Some(array) => adapter_utils::downcast_array::<StringArray>(array, "C_DIAG", "String")?,
+            Some(array) => downcast_array::<StringArray>(array, "C_DIAG", "String")?,
             None => unreachable!(), // This can't happen because we specified required=true
         };
 
-        let diag_type_array_opt = adapter_utils::get_column(
-            batch,
-            "C_DIAGTYPE",
-            &arrow::datatypes::DataType::Utf8,
-            true,
-        )?;
+        let diag_type_array_opt =
+            get_column(batch, "C_DIAGTYPE", &arrow::datatypes::DataType::Utf8, true)?;
 
         let diag_type_array = match &diag_type_array_opt {
-            Some(array) => adapter_utils::downcast_array::<StringArray>(array, "C_DIAGTYPE", "String")?,
+            Some(array) => downcast_array::<StringArray>(array, "C_DIAGTYPE", "String")?,
             None => unreachable!(), // This can't happen because we specified required=true
         };
 
         // Get date column with automatic conversion if needed
-        let date_array_opt = adapter_utils::get_column(
+        let date_array_opt = get_column(
             batch,
             "LEVERANCEDATO",
             &arrow::datatypes::DataType::Date32,
@@ -293,7 +289,9 @@ impl Lpr2DiagAdapter {
         )?;
 
         let date_array = if let Some(array) = &date_array_opt {
-            if let Some(date_array) = array.as_any().downcast_ref::<Date32Array>() { Some(date_array) } else {
+            if let Some(date_array) = array.as_any().downcast_ref::<Date32Array>() {
+                Some(date_array)
+            } else {
                 log::warn!("Failed to convert LEVERANCEDATO to Date32");
                 None
             }
@@ -389,7 +387,7 @@ impl Lpr3DiagnoserAdapter {
     /// Process an LPR3 batch and create Diagnosis objects
     pub fn process_batch(&self, batch: &RecordBatch) -> Result<Vec<Diagnosis>> {
         // Get columns with automatic type adaptation
-        let kontakt_array_opt = adapter_utils::get_column(
+        let kontakt_array_opt = get_column(
             batch,
             "DW_EK_KONTAKT",
             &arrow::datatypes::DataType::Utf8,
@@ -397,11 +395,11 @@ impl Lpr3DiagnoserAdapter {
         )?;
 
         let kontakt_array = match &kontakt_array_opt {
-            Some(array) => adapter_utils::downcast_array::<StringArray>(array, "DW_EK_KONTAKT", "String")?,
+            Some(array) => downcast_array::<StringArray>(array, "DW_EK_KONTAKT", "String")?,
             None => unreachable!(), // This can't happen because we specified required=true
         };
 
-        let diag_array_opt = adapter_utils::get_column(
+        let diag_array_opt = get_column(
             batch,
             "diagnosekode",
             &arrow::datatypes::DataType::Utf8,
@@ -409,11 +407,11 @@ impl Lpr3DiagnoserAdapter {
         )?;
 
         let diag_array = match &diag_array_opt {
-            Some(array) => adapter_utils::downcast_array::<StringArray>(array, "diagnosekode", "String")?,
+            Some(array) => downcast_array::<StringArray>(array, "diagnosekode", "String")?,
             None => unreachable!(), // This can't happen because we specified required=true
         };
 
-        let diag_type_array_opt = adapter_utils::get_column(
+        let diag_type_array_opt = get_column(
             batch,
             "diagnosetype",
             &arrow::datatypes::DataType::Utf8,
@@ -421,12 +419,12 @@ impl Lpr3DiagnoserAdapter {
         )?;
 
         let diag_type_array = match &diag_type_array_opt {
-            Some(array) => adapter_utils::downcast_array::<StringArray>(array, "diagnosetype", "String")?,
+            Some(array) => downcast_array::<StringArray>(array, "diagnosetype", "String")?,
             None => unreachable!(), // This can't happen because we specified required=true
         };
 
         // Get afkraeftet column (optional)
-        let afkraeftet_array_opt = adapter_utils::get_column(
+        let afkraeftet_array_opt = get_column(
             batch,
             "senere_afkraeftet",
             &arrow::datatypes::DataType::Utf8,
@@ -435,8 +433,14 @@ impl Lpr3DiagnoserAdapter {
 
         let afkraeftet_array: Option<&StringArray> = match &afkraeftet_array_opt {
             Some(array) => {
-                if let Ok(string_array) = adapter_utils::downcast_array::<StringArray>(array, "senere_afkraeftet", "String") { Some(string_array) } else {
-                    log::warn!("Column 'senere_afkraeftet' has unexpected data type, expected String");
+                if let Ok(string_array) =
+                    downcast_array::<StringArray>(array, "senere_afkraeftet", "String")
+                {
+                    Some(string_array)
+                } else {
+                    log::warn!(
+                        "Column 'senere_afkraeftet' has unexpected data type, expected String"
+                    );
                     None
                 }
             }

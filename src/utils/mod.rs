@@ -15,6 +15,7 @@ use rayon::prelude::*;
 use crate::error::Result;
 
 // Export utility modules
+pub mod array_utils;
 pub mod arrow_utils;
 pub mod progress;
 pub mod registry_utils;
