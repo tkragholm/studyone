@@ -139,7 +139,7 @@ fn test_numeric_conversion() {
 
     // Check values
     for (i, val) in values.iter().enumerate() {
-        assert_eq!(float_array.value(i), *val as f64);
+        assert_eq!(float_array.value(i), f64::from(*val));
     }
 }
 

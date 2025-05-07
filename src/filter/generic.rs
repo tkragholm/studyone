@@ -33,7 +33,7 @@ pub trait Filter<T>: Debug {
 #[derive(Debug, Clone, Default)]
 pub struct IncludeAllFilter;
 
-/// Implementation for IncludeAllFilter that accepts any type
+/// Implementation for `IncludeAllFilter` that accepts any type
 impl<T: Clone + Debug> Filter<T> for IncludeAllFilter {
     fn apply(&self, input: &T) -> Result<T> {
         // Always include the input by cloning it
@@ -50,7 +50,7 @@ impl<T: Clone + Debug> Filter<T> for IncludeAllFilter {
 #[derive(Debug, Clone, Default)]
 pub struct ExcludeAllFilter;
 
-/// Implementation for ExcludeAllFilter that rejects any type
+/// Implementation for `ExcludeAllFilter` that rejects any type
 impl<T: Debug> Filter<T> for ExcludeAllFilter {
     fn apply(&self, _input: &T) -> Result<T> {
         // Always exclude with standard error
@@ -104,7 +104,7 @@ where
     }
 }
 
-/// Implementation of Filter for AndFilter
+/// Implementation of Filter for `AndFilter`
 impl<T, F> Filter<T> for AndFilter<T, F>
 where
     F: Filter<T> + Send + Sync + Clone,
@@ -177,7 +177,7 @@ where
     }
 }
 
-/// Implementation of Filter for OrFilter
+/// Implementation of Filter for `OrFilter`
 impl<T, F> Filter<T> for OrFilter<T, F>
 where
     F: Filter<T> + Send + Sync + Clone,
@@ -258,7 +258,7 @@ where
     }
 }
 
-/// Implementation of Filter for NotFilter
+/// Implementation of Filter for `NotFilter`
 impl<T, F> Filter<T> for NotFilter<T, F>
 where
     F: Filter<T> + Send + Sync + Clone,
@@ -341,7 +341,7 @@ where
     T: Clone + Debug + Send + Sync,
 {
     /// Create a new filter builder
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         Self {
             filters: Vec::new(),
             _phantom: std::marker::PhantomData,
@@ -355,22 +355,22 @@ where
     }
 
     /// Combine all filters with AND
-    pub fn build_and(self) -> AndFilter<T, F> {
+    #[must_use] pub fn build_and(self) -> AndFilter<T, F> {
         AndFilter::new(self.filters)
     }
 
     /// Combine all filters with OR
-    pub fn build_or(self) -> OrFilter<T, F> {
+    #[must_use] pub fn build_or(self) -> OrFilter<T, F> {
         OrFilter::new(self.filters)
     }
 
     /// Create a filter that is the logical NOT of all the filters combined with AND
-    pub fn build_not_and(self) -> NotFilter<T, AndFilter<T, F>> {
+    #[must_use] pub fn build_not_and(self) -> NotFilter<T, AndFilter<T, F>> {
         NotFilter::new(self.build_and())
     }
 
     /// Create a filter that is the logical NOT of all the filters combined with OR
-    pub fn build_not_or(self) -> NotFilter<T, OrFilter<T, F>> {
+    #[must_use] pub fn build_not_or(self) -> NotFilter<T, OrFilter<T, F>> {
         NotFilter::new(self.build_or())
     }
 }

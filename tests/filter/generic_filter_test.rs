@@ -372,7 +372,7 @@ impl Filter<i32> for EvenNumberFilter {
             Ok(*input)
         } else {
             Err(ParquetReaderError::FilterExcluded {
-                message: format!("Number {} is not even", input),
+                message: format!("Number {input} is not even"),
             }
             .into())
         }
@@ -552,7 +552,7 @@ impl Filter<Family> for FamilySizeFilter {
         if let Some(min) = self.min_children {
             if size < min {
                 return Err(ParquetReaderError::FilterExcluded {
-                    message: format!("Family size {} is less than minimum {}", size, min),
+                    message: format!("Family size {size} is less than minimum {min}"),
                 }
                 .into());
             }
@@ -562,7 +562,7 @@ impl Filter<Family> for FamilySizeFilter {
         if let Some(max) = self.max_children {
             if size > max {
                 return Err(ParquetReaderError::FilterExcluded {
-                    message: format!("Family size {} is greater than maximum {}", size, max),
+                    message: format!("Family size {size} is greater than maximum {max}"),
                 }
                 .into());
             }

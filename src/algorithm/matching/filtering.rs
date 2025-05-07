@@ -15,7 +15,7 @@ use std::sync::Arc;
 /// * `indices` - The indices of rows to keep
 ///
 /// # Returns
-/// A filtered RecordBatch containing only the specified rows
+/// A filtered `RecordBatch` containing only the specified rows
 ///
 /// # Errors
 /// Returns an error if filtering fails

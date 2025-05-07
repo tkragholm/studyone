@@ -9,7 +9,7 @@ use par_reader::models::{
 };
 
 // Helper function to create test families
-pub fn create_test_families() -> Vec<Family> {
+#[must_use] pub fn create_test_families() -> Vec<Family> {
     // Create test individuals to use as parents and children
     let mother1 = Arc::new(Individual {
         pnr: "mother1".to_string(),

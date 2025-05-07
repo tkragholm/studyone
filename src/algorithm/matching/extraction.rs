@@ -113,7 +113,7 @@ pub fn extract_attributes_with_indices(
 }
 
 /// Group cases by birth day range for parallel processing
-pub fn group_cases_by_birth_day_range(
+#[must_use] pub fn group_cases_by_birth_day_range(
     attributes: ExtractedAttributes,
     num_groups: usize,
 ) -> Vec<CaseGroup> {

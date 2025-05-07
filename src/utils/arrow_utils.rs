@@ -121,7 +121,7 @@ pub fn arrow_array_to_i64(array: &ArrayRef, index: usize) -> Option<i64> {
     match array.data_type() {
         DataType::Int32 => {
             let int_array = array.as_any().downcast_ref::<Int32Array>()?;
-            Some(int_array.value(index) as i64)
+            Some(i64::from(int_array.value(index)))
         }
         DataType::Int64 => {
             let int_array = array.as_any().downcast_ref::<Int64Array>()?;
@@ -155,7 +155,7 @@ pub fn arrow_array_to_f64(array: &ArrayRef, index: usize) -> Option<f64> {
     match array.data_type() {
         DataType::Int32 => {
             let int_array = array.as_any().downcast_ref::<Int32Array>()?;
-            Some(int_array.value(index) as f64)
+            Some(f64::from(int_array.value(index)))
         }
         DataType::Int64 => {
             let int_array = array.as_any().downcast_ref::<Int64Array>()?;
@@ -163,7 +163,7 @@ pub fn arrow_array_to_f64(array: &ArrayRef, index: usize) -> Option<f64> {
         }
         DataType::Float32 => {
             let float_array = array.as_any().downcast_ref::<Float32Array>()?;
-            Some(float_array.value(index) as f64)
+            Some(f64::from(float_array.value(index)))
         }
         DataType::Float64 => {
             let float_array = array.as_any().downcast_ref::<Float64Array>()?;
@@ -220,7 +220,7 @@ pub fn get_column_index(batch: &arrow::record_batch::RecordBatch, column_name: &
 /// * `column_name` - The name of the column to find
 ///
 /// # Returns
-/// The column as an ArrayRef
+/// The column as an `ArrayRef`
 ///
 /// # Errors
 /// Returns an error if the column does not exist
@@ -229,17 +229,17 @@ pub fn get_column(batch: &arrow::record_batch::RecordBatch, column_name: &str) -
     Ok(batch.column(idx).clone())
 }
 
-/// Type-safe extraction of a StringArray from a column
+/// Type-safe extraction of a `StringArray` from a column
 ///
 /// # Arguments
 /// * `batch` - The record batch
 /// * `column_name` - The name of the column to extract
 ///
 /// # Returns
-/// The column as a StringArray
+/// The column as a `StringArray`
 ///
 /// # Errors
-/// Returns an error if the column does not exist or is not a StringArray
+/// Returns an error if the column does not exist or is not a `StringArray`
 pub fn get_string_column<'a>(batch: &'a arrow::record_batch::RecordBatch, column_name: &str) -> Result<&'a StringArray> {
     let idx = get_column_index(batch, column_name)?;
     let column = batch.column(idx);
@@ -256,17 +256,17 @@ pub fn get_string_column<'a>(batch: &'a arrow::record_batch::RecordBatch, column
         })
 }
 
-/// Type-safe extraction of a Date32Array from a column
+/// Type-safe extraction of a `Date32Array` from a column
 ///
 /// # Arguments
 /// * `batch` - The record batch
 /// * `column_name` - The name of the column to extract
 ///
 /// # Returns
-/// The column as a Date32Array
+/// The column as a `Date32Array`
 ///
 /// # Errors
-/// Returns an error if the column does not exist or is not a Date32Array
+/// Returns an error if the column does not exist or is not a `Date32Array`
 pub fn get_date32_column<'a>(batch: &'a arrow::record_batch::RecordBatch, column_name: &str) -> Result<&'a Date32Array> {
     let idx = get_column_index(batch, column_name)?;
     let column = batch.column(idx);
@@ -283,17 +283,17 @@ pub fn get_date32_column<'a>(batch: &'a arrow::record_batch::RecordBatch, column
         })
 }
 
-/// Type-safe extraction of a Date64Array from a column
+/// Type-safe extraction of a `Date64Array` from a column
 ///
 /// # Arguments
 /// * `batch` - The record batch
 /// * `column_name` - The name of the column to extract
 ///
 /// # Returns
-/// The column as a Date64Array
+/// The column as a `Date64Array`
 ///
 /// # Errors
-/// Returns an error if the column does not exist or is not a Date64Array
+/// Returns an error if the column does not exist or is not a `Date64Array`
 pub fn get_date64_column<'a>(batch: &'a arrow::record_batch::RecordBatch, column_name: &str) -> Result<&'a Date64Array> {
     let idx = get_column_index(batch, column_name)?;
     let column = batch.column(idx);
@@ -310,17 +310,17 @@ pub fn get_date64_column<'a>(batch: &'a arrow::record_batch::RecordBatch, column
         })
 }
 
-/// Type-safe extraction of an Int32Array from a column
+/// Type-safe extraction of an `Int32Array` from a column
 ///
 /// # Arguments
 /// * `batch` - The record batch
 /// * `column_name` - The name of the column to extract
 ///
 /// # Returns
-/// The column as an Int32Array
+/// The column as an `Int32Array`
 ///
 /// # Errors
-/// Returns an error if the column does not exist or is not an Int32Array
+/// Returns an error if the column does not exist or is not an `Int32Array`
 pub fn get_int32_column<'a>(batch: &'a arrow::record_batch::RecordBatch, column_name: &str) -> Result<&'a Int32Array> {
     let idx = get_column_index(batch, column_name)?;
     let column = batch.column(idx);

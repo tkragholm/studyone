@@ -40,7 +40,7 @@ impl<T: Clone + 'static> EntityToBatchAdapter<T> {
     }
 }
 
-/// Entity filter adapter implementation for BatchFilter
+/// Entity filter adapter implementation for `BatchFilter`
 impl<T: Clone + Send + Sync + 'static + std::fmt::Debug> BatchFilter for EntityToBatchAdapter<T>
 where
     T: Clone + Send + Sync,
@@ -75,7 +75,7 @@ where
     }
 }
 
-/// Wrapper for an entity filter to make it compatible with the BatchFilter trait
+/// Wrapper for an entity filter to make it compatible with the `BatchFilter` trait
 pub struct EntityFilterAdapter<T, F: Filter<T>> {
     entity_filter: F,
     extract_fn: Arc<dyn Fn(&RecordBatch) -> Result<Vec<T>> + Send + Sync>,
@@ -145,7 +145,7 @@ where
     }
 }
 
-/// Adapter for making a BatchFilter implement the generic Filter trait
+/// Adapter for making a `BatchFilter` implement the generic Filter trait
 #[derive(Debug)]
 pub struct BatchFilterAdapter<F: BatchFilter> {
     batch_filter: F,

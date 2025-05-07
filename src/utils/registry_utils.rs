@@ -53,7 +53,7 @@ pub struct DateRangeConfig {
 
 impl DateRangeConfig {
     /// Create a new date range configuration
-    pub fn new(
+    #[must_use] pub fn new(
         start_date: Option<NaiveDate>,
         end_date: Option<NaiveDate>,
         date_column: &str,
@@ -66,7 +66,7 @@ impl DateRangeConfig {
     }
 
     /// Check if a date is within the configured range
-    pub fn is_in_range(&self, date: &NaiveDate) -> bool {
+    #[must_use] pub fn is_in_range(&self, date: &NaiveDate) -> bool {
         // Check start date constraint
         if let Some(start) = self.start_date {
             if date < &start {
@@ -86,7 +86,7 @@ impl DateRangeConfig {
 }
 
 /// Convert Arrow Date32 value to `NaiveDate`
-pub fn arrow_date_to_naive_date(days_since_epoch: i32) -> NaiveDate {
+#[must_use] pub fn arrow_date_to_naive_date(days_since_epoch: i32) -> NaiveDate {
     let epoch = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap();
     epoch + chrono::Days::new(days_since_epoch as u64)
 }
@@ -100,7 +100,7 @@ pub struct ColumnMappingConfig {
 
 impl ColumnMappingConfig {
     /// Create a new empty column mapping
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         Self {
             mappings: HashMap::new(),
         }
@@ -113,12 +113,12 @@ impl ColumnMappingConfig {
     }
 
     /// Get the target column name for a source column
-    pub fn get_target(&self, source: &str) -> Option<&String> {
+    #[must_use] pub fn get_target(&self, source: &str) -> Option<&String> {
         self.mappings.get(source)
     }
 
     /// Create a column mapping for LPR2 registry
-    pub fn lpr2_default() -> Self {
+    #[must_use] pub fn lpr2_default() -> Self {
         let mut config = Self::new();
         config
             .add_mapping("PNR", "patient_id")
@@ -130,7 +130,7 @@ impl ColumnMappingConfig {
     }
 
     /// Create a column mapping for LPR3 registry
-    pub fn lpr3_default() -> Self {
+    #[must_use] pub fn lpr3_default() -> Self {
         let mut config = Self::new();
         config
             .add_mapping("cpr", "patient_id")
@@ -258,7 +258,7 @@ pub struct BaseRegistry {
 
 impl BaseRegistry {
     /// Create a new base registry
-    pub fn new(name: &'static str, schema: SchemaRef) -> Self {
+    #[must_use] pub fn new(name: &'static str, schema: SchemaRef) -> Self {
         Self { name, schema }
     }
 }
@@ -304,7 +304,7 @@ pub struct RegistryIntegrator {
 
 impl RegistryIntegrator {
     /// Create a new registry integrator
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         Self {
             registries: HashMap::new(),
         }
@@ -318,7 +318,7 @@ impl RegistryIntegrator {
     }
 
     /// Get a registry by name
-    pub fn get_registry(&self, name: &str) -> Option<&Arc<dyn Registry>> {
+    #[must_use] pub fn get_registry(&self, name: &str) -> Option<&Arc<dyn Registry>> {
         self.registries.get(name)
     }
 
@@ -338,7 +338,7 @@ impl RegistryIntegrator {
     }
 
     /// Load data from a registry asynchronously
-    pub fn load_registry_async<'a>(
+    #[must_use] pub fn load_registry_async<'a>(
         &'a self,
         name: &'a str,
         path: &'a Path,
@@ -361,7 +361,7 @@ impl Default for RegistryIntegrator {
     }
 }
 
-/// Extension trait for NaiveDate conversions
+/// Extension trait for `NaiveDate` conversions
 pub trait DateConversionExt {
     /// Check if a date is within a range
     fn is_in_range(&self, start: Option<&NaiveDate>, end: Option<&NaiveDate>) -> bool;

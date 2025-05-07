@@ -84,7 +84,7 @@ impl Parent {
         }
     }
     
-    /// Create a new Parent from an Individual (alias for from_individual)
+    /// Create a new Parent from an Individual (alias for `from_individual`)
     #[must_use]
     pub const fn new(individual: Arc<Individual>) -> Self {
         Self::from_individual(individual)

@@ -53,7 +53,7 @@ pub struct ExtractedAttributes {
 
 impl ExtractedAttributes {
     /// Check if the attributes are empty
-    pub fn is_empty(&self) -> bool {
+    #[must_use] pub fn is_empty(&self) -> bool {
         self.pnrs.is_empty()
     }
 }

@@ -19,7 +19,7 @@ pub const DEFAULT_GROUP_TEMPLATE: &str = "{spinner} [{elapsed_precise}] [{bar:40
 /// * `description` - Optional description to display as the initial message
 ///
 /// # Returns
-/// A configured ProgressBar
+/// A configured `ProgressBar`
 #[must_use]
 pub fn create_main_progress_bar(length: u64, description: Option<&str>) -> ProgressBar {
     let pb = ProgressBar::new(length);
@@ -44,7 +44,7 @@ pub fn create_main_progress_bar(length: u64, description: Option<&str>) -> Progr
 /// * `description` - Optional description to display as the initial message
 ///
 /// # Returns
-/// A configured ProgressBar
+/// A configured `ProgressBar`
 #[must_use]
 pub fn create_group_progress_bar(length: u64, description: Option<&str>) -> ProgressBar {
     let pb = ProgressBar::new(length);
@@ -69,7 +69,7 @@ pub fn create_group_progress_bar(length: u64, description: Option<&str>) -> Prog
 /// * `description` - Optional description for the main progress bar
 ///
 /// # Returns
-/// A tuple containing the MultiProgress instance and the main ProgressBar
+/// A tuple containing the `MultiProgress` instance and the main `ProgressBar`
 #[must_use]
 pub fn create_multi_progress(total: u64, description: Option<&str>) -> (MultiProgress, ProgressBar) {
     let mp = MultiProgress::new();
@@ -78,15 +78,15 @@ pub fn create_multi_progress(total: u64, description: Option<&str>) -> (MultiPro
     (mp, main_pb)
 }
 
-/// Add a group progress bar to a MultiProgress instance
+/// Add a group progress bar to a `MultiProgress` instance
 ///
 /// # Arguments
-/// * `mp` - The MultiProgress instance
+/// * `mp` - The `MultiProgress` instance
 /// * `length` - Total length for the group progress bar
 /// * `description` - Optional description for the group progress bar
 ///
 /// # Returns
-/// The configured group ProgressBar
+/// The configured group `ProgressBar`
 #[must_use]
 pub fn add_group_progress_bar(mp: &MultiProgress, length: u64, description: Option<&str>) -> ProgressBar {
     let pb = create_group_progress_bar(length, description);
@@ -99,7 +99,7 @@ pub fn add_group_progress_bar(mp: &MultiProgress, length: u64, description: Opti
 /// * `message` - Optional message to display with the spinner
 ///
 /// # Returns
-/// A configured spinner ProgressBar
+/// A configured spinner `ProgressBar`
 #[must_use]
 pub fn create_spinner(message: Option<&str>) -> ProgressBar {
     let pb = ProgressBar::new_spinner();
@@ -122,7 +122,7 @@ pub fn create_spinner(message: Option<&str>) -> ProgressBar {
 /// Finish a progress bar with a completion message
 ///
 /// # Arguments
-/// * `pb` - The ProgressBar to finish
+/// * `pb` - The `ProgressBar` to finish
 /// * `message` - Optional completion message
 pub fn finish_progress_bar(pb: &ProgressBar, message: Option<&str>) {
     if let Some(msg) = message {
@@ -135,7 +135,7 @@ pub fn finish_progress_bar(pb: &ProgressBar, message: Option<&str>) {
 /// Finish a progress bar and clear it from display
 ///
 /// # Arguments
-/// * `pb` - The ProgressBar to finish and clear
+/// * `pb` - The `ProgressBar` to finish and clear
 pub fn finish_and_clear(pb: &ProgressBar) {
     pb.finish_and_clear();
 }

@@ -5,7 +5,7 @@ use par_reader::models::{
 };
 
 // Helper function to create test individuals
-pub fn create_test_individuals() -> Vec<Individual> {
+#[must_use] pub fn create_test_individuals() -> Vec<Individual> {
     vec![
         Individual {
             pnr: "12345".to_string(),

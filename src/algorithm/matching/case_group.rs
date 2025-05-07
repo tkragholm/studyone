@@ -1,6 +1,6 @@
 //! Case grouping for parallel processing
 //!
-//! This module contains the CaseGroup struct for organizing cases into groups
+//! This module contains the `CaseGroup` struct for organizing cases into groups
 //! for efficient parallel processing based on birth date ranges.
 
 use chrono::NaiveDate;
