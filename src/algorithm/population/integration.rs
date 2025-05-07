@@ -10,7 +10,6 @@ use std::path::Path;
 use std::sync::Arc;
 
 use crate::error::Result;
-use crate::models::adapters::RegistryAdapter;
 use crate::models::family::FamilyCollection;
 use crate::models::{
     Child, Diagnosis, Income,

@@ -21,7 +21,6 @@ use std::fmt;
 use std::sync::Arc;
 
 use crate::error::Result;
-use crate::models::adapters::RegistryAdapter;
 use crate::models::adapters::{BefCombinedAdapter, MfrChildAdapter};
 use crate::models::family::FamilyCollection;
 use crate::models::family::FamilySnapshot;
