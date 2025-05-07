@@ -611,7 +611,7 @@ impl PopulationBuilder {
             if let Some(mother_pnr) = &mother_pnr {
                 if self.individuals.contains_key(mother_pnr) {
                     parent_pnrs.insert(mother_pnr.clone());
-                    log::debug!("Adding mother {} to family {}", mother_pnr, family_id);
+                    log::debug!("Adding mother {mother_pnr} to family {family_id}");
                 }
             }
 
@@ -619,7 +619,7 @@ impl PopulationBuilder {
             if let Some(father_pnr) = &father_pnr {
                 if self.individuals.contains_key(father_pnr) {
                     parent_pnrs.insert(father_pnr.clone());
-                    log::debug!("Adding father {} to family {}", father_pnr, family_id);
+                    log::debug!("Adding father {father_pnr} to family {family_id}");
                 }
             }
 

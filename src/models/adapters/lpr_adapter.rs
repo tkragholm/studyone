@@ -293,12 +293,9 @@ impl Lpr2DiagAdapter {
         )?;
 
         let date_array = if let Some(array) = &date_array_opt {
-            match array.as_any().downcast_ref::<Date32Array>() {
-                Some(date_array) => Some(date_array),
-                None => {
-                    log::warn!("Failed to convert LEVERANCEDATO to Date32");
-                    None
-                }
+            if let Some(date_array) = array.as_any().downcast_ref::<Date32Array>() { Some(date_array) } else {
+                log::warn!("Failed to convert LEVERANCEDATO to Date32");
+                None
             }
         } else {
             None
@@ -438,12 +435,9 @@ impl Lpr3DiagnoserAdapter {
 
         let afkraeftet_array: Option<&StringArray> = match &afkraeftet_array_opt {
             Some(array) => {
-                match adapter_utils::downcast_array::<StringArray>(array, "senere_afkraeftet", "String") {
-                    Ok(string_array) => Some(string_array),
-                    Err(_) => {
-                        log::warn!("Column 'senere_afkraeftet' has unexpected data type, expected String");
-                        None
-                    }
+                if let Ok(string_array) = adapter_utils::downcast_array::<StringArray>(array, "senere_afkraeftet", "String") { Some(string_array) } else {
+                    log::warn!("Column 'senere_afkraeftet' has unexpected data type, expected String");
+                    None
                 }
             }
             None => None,

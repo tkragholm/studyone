@@ -393,7 +393,7 @@ impl DateConversionExt for NaiveDate {
 ///
 /// Creates a map from PNR to birth date for all individuals in the population
 /// which can be used for faster lookups in algorithms that need birth dates.
-pub fn collect_birth_dates(population: &crate::algorithm::population::Population) -> HashMap<String, NaiveDate> {
+#[must_use] pub fn collect_birth_dates(population: &crate::algorithm::population::Population) -> HashMap<String, NaiveDate> {
     let mut birth_dates = HashMap::new();
 
     // Extract individuals from the family collection

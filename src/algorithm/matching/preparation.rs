@@ -1,7 +1,7 @@
 //! Preparation utilities for case-control matching
 //! 
 //! This module provides utilities for preparing data for case-control matching,
-//! including converting between population objects and Arrow RecordBatches.
+//! including converting between population objects and Arrow `RecordBatches`.
 
 use std::collections::HashSet;
 use std::sync::Arc;
@@ -20,7 +20,7 @@ use crate::models::Individual;
 /// Prepare case and control groups from a population and list of individuals with a condition
 /// 
 /// This function takes a population and a list of PNRs for individuals with a specific
-/// condition (such as SCD) and converts them into Arrow RecordBatches suitable for
+/// condition (such as SCD) and converts them into Arrow `RecordBatches` suitable for
 /// use with the matching algorithm.
 pub fn prepare_case_control_groups(
     population: &Population,
@@ -131,7 +131,7 @@ pub fn prepare_case_control_groups(
 
             // Create record batch
             RecordBatch::try_new(schema.clone(), arrays)
-                .map_err(|e| anyhow::anyhow!("Failed to create record batch: {}", e).into())
+                .map_err(|e| anyhow::anyhow!("Failed to create record batch: {}", e))
         };
 
     // Convert cases and controls to record batches

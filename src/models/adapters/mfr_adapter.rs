@@ -277,11 +277,11 @@ impl MfrChildAdapter {
             let pnr = pnr_array.value(i).to_string();
             
             // Debug output to help troubleshoot
-            log::debug!("Processing MFR record for individual PNR: {}", pnr);
+            log::debug!("Processing MFR record for individual PNR: {pnr}");
 
             // Skip if we don't have this individual in our lookup
             if let Some(individual) = self.individual_lookup.get(&pnr) {
-                log::debug!("Found individual in lookup: {}", pnr);
+                log::debug!("Found individual in lookup: {pnr}");
                 
                 // Get birth details
                 let birth_details = self.extract_birth_details(batch, &pnr)?;

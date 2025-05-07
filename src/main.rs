@@ -43,7 +43,7 @@ async fn main() -> Result<()> {
     for individual in population.collection.get_individuals() {
         total_diagnoses += diagnosis_collection.get_diagnoses(&individual.pnr).len();
     }
-    println!("Loaded {} diagnoses", total_diagnoses);
+    println!("Loaded {total_diagnoses} diagnoses");
 
     // Apply SCD algorithm to diagnoses
     let birth_dates = collect_birth_dates(&population);

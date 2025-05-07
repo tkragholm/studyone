@@ -77,12 +77,9 @@ impl RegistryAdapter<Individual> for BefIndividualAdapter {
         
         let origin_array: Option<&StringArray> = match &origin_array_opt {
             Some(array) => {
-                match adapter_utils::downcast_array::<StringArray>(array, "OPR_LAND", "String") {
-                    Ok(string_array) => Some(string_array),
-                    Err(_) => {
-                        log::warn!("Column 'OPR_LAND' has unexpected data type, expected String");
-                        None
-                    }
+                if let Ok(string_array) = adapter_utils::downcast_array::<StringArray>(array, "OPR_LAND", "String") { Some(string_array) } else {
+                    log::warn!("Column 'OPR_LAND' has unexpected data type, expected String");
+                    None
                 }
             }
             None => None,
@@ -126,13 +123,10 @@ impl RegistryAdapter<Individual> for BefIndividualAdapter {
 
             // Convert birth date using the adapted array
             let birth_date = if let Some(birth_day_array) = &birth_day_array_opt {
-                let date32_array = match birth_day_array.as_any().downcast_ref::<Date32Array>() {
-                    Some(array) => array,
-                    None => {
-                        // Fallback to null if the conversion failed
-                        log::warn!("Failed to extract Date32 value for PNR {}", pnr);
-                        return Ok(individuals); // Return what we have so far
-                    }
+                let date32_array = if let Some(array) = birth_day_array.as_any().downcast_ref::<Date32Array>() { array } else {
+                    // Fallback to null if the conversion failed
+                    log::warn!("Failed to extract Date32 value for PNR {pnr}");
+                    return Ok(individuals); // Return what we have so far
                 };
                 
                 if i < date32_array.len() && !date32_array.is_null(i) {

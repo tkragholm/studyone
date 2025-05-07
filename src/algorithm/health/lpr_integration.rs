@@ -96,17 +96,14 @@ pub fn integrate_lpr2_components(
         false
     )?;
     
-    let primary_diag_array = match &primary_diag_col_opt {
-        Some(col) => col.as_any().downcast_ref::<StringArray>().ok_or_else(|| 
-            ParquetReaderError::InvalidDataType {
-                column: "C_ADIAG".to_string(),
-                expected: "StringArray".to_string(),
-            })?,
-        None => {
-            log::warn!("C_ADIAG column not found in LPR_ADM data");
-            // Create an empty array as fallback
-            &StringArray::from(Vec::<Option<&str>>::new())
-        }
+    let primary_diag_array = if let Some(col) = &primary_diag_col_opt { col.as_any().downcast_ref::<StringArray>().ok_or_else(|| 
+    ParquetReaderError::InvalidDataType {
+        column: "C_ADIAG".to_string(),
+        expected: "StringArray".to_string(),
+    })? } else {
+        log::warn!("C_ADIAG column not found in LPR_ADM data");
+        // Create an empty array as fallback
+        &StringArray::from(Vec::<Option<&str>>::new())
     };
 
     // For date columns, use adapter_utils which will handle conversion if needed
@@ -155,17 +152,14 @@ pub fn integrate_lpr2_components(
         false
     )?;
     
-    let diag_type_array = match &diag_type_col_opt {
-        Some(col) => col.as_any().downcast_ref::<StringArray>().ok_or_else(|| 
-            ParquetReaderError::InvalidDataType {
-                column: "C_DIAGTYPE".to_string(),
-                expected: "StringArray".to_string(),
-            })?,
-        None => {
-            log::warn!("C_DIAGTYPE column not found in LPR_DIAG data");
-            // Create an empty array as fallback
-            &StringArray::from(Vec::<Option<&str>>::new())
-        }
+    let diag_type_array = if let Some(col) = &diag_type_col_opt { col.as_any().downcast_ref::<StringArray>().ok_or_else(|| 
+    ParquetReaderError::InvalidDataType {
+        column: "C_DIAGTYPE".to_string(),
+        expected: "StringArray".to_string(),
+    })? } else {
+        log::warn!("C_DIAGTYPE column not found in LPR_DIAG data");
+        // Create an empty array as fallback
+        &StringArray::from(Vec::<Option<&str>>::new())
     };
 
     // Get record number column from LPR_ADM to link with LPR_DIAG
@@ -540,9 +534,9 @@ impl DiagnosisCollectionExt for DiagnosisCollection {
     }
 }
 
-/// Get available LPR_DIAG files
+/// Get available `LPR_DIAG` files
 ///
-/// This utility function gets all available LPR_DIAG files from the registry directory
+/// This utility function gets all available `LPR_DIAG` files from the registry directory
 pub fn get_lpr_diag_files() -> Result<Vec<PathBuf>> {
     let lpr_diag_path = registry_dir("lpr_diag");
     if !lpr_diag_path.exists() {
@@ -552,9 +546,9 @@ pub fn get_lpr_diag_files() -> Result<Vec<PathBuf>> {
     Ok(get_available_year_files("lpr_diag"))
 }
 
-/// Get available LPR_ADM files
+/// Get available `LPR_ADM` files
 ///
-/// This utility function gets all available LPR_ADM files from the registry directory
+/// This utility function gets all available `LPR_ADM` files from the registry directory
 pub fn get_lpr_adm_files() -> Result<Vec<PathBuf>> {
     let lpr_adm_path = registry_dir("lpr_adm");
     if !lpr_adm_path.exists() {
@@ -566,7 +560,7 @@ pub fn get_lpr_adm_files() -> Result<Vec<PathBuf>> {
 
 /// Load diagnoses from real LPR test data for all available years
 ///
-/// This implementation uses RegistryManager for efficient loading and automatic type conversion
+/// This implementation uses `RegistryManager` for efficient loading and automatic type conversion
 pub fn load_real_diagnoses(population: &Population) -> Result<DiagnosisCollection> {
     // Check if LPR data directories exist
     let lpr_diag_path = registry_dir("lpr_diag");
@@ -576,8 +570,7 @@ pub fn load_real_diagnoses(population: &Population) -> Result<DiagnosisCollectio
     if !lpr_diag_path.exists() && !lpr_adm_path.exists() {
         return Err(anyhow::anyhow!(
             "LPR data directories not found. Need either lpr_diag or lpr_adm."
-        )
-        .into());
+        ));
     }
 
     // Get all available LPR files
@@ -628,7 +621,7 @@ pub fn load_real_diagnoses(population: &Population) -> Result<DiagnosisCollectio
     for (diag_idx, diag_file) in lpr_diag_files.iter().enumerate() {
         // Try to find matching ADM file by getting the same index
         if diag_idx >= lpr_adm_files.len() {
-            log::info!("No matching LPR_ADM file for {:?}, skipping", diag_file);
+            log::info!("No matching LPR_ADM file for {diag_file:?}, skipping");
             continue;
         }
 
@@ -649,8 +642,8 @@ pub fn load_real_diagnoses(population: &Population) -> Result<DiagnosisCollectio
 
         // Register data sources for this year with the registry manager
         // We use unique names that include the year to avoid caching conflicts
-        let diag_name = format!("lpr_diag_{}", diag_year);
-        let adm_name = format!("lpr_adm_{}", diag_year);
+        let diag_name = format!("lpr_diag_{diag_year}");
+        let adm_name = format!("lpr_adm_{diag_year}");
 
         manager.register(&diag_name, diag_file)?;
         manager.register(&adm_name, adm_file)?;
@@ -665,7 +658,7 @@ pub fn load_real_diagnoses(population: &Population) -> Result<DiagnosisCollectio
 
         // Skip if no data
         if diag_batches.is_empty() || adm_batches.is_empty() {
-            log::info!("No data for year {}, skipping", diag_year);
+            log::info!("No data for year {diag_year}, skipping");
             continue;
         }
 
@@ -690,8 +683,7 @@ pub fn load_real_diagnoses(population: &Population) -> Result<DiagnosisCollectio
         }
 
         log::info!(
-            "Added {} diagnoses from year {}",
-            diagnoses_count, diag_year
+            "Added {diagnoses_count} diagnoses from year {diag_year}"
         );
     }
 
@@ -703,10 +695,10 @@ pub fn load_real_diagnoses(population: &Population) -> Result<DiagnosisCollectio
 
     // Check if we loaded any diagnoses
     if total_diagnoses == 0 {
-        return Err(anyhow::anyhow!("No LPR data loaded from any year").into());
+        return Err(anyhow::anyhow!("No LPR data loaded from any year"));
     }
 
-    log::info!("Total diagnoses loaded from all years: {}", total_diagnoses);
+    log::info!("Total diagnoses loaded from all years: {total_diagnoses}");
 
     Ok(combined_diagnosis_collection)
 }

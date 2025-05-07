@@ -31,7 +31,7 @@ pub enum IncomeType {
 
 impl IncomeType {
     /// Convert income type to string representation
-    pub const fn as_str(&self) -> &'static str {
+    #[must_use] pub const fn as_str(&self) -> &'static str {
         match self {
             Self::TotalPersonal => "total_personal",
             Self::Salary => "salary",
@@ -317,12 +317,9 @@ impl IndIncomeAdapter {
 
         let salary_array: Option<&Float64Array> = match &salary_array_opt {
             Some(array) => {
-                match adapter_utils::downcast_array::<Float64Array>(array, "LOENMV_13", "Float64") {
-                    Ok(float_array) => Some(float_array),
-                    Err(_) => {
-                        log::warn!("Column 'LOENMV_13' has unexpected data type, expected Float64");
-                        None
-                    }
+                if let Ok(float_array) = adapter_utils::downcast_array::<Float64Array>(array, "LOENMV_13", "Float64") { Some(float_array) } else {
+                    log::warn!("Column 'LOENMV_13' has unexpected data type, expected Float64");
+                    None
                 }
             }
             None => None,

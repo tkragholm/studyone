@@ -13,7 +13,7 @@ use crate::error::{Error, Result};
 use crate::schema::adapt::{compatibility, conversions, types::DateFormatConfig};
 
 /// Default date format configuration for date conversions
-pub fn default_date_config() -> DateFormatConfig {
+#[must_use] pub fn default_date_config() -> DateFormatConfig {
     DateFormatConfig {
         date_formats: vec![
             "%Y-%m-%d".to_string(),
@@ -51,19 +51,15 @@ pub fn get_column(
     required: bool,
 ) -> Result<Option<ArrayRef>> {
     // Try to find the column
-    let idx = match batch.schema().index_of(column_name) {
-        Ok(idx) => idx,
-        Err(_) => {
-            if required {
-                return Err(Error::ColumnNotFound {
-                    column: column_name.to_string(),
-                }
-                .into());
-            } else {
-                warn!("Column '{}' not found in record batch", column_name);
-                return Ok(None);
+    let idx = if let Ok(idx) = batch.schema().index_of(column_name) { idx } else {
+        if required {
+            return Err(Error::ColumnNotFound {
+                column: column_name.to_string(),
             }
+            .into());
         }
+        warn!("Column '{column_name}' not found in record batch");
+        return Ok(None);
     };
 
     // Get the column
@@ -77,8 +73,7 @@ pub fn get_column(
 
     // Types don't match, try to convert
     info!(
-        "Converting column '{}' from {:?} to {:?}",
-        column_name, actual_type, expected_type
+        "Converting column '{column_name}' from {actual_type:?} to {expected_type:?}"
     );
 
     // Use appropriate conversion based on the target type
@@ -90,8 +85,7 @@ pub fn get_column(
                 Ok(converted) => converted,
                 Err(err) => {
                     warn!(
-                        "Failed to convert column '{}' to {:?}: {}",
-                        column_name, expected_type, err
+                        "Failed to convert column '{column_name}' to {expected_type:?}: {err}"
                     );
                     // Create a null array as fallback
                     Arc::new(arrow::array::NullArray::new(batch.num_rows()))
@@ -104,8 +98,7 @@ pub fn get_column(
                 Ok(converted) => converted,
                 Err(err) => {
                     warn!(
-                        "Failed to convert column '{}' from {:?} to {:?}: {}",
-                        column_name, actual_type, expected_type, err
+                        "Failed to convert column '{column_name}' from {actual_type:?} to {expected_type:?}: {err}"
                     );
                     // Create a null array as fallback
                     Arc::new(arrow::array::NullArray::new(batch.num_rows()))
@@ -118,8 +111,7 @@ pub fn get_column(
                 Ok(converted) => converted,
                 Err(err) => {
                     warn!(
-                        "Failed to convert column '{}' to {:?}: {}",
-                        column_name, expected_type, err
+                        "Failed to convert column '{column_name}' to {expected_type:?}: {err}"
                     );
                     // Create a null array as fallback
                     Arc::new(arrow::array::NullArray::new(batch.num_rows()))
@@ -162,5 +154,5 @@ pub fn downcast_array<'a, A: Array + 'static>(
         });
     
     // Then convert from our custom error to anyhow::Error
-    result.map_err(|e| e.into())
+    result.map_err(std::convert::Into::into)
 }

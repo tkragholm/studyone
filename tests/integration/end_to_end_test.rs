@@ -46,7 +46,7 @@ fn test_end_to_end_workflow() -> Result<()> {
     for individual in population.collection.get_individuals() {
         total_diagnoses += diagnosis_collection.get_diagnoses(&individual.pnr).len();
     }
-    println!("Loaded {} diagnoses", total_diagnoses);
+    println!("Loaded {total_diagnoses} diagnoses");
 
     // Apply SCD algorithm to diagnoses
     let birth_dates = collect_birth_dates(&population);
@@ -214,7 +214,7 @@ fn load_real_diagnoses(population: &Population) -> Result<DiagnosisCollection> {
 
     if lpr_diag_files.is_empty() || lpr_adm_files.is_empty() {
         return Err(
-            anyhow::anyhow!("No LPR files found. Need both LPR_DIAG and LPR_ADM files.").into(),
+            anyhow::anyhow!("No LPR files found. Need both LPR_DIAG and LPR_ADM files."),
         );
     }
 
@@ -249,7 +249,7 @@ fn load_real_diagnoses(population: &Population) -> Result<DiagnosisCollection> {
     for (diag_idx, diag_file) in lpr_diag_files.iter().enumerate() {
         // Try to find matching ADM file by getting the same index
         if diag_idx >= lpr_adm_files.len() {
-            info!("No matching LPR_ADM file for {:?}, skipping", diag_file);
+            info!("No matching LPR_ADM file for {diag_file:?}, skipping");
             continue;
         }
         
@@ -270,7 +270,7 @@ fn load_real_diagnoses(population: &Population) -> Result<DiagnosisCollection> {
         
         // Skip if empty data
         if lpr_diag_data.is_empty() || lpr_adm_data.is_empty() {
-            info!("No data for year {}, skipping", diag_year);
+            info!("No data for year {diag_year}, skipping");
             continue;
         }
         
@@ -294,7 +294,7 @@ fn load_real_diagnoses(population: &Population) -> Result<DiagnosisCollection> {
             }
         }
         
-        info!("Added {} diagnoses from year {}", diagnoses_count, diag_year);
+        info!("Added {diagnoses_count} diagnoses from year {diag_year}");
     }
     
     // Count total diagnoses by iterating through all PNRs
@@ -305,15 +305,15 @@ fn load_real_diagnoses(population: &Population) -> Result<DiagnosisCollection> {
     
     // Check if we loaded any diagnoses
     if total_diagnoses == 0 {
-        return Err(anyhow::anyhow!("No LPR data loaded from any year").into());
+        return Err(anyhow::anyhow!("No LPR data loaded from any year"));
     }
     
-    info!("Total diagnoses loaded from all years: {}", total_diagnoses);
+    info!("Total diagnoses loaded from all years: {total_diagnoses}");
     
     Ok(combined_diagnosis_collection)
 }
 
-/// Get available LPR_DIAG files
+/// Get available `LPR_DIAG` files
 fn get_lpr_diag_files() -> Result<Vec<PathBuf>> {
     let lpr_diag_path = registry_dir("lpr_diag");
     if !lpr_diag_path.exists() {
@@ -323,7 +323,7 @@ fn get_lpr_diag_files() -> Result<Vec<PathBuf>> {
     Ok(get_available_year_files("lpr_diag"))
 }
 
-/// Get available LPR_ADM files
+/// Get available `LPR_ADM` files
 fn get_lpr_adm_files() -> Result<Vec<PathBuf>> {
     let lpr_adm_path = registry_dir("lpr_adm");
     if !lpr_adm_path.exists() {
@@ -449,7 +449,7 @@ fn prepare_case_control_groups(
 
             // Create record batch
             RecordBatch::try_new(schema.clone(), arrays)
-                .map_err(|e| anyhow::anyhow!("Failed to create record batch: {}", e).into())
+                .map_err(|e| anyhow::anyhow!("Failed to create record batch: {}", e))
         };
 
     // Convert cases and controls to record batches
