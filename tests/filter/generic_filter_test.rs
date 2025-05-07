@@ -6,7 +6,7 @@ use std::collections::HashSet;
 
 /// Test basic includes and excludes filter
 #[test]
-fn test_basic_filters() -> () {
+fn test_basic_filters() {
     // Test data
     let test_value = 42;
 
@@ -31,7 +31,7 @@ fn test_basic_filters() -> () {
 
 /// Test simple filters with AND, OR, NOT operations
 #[test]
-fn test_filter_combinators() -> () {
+fn test_filter_combinators() {
     // Create simple filters
     let even_filter = EvenNumberFilter;
     let gt_five_filter = GreaterThanFilter { threshold: 5 };
@@ -69,7 +69,7 @@ fn test_filter_combinators() -> () {
 
 /// Test filter builder pattern
 #[test]
-fn test_filter_builder() -> () {
+fn test_filter_builder() {
     // Create simple filters
     let even_filter = EvenNumberFilter;
     let gt_five_filter = GreaterThanFilter { threshold: 5 };
@@ -121,7 +121,7 @@ fn test_filter_builder() -> () {
 
 /// Test filter extension methods
 #[test]
-fn test_filter_extension_methods() -> () {
+fn test_filter_extension_methods() {
     // Create simple filters
     let even_filter1 = EvenNumberFilter;
     let even_filter2 = EvenNumberFilter;
@@ -168,7 +168,7 @@ fn test_filter_extension_methods() -> () {
 
 /// Test boxed filter implementation
 #[test]
-fn test_boxed_filter() -> () {
+fn test_boxed_filter() {
     // Create a simple filter
     let even_filter = EvenNumberFilter;
 
@@ -198,7 +198,7 @@ fn test_boxed_filter() -> () {
 
 /// Test resource tracking
 #[test]
-fn test_resource_tracking() -> () {
+fn test_resource_tracking() {
     // Create filters with different resource requirements
     let age_filter = AgeFilter { max_age: 30 };
     let gender_filter = GenderFilter {
@@ -225,7 +225,7 @@ fn test_resource_tracking() -> () {
 
 /// Test filters with domain entities
 #[test]
-fn test_domain_entity_filters() -> () {
+fn test_domain_entity_filters() {
     // Create test individuals
     let individuals = individuals::create_test_individuals();
 
@@ -264,7 +264,7 @@ fn test_domain_entity_filters() -> () {
 
 /// Test filters with family entities
 #[test]
-fn test_family_filters() -> () {
+fn test_family_filters() {
     // Create test families
     let families = families::create_test_families();
 
@@ -304,7 +304,7 @@ fn test_family_filters() -> () {
 
 /// Test adapter pattern
 #[test]
-fn test_filter_adapters() -> () {
+fn test_filter_adapters() {
     // Create test individuals
     let individuals = individuals::create_test_individuals();
 

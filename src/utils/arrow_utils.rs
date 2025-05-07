@@ -4,10 +4,13 @@
 //! with a focus on extracting and converting individual values from arrays.
 //! It builds upon the type conversion functionality in the schema/adapt/conversions module.
 
-use arrow::array::{Array, ArrayRef, BooleanArray, Date32Array, Date64Array, Float32Array, Float64Array, Int32Array, Int64Array, StringArray};
+use crate::error::{ParquetReaderError, Result};
+use arrow::array::{
+    Array, ArrayRef, BooleanArray, Date32Array, Date64Array, Float32Array, Float64Array,
+    Int32Array, Int64Array, StringArray,
+};
 use arrow::datatypes::DataType;
 use chrono::NaiveDate;
-use crate::error::{ParquetReaderError, Result};
 
 /// Extract a string value from an Arrow array at the specified index, handling nulls
 ///
@@ -91,7 +94,7 @@ pub fn arrow_array_to_i32(array: &ArrayRef, index: usize) -> Option<i32> {
         }
         DataType::Int64 => {
             let int_array = array.as_any().downcast_ref::<Int64Array>()?;
-            Some(int_array.value(index) as i32)
+            Some(i32::try_from(int_array.value(index)).expect("Failed to cast i64 to i32"))
         }
         DataType::Float32 => {
             let float_array = array.as_any().downcast_ref::<Float32Array>()?;
@@ -206,11 +209,13 @@ pub fn arrow_array_to_bool(array: &ArrayRef, index: usize) -> Option<bool> {
 ///
 /// # Errors
 /// Returns an error if the column does not exist
-pub fn get_column_index(batch: &arrow::record_batch::RecordBatch, column_name: &str) -> Result<usize> {
-    batch
-        .schema()
-        .index_of(column_name)
-        .map_err(|_| ParquetReaderError::ValidationError(format!("Column not found: {column_name}")).into())
+pub fn get_column_index(
+    batch: &arrow::record_batch::RecordBatch,
+    column_name: &str,
+) -> Result<usize> {
+    batch.schema().index_of(column_name).map_err(|_| {
+        ParquetReaderError::ValidationError(format!("Column not found: {column_name}")).into()
+    })
 }
 
 /// Get a column from a record batch by name
@@ -240,10 +245,13 @@ pub fn get_column(batch: &arrow::record_batch::RecordBatch, column_name: &str) -
 ///
 /// # Errors
 /// Returns an error if the column does not exist or is not a `StringArray`
-pub fn get_string_column<'a>(batch: &'a arrow::record_batch::RecordBatch, column_name: &str) -> Result<&'a StringArray> {
+pub fn get_string_column<'a>(
+    batch: &'a arrow::record_batch::RecordBatch,
+    column_name: &str,
+) -> Result<&'a StringArray> {
     let idx = get_column_index(batch, column_name)?;
     let column = batch.column(idx);
-    
+
     column
         .as_any()
         .downcast_ref::<StringArray>()
@@ -267,10 +275,13 @@ pub fn get_string_column<'a>(batch: &'a arrow::record_batch::RecordBatch, column
 ///
 /// # Errors
 /// Returns an error if the column does not exist or is not a `Date32Array`
-pub fn get_date32_column<'a>(batch: &'a arrow::record_batch::RecordBatch, column_name: &str) -> Result<&'a Date32Array> {
+pub fn get_date32_column<'a>(
+    batch: &'a arrow::record_batch::RecordBatch,
+    column_name: &str,
+) -> Result<&'a Date32Array> {
     let idx = get_column_index(batch, column_name)?;
     let column = batch.column(idx);
-    
+
     column
         .as_any()
         .downcast_ref::<Date32Array>()
@@ -294,10 +305,13 @@ pub fn get_date32_column<'a>(batch: &'a arrow::record_batch::RecordBatch, column
 ///
 /// # Errors
 /// Returns an error if the column does not exist or is not a `Date64Array`
-pub fn get_date64_column<'a>(batch: &'a arrow::record_batch::RecordBatch, column_name: &str) -> Result<&'a Date64Array> {
+pub fn get_date64_column<'a>(
+    batch: &'a arrow::record_batch::RecordBatch,
+    column_name: &str,
+) -> Result<&'a Date64Array> {
     let idx = get_column_index(batch, column_name)?;
     let column = batch.column(idx);
-    
+
     column
         .as_any()
         .downcast_ref::<Date64Array>()
@@ -321,18 +335,18 @@ pub fn get_date64_column<'a>(batch: &'a arrow::record_batch::RecordBatch, column
 ///
 /// # Errors
 /// Returns an error if the column does not exist or is not an `Int32Array`
-pub fn get_int32_column<'a>(batch: &'a arrow::record_batch::RecordBatch, column_name: &str) -> Result<&'a Int32Array> {
+pub fn get_int32_column<'a>(
+    batch: &'a arrow::record_batch::RecordBatch,
+    column_name: &str,
+) -> Result<&'a Int32Array> {
     let idx = get_column_index(batch, column_name)?;
     let column = batch.column(idx);
-    
-    column
-        .as_any()
-        .downcast_ref::<Int32Array>()
-        .ok_or_else(|| {
-            ParquetReaderError::InvalidDataType {
-                column: column_name.to_string(),
-                expected: "Int32Array".to_string(),
-            }
-            .into()
-        })
+
+    column.as_any().downcast_ref::<Int32Array>().ok_or_else(|| {
+        ParquetReaderError::InvalidDataType {
+            column: column_name.to_string(),
+            expected: "Int32Array".to_string(),
+        }
+        .into()
+    })
 }
