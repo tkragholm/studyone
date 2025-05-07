@@ -913,16 +913,12 @@ impl Matcher {
 struct ExtractedAttributes {
     /// Personal identification numbers
     pnrs: Vec<String>,
-
     /// Birth dates
     birth_dates: Vec<NaiveDate>,
-
     /// Genders (optional)
     genders: Vec<Option<String>>,
-
     /// Family sizes (optional)
     family_sizes: Vec<Option<i32>>,
-
     /// Record batch indices
     indices: Vec<usize>,
 }
