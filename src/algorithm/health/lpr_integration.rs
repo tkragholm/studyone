@@ -484,8 +484,10 @@ pub fn process_lpr_data(
 
 /// Convert Arrow Date32 value to `NaiveDate`
 fn arrow_date_to_naive_date(days_since_epoch: i32) -> NaiveDate {
+    // Using a non-const approach for the date calculation
     let epoch = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap();
-    epoch + chrono::Days::new(days_since_epoch as u64)
+    epoch.checked_add_days(chrono::Days::new(days_since_epoch as u64))
+        .unwrap_or(epoch)
 }
 
 /// Extension trait for `DiagnosisCollection`
