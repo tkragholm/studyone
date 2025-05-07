@@ -18,6 +18,7 @@ use crate::error::Result;
 pub mod arrow_utils;
 pub mod progress;
 pub mod registry_utils;
+pub mod test_utils;
 
 /// Validates that a directory exists and is a directory
 ///
@@ -308,9 +309,7 @@ pub fn read_parquet<S: ::std::hash::BuildHasher + std::marker::Sync>(
                             batches.push(adapted_batch);
                         }
                         Err(e) => {
-                            log::warn!(
-                                "Failed to adapt record batch: {e}. Using original batch."
-                            );
+                            log::warn!("Failed to adapt record batch: {e}. Using original batch.");
                             let mut batches = batches_collector.lock().unwrap();
                             batches.push(batch.clone());
                         }

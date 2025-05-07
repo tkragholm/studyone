@@ -535,14 +535,13 @@ impl PopulationBuilder {
             .map(|(k, v)| (k.clone(), Arc::new(v.clone())))
             .collect();
 
-        // Create MFR adapter
-        // Using underscore to avoid unused variable warning since we're using the static function
-        let _adapter = MfrChildAdapter::new(individual_lookup);
+        // Create MFR adapter with individual lookup
+        let adapter = MfrChildAdapter::new(individual_lookup);
 
-        // Process each batch using the static function
+        // Process each batch using the adapter's process_batch method
         for batch in batches {
-            // Use the RegistryAdapter trait implementation to extract child data
-            let child_details = MfrChildAdapter::from_record_batch(&batch)?;
+            // Use the adapter instance to extract child data
+            let child_details = adapter.process_batch(&batch)?;
 
             // For each child detail record, try to find the corresponding individual
             for detail in child_details {
@@ -581,13 +580,30 @@ impl PopulationBuilder {
             self.families.len()
         );
 
+        // Log available family data before processing
+        log::info!(
+            "Identifying family roles from {} individuals",
+            self.individuals.len()
+        );
+
+        // Extract all family IDs from individuals
+        let mut family_ids = HashSet::new();
+        for individual in self.individuals.values() {
+            if let Some(family_id) = &individual.family_id {
+                family_ids.insert(family_id.clone());
+            }
+        }
+        log::info!("Found {} unique family IDs in individual data", family_ids.len());
+
         // Extract family relationships from BEF data
         let relationships = BefCombinedAdapter::extract_relationships(
             &self.individuals.values().cloned().collect::<Vec<_>>(),
         );
 
+        log::info!("Extracted {} family relationships", relationships.len());
+
         // Process each family
-        for (_family_id, (mother_pnr, father_pnr, children_pnrs)) in relationships {
+        for (family_id, (mother_pnr, father_pnr, children_pnrs)) in relationships {
             // Find all relevant individuals
             let mut parent_pnrs = HashSet::new();
 
@@ -595,6 +611,7 @@ impl PopulationBuilder {
             if let Some(mother_pnr) = &mother_pnr {
                 if self.individuals.contains_key(mother_pnr) {
                     parent_pnrs.insert(mother_pnr.clone());
+                    log::debug!("Adding mother {} to family {}", mother_pnr, family_id);
                 }
             }
 
@@ -602,6 +619,7 @@ impl PopulationBuilder {
             if let Some(father_pnr) = &father_pnr {
                 if self.individuals.contains_key(father_pnr) {
                     parent_pnrs.insert(father_pnr.clone());
+                    log::debug!("Adding father {} to family {}", father_pnr, family_id);
                 }
             }
 
@@ -694,8 +712,27 @@ impl PopulationBuilder {
             let has_father = family.father.is_some();
             let has_children = !family.children.is_empty();
 
+            // Log family composition for debugging
+            log::debug!(
+                "Family {}: mother={}, father={}, children={}",
+                family_id,
+                has_mother,
+                has_father,
+                family.children.len()
+            );
+
+            // Add family if it meets criteria
             if has_children && (!self.config.two_parent_only || (has_mother && has_father)) {
                 collection.add_family(family);
+            } else {
+                log::debug!(
+                    "Skipping family {} (children={}, two_parent_only={}, has_mother={}, has_father={})",
+                    family_id,
+                    has_children,
+                    self.config.two_parent_only,
+                    has_mother,
+                    has_father
+                );
             }
         }
 

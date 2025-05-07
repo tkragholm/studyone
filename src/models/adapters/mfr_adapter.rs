@@ -42,9 +42,11 @@ impl MfrChildAdapter {
             })?;
 
         // These fields might be optional in MFR schema
-        let birth_weight_idx = batch.schema().index_of("VAGT").ok();
-        let gestational_age_idx = batch.schema().index_of("SVLENGDE").ok();
-        let apgar_idx = batch.schema().index_of("APGAR5").ok();
+        // Column names from actual data schema
+        let birth_weight_idx = batch.schema().index_of("VAEGT_BARN").ok();
+        let gestational_age_idx = batch.schema().index_of("GESTATIONSALDER_DAGE").ok();
+        // APGAR5 doesn't exist in this schema, we'll leave it as None
+        let apgar_idx = None;
 
         // Get arrays
         let pnr_array = batch
@@ -61,17 +63,17 @@ impl MfrChildAdapter {
             if pnr_array.value(i) == pnr {
                 // Extract birth details if columns exist
                 let birth_weight = if let Some(idx) = birth_weight_idx {
-                    // Assuming birth weight is stored as an Int32 or similar
-                    // In a real implementation, check the actual data type
+                    // Birth weight is stored as a Float64 in our data
                     batch
                         .column(idx)
                         .as_any()
-                        .downcast_ref::<arrow::array::Int32Array>()
+                        .downcast_ref::<arrow::array::Float64Array>()
                         .and_then(|array| {
                             if array.is_null(i) {
                                 None
                             } else {
-                                Some(array.value(i))
+                                // Convert float to integer grams
+                                Some(array.value(i) as i32)
                             }
                         })
                 } else {
@@ -273,9 +275,14 @@ impl MfrChildAdapter {
         // Process each row in the batch
         for i in 0..batch.num_rows() {
             let pnr = pnr_array.value(i).to_string();
+            
+            // Debug output to help troubleshoot
+            log::debug!("Processing MFR record for individual PNR: {}", pnr);
 
             // Skip if we don't have this individual in our lookup
             if let Some(individual) = self.individual_lookup.get(&pnr) {
+                log::debug!("Found individual in lookup: {}", pnr);
+                
                 // Get birth details
                 let birth_details = self.extract_birth_details(batch, &pnr)?;
 

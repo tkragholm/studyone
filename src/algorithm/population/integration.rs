@@ -207,14 +207,17 @@ impl RegistryIntegration {
             let registry = factory::registry_from_name("lpr3_diagnoser")?;
             let batches = registry.load(path, pnr_filter)?;
 
-            // Create an empty PNR lookup for the adapter
+            // Create and populate a PNR lookup for the adapter
+            // For LPR3, we'd need to map kontakt IDs to PNRs
+            // This is just a placeholder since actual implementation would depend on data structure
             let pnr_lookup: HashMap<String, String> = HashMap::new();
-            // Using underscore to avoid unused variable warning since we're using the static function
-            let _adapter = Lpr3DiagnoserAdapter::new(pnr_lookup);
+            
+            // Create the adapter with lookup
+            let adapter = Lpr3DiagnoserAdapter::new(pnr_lookup);
 
             for batch in batches {
-                // Use static function call instead of method
-                let batch_diagnoses = Lpr3DiagnoserAdapter::from_record_batch(&batch)?;
+                // Use the adapter's process_batch method
+                let batch_diagnoses = adapter.process_batch(&batch)?;
 
                 // Group diagnoses by individual
                 for diagnosis in batch_diagnoses {
@@ -229,14 +232,17 @@ impl RegistryIntegration {
             let registry = factory::registry_from_name("lpr_diag")?;
             let batches = registry.load(path, pnr_filter)?;
 
-            // Create an empty PNR lookup for the adapter
+            // Create and populate a PNR lookup for the adapter
+            // For LPR2, we'd need to map record IDs to PNRs
+            // This is just a placeholder since actual implementation would depend on data structure
             let pnr_lookup: HashMap<String, String> = HashMap::new();
-            // Using underscore to avoid unused variable warning since we're using the static function
-            let _adapter = Lpr2DiagAdapter::new(pnr_lookup);
+            
+            // Create the adapter with lookup
+            let adapter = Lpr2DiagAdapter::new(pnr_lookup);
 
             for batch in batches {
-                // Use static function call instead of method
-                let batch_diagnoses = Lpr2DiagAdapter::from_record_batch(&batch)?;
+                // Use the adapter's process_batch method
+                let batch_diagnoses = adapter.process_batch(&batch)?;
 
                 // Group diagnoses by individual
                 for diagnosis in batch_diagnoses {
