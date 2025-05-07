@@ -5,20 +5,22 @@
 //! in the `STUDY_FLOW.md` document.
 
 // Re-export entity models
-pub mod individual;
-pub mod family;
-pub mod parent;
 pub mod child;
 pub mod diagnosis;
+pub mod family;
 pub mod income;
+pub mod individual;
+pub mod parent;
 
-// Adapters submodule for registry-to-model mapping
-pub mod adapters;
+// Schema-aware model constructors (direct registry integration)
+pub mod child_schema_constructors;
+pub mod diagnosis_schema_constructors;
+pub mod income_schema_constructors;
 
 // Re-export commonly used types
-pub use individual::Individual;
-pub use family::Family;
-pub use parent::Parent;
 pub use child::Child;
 pub use diagnosis::Diagnosis;
+pub use family::Family;
 pub use income::Income;
+pub use individual::Individual;
+pub use parent::Parent;

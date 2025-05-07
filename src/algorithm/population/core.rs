@@ -21,11 +21,12 @@ use std::fmt;
 use std::sync::Arc;
 
 use crate::error::Result;
-use crate::models::adapters::{BefCombinedAdapter, MfrChildAdapter};
 use crate::models::family::FamilyCollection;
 use crate::models::family::FamilySnapshot;
 use crate::models::{Child, Family, Individual, Parent};
-use crate::registry::{RegisterLoader, factory};
+use crate::registry::BefCombinedRegister;
+
+use crate::registry::{MfrChildRegister, RegisterLoader, factory};
 use crate::utils::test_utils::{ensure_path_exists, registry_dir};
 
 /// Configuration for population generation
@@ -212,19 +213,13 @@ impl Population {
             // Use the current year as an example - in a real implementation,
             // we would load data for multiple years
             let current_year = chrono::Utc::now().year();
-            integration.add_income_data(
-                ind_path,
-                current_year,
-                pnr_filter.as_ref(),
-            )?;
+            integration.add_income_data(ind_path, current_year, pnr_filter.as_ref())?;
             progress += 1;
             log::debug!("Completed {progress}/{total_steps} steps of population generation");
         }
 
         // Step 7: Process and enhance the population
-        log::info!(
-            "[Step {total_steps}/{total_steps}] Processing population relationships"
-        );
+        log::info!("[Step {total_steps}/{total_steps}] Processing population relationships");
 
         // Identify siblings
         integration.identify_siblings()?;
@@ -356,9 +351,7 @@ impl Population {
                     0.0
                 };
 
-                summary.push_str(&format!(
-                    "    {type_label}: {count} ({percentage:.1}%)\n"
-                ));
+                summary.push_str(&format!("    {type_label}: {count} ({percentage:.1}%)\n"));
             }
         }
 
@@ -470,7 +463,7 @@ impl PopulationBuilder {
         for batch in batches {
             // Use the BEF adapter to extract individuals and families
             let (mut batch_individuals, batch_families) =
-                BefCombinedAdapter::process_batch(&batch)?;
+                BefCombinedRegister::process_batch(&batch)?;
 
             // Apply filtering based on configuration
             if self.config.resident_only {
@@ -536,7 +529,7 @@ impl PopulationBuilder {
             .collect();
 
         // Create MFR adapter with individual lookup
-        let adapter = MfrChildAdapter::new(individual_lookup);
+        let adapter = MfrChildRegister::new_with_lookup(individual_lookup);
 
         // Process each batch using the adapter's process_batch method
         for batch in batches {
@@ -593,10 +586,13 @@ impl PopulationBuilder {
                 family_ids.insert(family_id.clone());
             }
         }
-        log::info!("Found {} unique family IDs in individual data", family_ids.len());
+        log::info!(
+            "Found {} unique family IDs in individual data",
+            family_ids.len()
+        );
 
         // Extract family relationships from BEF data
-        let relationships = BefCombinedAdapter::extract_relationships(
+        let relationships = BefCombinedRegister::extract_relationships(
             &self.individuals.values().cloned().collect::<Vec<_>>(),
         );
 
@@ -625,9 +621,9 @@ impl PopulationBuilder {
 
             // Create parent objects for identified parents
             for pnr in &parent_pnrs {
-                if let Some(individual) = self.individuals.get(pnr) {
+                if let Some(individual) = self.individuals.get(&pnr.to_string()) {
                     // Create a new Parent if it doesn't already exist
-                    if !self.parents.contains_key(pnr) {
+                    if !self.parents.contains_key(&pnr.to_string()) {
                         let individual_arc = Arc::new(individual.clone());
                         let parent = Parent::from_individual(individual_arc);
                         self.parents.insert(pnr.clone(), parent);
@@ -767,7 +763,7 @@ impl Default for PopulationBuilder {
 }
 
 /// Generate a test population from the test data
-/// 
+///
 /// This is a utility function to easily create a test population
 /// for development and testing purposes using test data directories.
 pub fn generate_test_population() -> Result<Population> {

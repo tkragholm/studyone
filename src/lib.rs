@@ -37,12 +37,8 @@ pub use arrow::record_batch::RecordBatch;
 // Domain models
 pub use models::{Child, Diagnosis, Family, Income, Individual, Parent};
 
-// Adapter models for registry data
-pub use models::adapters::{
-    BefCombinedAdapter, BefFamilyAdapter, BefIndividualAdapter, IndIncomeAdapter,
-    IndMultiYearAdapter, Lpr2DiagAdapter, Lpr3DiagnoserAdapter, LprCombinedAdapter,
-    MfrChildAdapter, RegistryAdapter,
-};
+// Registry-model conversion
+pub use registry::model_conversion::{ModelConversion, ModelConversionExt};
 
 // Filtering capabilities
 pub use filter::{Expr, LiteralValue};

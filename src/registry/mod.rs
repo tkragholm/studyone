@@ -86,11 +86,13 @@ pub use dod::DodRegister;
 pub use dodsaarsag::DodsaarsagRegister;
 pub use idan::IdanRegister;
 pub use ind::IndRegister;
+pub use ind_model_conversion::YearConfiguredIndRegister;
 pub use lpr::{
     Lpr3DiagnoserRegister, Lpr3KontakterRegister, LprAdmRegister, LprBesRegister, LprDiagRegister,
     LprPaths, find_lpr_files,
 };
 pub use mfr::MfrRegister;
+pub use mfr_model_conversion::MfrChildRegister;
 pub use uddf::UddfRegister;
 pub use vnds::VndsRegister;
 
@@ -102,3 +104,16 @@ pub use transform::{
     add_postal_code_region, add_year_column, filter_by_date_range, filter_out_missing_values,
     map_categorical_values, scale_numeric_values, transform_records,
 };
+
+// Model conversion traits and implementation
+pub mod model_conversion;
+pub use model_conversion::{ModelConversion, ModelConversionExt};
+
+// Registry-specific model conversion implementations
+pub mod bef_combined_register;
+pub mod bef_model_conversion;
+pub mod ind_model_conversion;
+pub mod lpr_model_conversion;
+pub mod mfr_model_conversion;
+
+pub use bef_combined_register::BefCombinedRegister;

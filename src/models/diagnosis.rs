@@ -3,12 +3,14 @@
 //! This module contains the Diagnosis model, representing health diagnoses in the study.
 //! Diagnoses are used to determine severe chronic disease (SCD) status and
 //! categorize conditions by type and severity.
+//! 
+//! Also includes SCD classification criteria and utilities for handling diagnosis data.
 
 use crate::error::Result;
 use arrow::datatypes::{DataType, Field, Schema};
 use arrow::record_batch::RecordBatch;
 use chrono::NaiveDate;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 /// Type of diagnosis (primary or secondary)
@@ -154,6 +156,139 @@ impl Diagnosis {
         // This would create Arrow arrays for each field and then combine them
         // For brevity, this is left as a placeholder
         unimplemented!("Conversion to RecordBatch not yet implemented")
+    }
+}
+
+/// ICD-10 SCD classification criteria
+#[derive(Debug, Clone)]
+pub struct ScdCriteria {
+    /// ICD-10 codes that qualify as severe chronic disease
+    scd_codes: HashSet<String>,
+    /// ICD-10 code patterns (prefixes) that qualify as severe chronic disease
+    scd_patterns: Vec<String>,
+    /// Severity mappings for specific diagnoses
+    severity_mappings: HashMap<String, i32>,
+    /// Default severity for SCD diagnoses without specific mapping
+    default_severity: i32,
+}
+
+impl ScdCriteria {
+    /// Create a new SCD criteria set with defaults
+    #[must_use]
+    pub fn new() -> Self {
+        let mut scd_codes = HashSet::new();
+        // Examples of specific ICD-10 codes considered severe chronic diseases
+        scd_codes.insert("E10".to_string()); // Type 1 diabetes
+        scd_codes.insert("G40".to_string()); // Epilepsy
+        scd_codes.insert("Q90".to_string()); // Down syndrome
+        scd_codes.insert("C50".to_string()); // Malignant neoplasm of breast
+
+        // Examples of ICD-10 code patterns for SCD categories
+        let scd_patterns = vec![
+            "C".to_string(),   // All cancers
+            "D80".to_string(), // Immunodeficiency
+            "G71".to_string(), // Primary disorders of muscles
+            "Q".to_string(),   // Congenital malformations
+        ];
+
+        let mut severity_mappings = HashMap::new();
+        // Examples of severity classifications (1=mild, 2=moderate, 3=severe)
+        severity_mappings.insert("E10".to_string(), 2); // Type 1 diabetes - moderate
+        severity_mappings.insert("G40".to_string(), 2); // Epilepsy - moderate
+        severity_mappings.insert("C".to_string(), 3); // Cancer - severe
+        severity_mappings.insert("Q90".to_string(), 3); // Down syndrome - severe
+
+        Self {
+            scd_codes,
+            scd_patterns,
+            severity_mappings,
+            default_severity: 2, // Default to moderate severity
+        }
+    }
+
+    /// Check if an ICD-10 code is classified as a severe chronic disease
+    #[must_use]
+    pub fn is_scd(&self, code: &str) -> bool {
+        if self.scd_codes.contains(code) {
+            return true;
+        }
+
+        for pattern in &self.scd_patterns {
+            if code.starts_with(pattern) {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    /// Get severity for an ICD-10 code
+    #[must_use]
+    pub fn get_severity(&self, code: &str) -> i32 {
+        // Check for exact code match
+        if let Some(severity) = self.severity_mappings.get(code) {
+            return *severity;
+        }
+
+        // Check for pattern match
+        for (pattern, severity) in &self.severity_mappings {
+            if code.starts_with(pattern) {
+                return *severity;
+            }
+        }
+
+        self.default_severity
+    }
+
+    /// Check if a diagnosis is congenital (based on ICD-10 chapter)
+    #[must_use]
+    pub fn is_congenital(&self, code: &str) -> bool {
+        // Q codes are congenital malformations
+        code.starts_with('Q')
+    }
+}
+
+impl Default for ScdCriteria {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Get SCD category for an ICD-10 code
+/// 
+/// Maps ICD-10 codes to SCD categories (1-10) based on disease type
+#[must_use]
+pub fn get_scd_category_for_code(code: &str) -> u8 {
+    // Simple mapping based on ICD-10 chapter
+    if code.starts_with('C') || code.starts_with('D') && code.len() >= 3 && &code[1..3] <= "48"
+    {
+        1 // Blood/neoplasm
+    } else if (code.starts_with('D')
+        && code.len() >= 3
+        && &code[1..3] >= "50"
+        && &code[1..3] <= "89")
+        || code.starts_with("M35")
+        || code.starts_with("M30")
+    {
+        2 // Immune
+    } else if code.starts_with('E') {
+        3 // Endocrine
+    } else if code.starts_with('G') {
+        4 // Neurological
+    } else if code.starts_with('I') {
+        5 // Cardiovascular
+    } else if code.starts_with('J') {
+        6 // Respiratory
+    } else if code.starts_with('K') {
+        7 // Gastrointestinal
+    } else if code.starts_with('M') && code != "M35" && !code.starts_with("M30") {
+        8 // Musculoskeletal
+    } else if code.starts_with('N') {
+        9 // Renal
+    } else if code.starts_with('Q') {
+        10 // Congenital
+    } else {
+        0 // Other
     }
 }
 

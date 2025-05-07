@@ -163,7 +163,178 @@ impl Individual {
             immigration_date: None,
         }
     }
-
+    
+    /// Create an Individual directly from a BEF schema record
+    ///
+    /// This constructor understands the BEF registry schema and can extract
+    /// appropriate fields to create an Individual object. It handles field
+    /// extraction, type conversion, and default values automatically.
+    ///
+    /// # Arguments
+    ///
+    /// * `batch` - The record batch with BEF schema
+    /// * `row` - The row index to extract
+    ///
+    /// # Returns
+    ///
+    /// * `Result<Individual>` - The created Individual or an error
+    pub fn from_bef_record(batch: &RecordBatch, row: usize) -> Result<Self> {
+        use crate::utils::array_utils::{downcast_array, get_column};
+        use arrow::datatypes::DataType;
+        use arrow::array::{Array, Date32Array, Int8Array, StringArray};
+        
+        // Extract required columns with schema adaptation
+        let pnr_array_opt = get_column(batch, "PNR", &DataType::Utf8, true)?;
+        
+        // Need to get the column array directly
+        let pnr_array = match &pnr_array_opt {
+            Some(array) => downcast_array::<StringArray>(array, "PNR", "String")?,
+            None => return Err(crate::error::Error::ColumnNotFound {
+                column: "PNR".to_string(),
+            }.into()),
+        };
+        
+        // Extract birth date
+        let birth_day_array_opt = get_column(batch, "FOED_DAG", &DataType::Date32, true)?;
+        
+        // Extract parent IDs
+        let far_id_array_opt = get_column(batch, "FAR_ID", &DataType::Utf8, false)?;
+        let mor_id_array_opt = get_column(batch, "MOR_ID", &DataType::Utf8, false)?;
+        
+        // Get family ID
+        let familie_id_array_opt = get_column(batch, "FAMILIE_ID", &DataType::Utf8, false)?;
+        
+        // Get gender
+        let gender_array_opt = get_column(batch, "KOEN", &DataType::Utf8, false)?;
+        
+        // Get municipality code
+        let municipality_array_opt = get_column(batch, "KOM", &DataType::Int8, false)?;
+        
+        // Get origin information (optional)
+        let origin_array_opt = get_column(batch, "OPR_LAND", &DataType::Utf8, false)?;
+        
+        let pnr = pnr_array.value(row).to_string();
+        
+        // Determine gender
+        let gender = if let Some(array) = &gender_array_opt {
+            let gender_array = downcast_array::<StringArray>(array, "KOEN", "String")?;
+            if row < gender_array.len() && !gender_array.is_null(row) {
+                match gender_array.value(row) {
+                    "M" => Gender::Male,
+                    "F" => Gender::Female,
+                    _ => Gender::Unknown
+                }
+            } else {
+                Gender::Unknown
+            }
+        } else {
+            Gender::Unknown
+        };
+        
+        // Extract birth date
+        let birth_date = if let Some(array) = &birth_day_array_opt {
+            let date32_array = downcast_array::<Date32Array>(array, "FOED_DAG", "Date32")?;
+            if row < date32_array.len() && !date32_array.is_null(row) {
+                let days = date32_array.value(row);
+                NaiveDate::from_ymd_opt(1970, 1, 1)
+                    .and_then(|epoch| epoch.checked_add_days(chrono::Days::new(days as u64)))
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+        
+        // Parse origin
+        let origin = if let Some(array) = &origin_array_opt {
+            let origin_array = downcast_array::<StringArray>(array, "OPR_LAND", "String")?;
+            if row < origin_array.len() && !origin_array.is_null(row) {
+                match origin_array.value(row) {
+                    "5100" => Origin::Danish, // Denmark
+                    code => {
+                        let code_num = code.parse::<i32>().unwrap_or(0);
+                        if (5000..5999).contains(&code_num) {
+                            // Western countries
+                            Origin::Western
+                        } else {
+                            Origin::NonWestern
+                        }
+                    }
+                }
+            } else {
+                Origin::Danish // Default to Danish when null
+            }
+        } else {
+            Origin::Danish // Default to Danish when column is missing
+        };
+        
+        // Create the base individual
+        let mut individual = Individual::new(pnr, gender, birth_date);
+        
+        // Set origin
+        individual.origin = origin;
+        
+        // Set education level (not available in BEF)
+        individual.education_level = EducationLevel::Unknown;
+        
+        // Set municipality code
+        if let Some(array) = &municipality_array_opt {
+            let municipality_array = downcast_array::<Int8Array>(array, "KOM", "Int8")?;
+            if row < municipality_array.len() && !municipality_array.is_null(row) {
+                individual.municipality_code = Some(municipality_array.value(row).to_string());
+                // Municipalities with codes below 100 are typically rural
+                individual.is_rural = municipality_array.value(row) < 100;
+            }
+        }
+        
+        // Set parent PNRs
+        if let Some(array) = &far_id_array_opt {
+            let far_id_array = downcast_array::<StringArray>(array, "FAR_ID", "String")?;
+            if row < far_id_array.len() && !far_id_array.is_null(row) {
+                individual.father_pnr = Some(far_id_array.value(row).to_string());
+            }
+        }
+        
+        if let Some(array) = &mor_id_array_opt {
+            let mor_id_array = downcast_array::<StringArray>(array, "MOR_ID", "String")?;
+            if row < mor_id_array.len() && !mor_id_array.is_null(row) {
+                individual.mother_pnr = Some(mor_id_array.value(row).to_string());
+            }
+        }
+        
+        // Set family ID
+        if let Some(array) = &familie_id_array_opt {
+            let familie_id_array = downcast_array::<StringArray>(array, "FAMILIE_ID", "String")?;
+            if row < familie_id_array.len() && !familie_id_array.is_null(row) {
+                individual.family_id = Some(familie_id_array.value(row).to_string());
+            }
+        }
+        
+        Ok(individual)
+    }
+    
+    /// Create a collection of Individuals from a BEF record batch
+    ///
+    /// # Arguments
+    ///
+    /// * `batch` - The record batch with BEF schema
+    ///
+    /// # Returns
+    ///
+    /// * `Result<Vec<Individual>>` - The created Individuals or an error
+    pub fn from_bef_batch(batch: &RecordBatch) -> Result<Vec<Self>> {
+        let mut individuals = Vec::with_capacity(batch.num_rows());
+        
+        for i in 0..batch.num_rows() {
+            individuals.push(Self::from_bef_record(batch, i)?);
+        }
+        
+        Ok(individuals)
+    }
+    
+    // Helper function to create optimized batch conversions for other registry types
+    // Add additional from_*_record and from_*_batch methods for other registries
+    
     /// Calculate age of the individual at a specific reference date
     #[must_use]
     pub fn age_at(&self, reference_date: &NaiveDate) -> Option<i32> {

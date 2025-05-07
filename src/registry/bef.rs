@@ -14,6 +14,8 @@ use std::future::Future;
 use std::path::Path;
 use std::pin::Pin;
 
+// Import model conversion trait and models
+
 /// BEF registry loader for population demographic information
 #[derive(Debug, Clone)]
 pub struct BefRegister {

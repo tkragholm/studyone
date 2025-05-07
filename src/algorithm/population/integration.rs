@@ -11,12 +11,11 @@ use std::sync::Arc;
 
 use crate::error::Result;
 use crate::models::family::FamilyCollection;
-use crate::models::{
-    Child, Diagnosis, Income,
-    adapters::{
-        BefCombinedAdapter, IndIncomeAdapter, Lpr2DiagAdapter, Lpr3DiagnoserAdapter,
-        MfrChildAdapter,
-    },
+use crate::models::{Child, Diagnosis, Income};
+use crate::registry::BefCombinedRegister;
+use crate::registry::model_conversion::ModelConversion;
+use crate::registry::{
+    Lpr3DiagnoserRegister, LprDiagRegister, MfrChildRegister, YearConfiguredIndRegister,
 };
 
 use crate::Family;
@@ -123,7 +122,7 @@ impl RegistryIntegration {
 
         for batch in batches {
             // Use the BEF adapter to process the batch
-            let (individuals, families) = BefCombinedAdapter::process_batch(&batch)?;
+            let (individuals, families) = BefCombinedRegister::process_batch(&batch)?;
 
             // Add individuals to collection
             for individual in individuals {
@@ -160,11 +159,11 @@ impl RegistryIntegration {
             .collect();
 
         // Create MFR adapter with individual lookup
-        let adapter = MfrChildAdapter::new(individual_lookup);
+        let adapter = MfrChildRegister::new_with_lookup(individual_lookup);
 
         // Process and match children data
         for batch in batches {
-            // Use adapter's process_batch method instead of from_record_batch
+            // Use adapter's process_batch method
             let child_details = adapter.process_batch(&batch)?;
 
             for detail in child_details {
@@ -210,13 +209,15 @@ impl RegistryIntegration {
             // For LPR3, we'd need to map kontakt IDs to PNRs
             // This is just a placeholder since actual implementation would depend on data structure
             let pnr_lookup: HashMap<String, String> = HashMap::new();
-            
+
             // Create the adapter with lookup
-            let adapter = Lpr3DiagnoserAdapter::new(pnr_lookup);
+            use crate::registry::lpr_model_conversion::PnrLookupRegistry;
+            let mut adapter = Lpr3DiagnoserRegister::new();
+            adapter.set_pnr_lookup(pnr_lookup);
 
             for batch in batches {
-                // Use the adapter's process_batch method
-                let batch_diagnoses = adapter.process_batch(&batch)?;
+                // Use the adapter's to_models method
+                let batch_diagnoses = adapter.to_models(&batch)?;
 
                 // Group diagnoses by individual
                 for diagnosis in batch_diagnoses {
@@ -235,13 +236,15 @@ impl RegistryIntegration {
             // For LPR2, we'd need to map record IDs to PNRs
             // This is just a placeholder since actual implementation would depend on data structure
             let pnr_lookup: HashMap<String, String> = HashMap::new();
-            
+
             // Create the adapter with lookup
-            let adapter = Lpr2DiagAdapter::new(pnr_lookup);
+            use crate::registry::lpr_model_conversion::PnrLookupRegistry;
+            let mut adapter = LprDiagRegister::new();
+            adapter.set_pnr_lookup(pnr_lookup);
 
             for batch in batches {
-                // Use the adapter's process_batch method
-                let batch_diagnoses = adapter.process_batch(&batch)?;
+                // Use the adapter's to_models method
+                let batch_diagnoses = adapter.to_models(&batch)?;
 
                 // Group diagnoses by individual
                 for diagnosis in batch_diagnoses {
@@ -270,11 +273,11 @@ impl RegistryIntegration {
         let batches = registry.load(path, pnr_filter)?;
 
         // Create IND adapter for the specific year
-        let adapter = IndIncomeAdapter::new_without_cpi(year);
+        let adapter = YearConfiguredIndRegister::new(year);
 
         for batch in batches {
-            // There's no static version, so we need to keep using the instance method
-            let batch_incomes = adapter.from_record_batch_with_year(&batch)?;
+            // Use the to_models method
+            let batch_incomes = adapter.to_models(&batch)?;
 
             // Group incomes by individual
             for income in batch_incomes {

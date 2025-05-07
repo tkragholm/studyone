@@ -112,6 +112,7 @@ impl RegisterLoader for Lpr3KontakterRegister {
 #[derive(Debug, Clone)]
 pub struct Lpr3DiagnoserRegister {
     schema: SchemaRef,
+    pub pnr_lookup: Option<std::collections::HashMap<String, String>>,
 }
 
 impl Lpr3DiagnoserRegister {
@@ -120,6 +121,16 @@ impl Lpr3DiagnoserRegister {
     pub fn new() -> Self {
         Self {
             schema: lpr3_diagnoser_schema(),
+            pnr_lookup: None,
+        }
+    }
+
+    /// Create a new `LPR3_DIAGNOSER` registry loader with a PNR lookup
+    #[must_use]
+    pub fn with_pnr_lookup(pnr_lookup: std::collections::HashMap<String, String>) -> Self {
+        Self {
+            schema: lpr3_diagnoser_schema(),
+            pnr_lookup: Some(pnr_lookup),
         }
     }
 }
