@@ -91,7 +91,7 @@ mod tests {
         let batch = create_test_batch();
 
         // Create adapter for year 2020
-        let adapter = IndIncomeAdapter::new_without_cpi(2020);
+        let _adapter = IndIncomeAdapter::new_without_cpi(2020);
         let result = IndIncomeAdapter::from_record_batch(&batch);
 
         assert!(result.is_ok());

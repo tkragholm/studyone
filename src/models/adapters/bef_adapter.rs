@@ -3,11 +3,12 @@
 //! This module contains the adapter that maps BEF registry data to Individual and Family domain models.
 //! The BEF (Befolkning) registry contains population demographic information.
 
-use super::RegistryAdapter;
-use crate::error::{Error, Result};
+use super::{RegistryAdapter, adapter_utils};
+use crate::error::Result;
 use crate::models::family::{Family, FamilyType};
 use crate::models::individual::{EducationLevel, Gender, Individual, Origin};
 use arrow::array::{Array, Date32Array, Int8Array, StringArray};
+use arrow::datatypes::DataType;
 use arrow::record_batch::RecordBatch;
 use chrono::NaiveDate;
 use std::collections::HashMap;
@@ -19,132 +20,73 @@ pub struct BefIndividualAdapter;
 impl RegistryAdapter<Individual> for BefIndividualAdapter {
     /// Convert a BEF `RecordBatch` to a vector of Individual objects
     fn from_record_batch(batch: &RecordBatch) -> Result<Vec<Individual>> {
-        // Get the column indices for required fields
-        let pnr_idx = batch
-            .schema()
-            .index_of("PNR")
-            .map_err(|_| Error::ColumnNotFound {
-                column: "PNR".to_string(),
-            })?;
-        let birth_day_idx =
-            batch
-                .schema()
-                .index_of("FOED_DAG")
-                .map_err(|_| Error::ColumnNotFound {
-                    column: "FOED_DAG".to_string(),
-                })?;
-        let far_id_idx = batch
-            .schema()
-            .index_of("FAR_ID")
-            .map_err(|_| Error::ColumnNotFound {
-                column: "FAR_ID".to_string(),
-            })?;
-        let mor_id_idx = batch
-            .schema()
-            .index_of("MOR_ID")
-            .map_err(|_| Error::ColumnNotFound {
-                column: "MOR_ID".to_string(),
-            })?;
-        let familie_id_idx =
-            batch
-                .schema()
-                .index_of("FAMILIE_ID")
-                .map_err(|_| Error::ColumnNotFound {
-                    column: "FAMILIE_ID".to_string(),
-                })?;
-        let gender_idx = batch
-            .schema()
-            .index_of("KOEN")
-            .map_err(|_| Error::ColumnNotFound {
-                column: "KOEN".to_string(),
-            })?;
-        let municipality_idx =
-            batch
-                .schema()
-                .index_of("KOM")
-                .map_err(|_| Error::ColumnNotFound {
-                    column: "KOM".to_string(),
-                })?;
-        let origin_idx =
-            batch
-                .schema()
-                .index_of("OPR_LAND")
-                .map_err(|_| Error::ColumnNotFound {
-                    column: "OPR_LAND".to_string(),
-                })?;
+        // Get required columns with automatic type conversion
+        let pnr_array_opt = adapter_utils::get_column(batch, "PNR", &DataType::Utf8, true)?;
+        
+        // We need to get the column array directly
+        let pnr_array = match &pnr_array_opt {
+            Some(array) => adapter_utils::downcast_array::<StringArray>(array, "PNR", "String")?,
+            None => unreachable!(), // This can't happen because we specified required=true
+        };
 
-        // Cast columns to their appropriate types
-        let pnr_array = batch
-            .column(pnr_idx)
-            .as_any()
-            .downcast_ref::<StringArray>()
-            .ok_or_else(|| Error::InvalidDataType {
-                column: "PNR".to_string(),
-                expected: "String".to_string(),
-            })?;
+        // Get birth day with automatic conversion to Date32
+        let birth_day_array_opt =
+            adapter_utils::get_column(batch, "FOED_DAG", &DataType::Date32, true)?;
 
-        let birth_day_array = batch
-            .column(birth_day_idx)
-            .as_any()
-            .downcast_ref::<Date32Array>()
-            .ok_or_else(|| Error::InvalidDataType {
-                column: "FOED_DAG".to_string(),
-                expected: "Date32".to_string(),
-            })?;
+        // Get parent ID columns
+        let far_id_array_opt = adapter_utils::get_column(batch, "FAR_ID", &DataType::Utf8, true)?;
 
-        let far_id_array = batch
-            .column(far_id_idx)
-            .as_any()
-            .downcast_ref::<StringArray>()
-            .ok_or_else(|| Error::InvalidDataType {
-                column: "FAR_ID".to_string(),
-                expected: "String".to_string(),
-            })?;
-
-        let mor_id_array = batch
-            .column(mor_id_idx)
-            .as_any()
-            .downcast_ref::<StringArray>()
-            .ok_or_else(|| Error::InvalidDataType {
-                column: "MOR_ID".to_string(),
-                expected: "String".to_string(),
-            })?;
-
-        let familie_id_array = batch
-            .column(familie_id_idx)
-            .as_any()
-            .downcast_ref::<StringArray>()
-            .ok_or_else(|| Error::InvalidDataType {
-                column: "FAMILIE_ID".to_string(),
-                expected: "String".to_string(),
-            })?;
-
-        let gender_array = batch
-            .column(gender_idx)
-            .as_any()
-            .downcast_ref::<StringArray>()
-            .ok_or_else(|| Error::InvalidDataType {
-                column: "KOEN".to_string(),
-                expected: "String".to_string(),
-            })?;
-
-        let municipality_array = batch
-            .column(municipality_idx)
-            .as_any()
-            .downcast_ref::<Int8Array>()
-            .ok_or_else(|| Error::InvalidDataType {
-                column: "KOM".to_string(),
-                expected: "Int8".to_string(),
-            })?;
-
-        let origin_array = batch
-            .column(origin_idx)
-            .as_any()
-            .downcast_ref::<StringArray>()
-            .ok_or_else(|| Error::InvalidDataType {
-                column: "OPR_LAND".to_string(),
-                expected: "String".to_string(),
-            })?;
+        let far_id_array = match &far_id_array_opt {
+            Some(array) => adapter_utils::downcast_array::<StringArray>(array, "FAR_ID", "String")?,
+            None => unreachable!(), // This can't happen because we specified required=true
+        };
+        
+        let mor_id_array_opt = adapter_utils::get_column(batch, "MOR_ID", &DataType::Utf8, true)?;
+        
+        let mor_id_array = match &mor_id_array_opt {
+            Some(array) => adapter_utils::downcast_array::<StringArray>(array, "MOR_ID", "String")?,
+            None => unreachable!(), // This can't happen because we specified required=true
+        };
+        
+        // Get family ID column
+        let familie_id_array_opt = adapter_utils::get_column(batch, "FAMILIE_ID", &DataType::Utf8, true)?;
+        
+        let familie_id_array = match &familie_id_array_opt {
+            Some(array) => adapter_utils::downcast_array::<StringArray>(array, "FAMILIE_ID", "String")?,
+            None => unreachable!(), // This can't happen because we specified required=true
+        };
+        
+        // Get gender column
+        let gender_array_opt = adapter_utils::get_column(batch, "KOEN", &DataType::Utf8, true)?;
+        
+        let gender_array = match &gender_array_opt {
+            Some(array) => adapter_utils::downcast_array::<StringArray>(array, "KOEN", "String")?,
+            None => unreachable!(), // This can't happen because we specified required=true
+        };
+        
+        // Get municipality column with automatic numeric type conversion if needed
+        let municipality_array_opt = adapter_utils::get_column(batch, "KOM", &DataType::Int8, true)?;
+        
+        let municipality_array = match &municipality_array_opt {
+            Some(array) => adapter_utils::downcast_array::<Int8Array>(array, "KOM", "Int8")?,
+            None => unreachable!(), // This can't happen because we specified required=true
+        };
+        
+        // Get origin column (optional)
+        let origin_array_opt = adapter_utils::get_column(batch, "OPR_LAND", &DataType::Utf8, false)?;
+        
+        let origin_array: Option<&StringArray> = match &origin_array_opt {
+            Some(array) => {
+                match adapter_utils::downcast_array::<StringArray>(array, "OPR_LAND", "String") {
+                    Ok(string_array) => Some(string_array),
+                    Err(_) => {
+                        log::warn!("Column 'OPR_LAND' has unexpected data type, expected String");
+                        None
+                    }
+                }
+            }
+            None => None,
+        };
 
         // Create individual objects from the record batch
         let mut individuals = Vec::with_capacity(batch.num_rows());
@@ -182,34 +124,53 @@ impl RegistryAdapter<Individual> for BefIndividualAdapter {
                 }
             };
 
-            // Convert birth date
-            let birth_date = if birth_day_array.is_null(i) {
-                None
+            // Convert birth date using the adapted array
+            let birth_date = if let Some(birth_day_array) = &birth_day_array_opt {
+                let date32_array = match birth_day_array.as_any().downcast_ref::<Date32Array>() {
+                    Some(array) => array,
+                    None => {
+                        // Fallback to null if the conversion failed
+                        log::warn!("Failed to extract Date32 value for PNR {}", pnr);
+                        return Ok(individuals); // Return what we have so far
+                    }
+                };
+                
+                if i < date32_array.len() && !date32_array.is_null(i) {
+                    // Convert Date32 to NaiveDate (days since Unix epoch)
+                    let days = date32_array.value(i);
+                    NaiveDate::from_ymd_opt(1970, 1, 1).and_then(|epoch| {
+                        epoch.checked_add_days(chrono::Days::new(days as u64))
+                    })
+                } else {
+                    None
+                }
             } else {
-                // Convert Date32 to NaiveDate (days since Unix epoch)
-                Some(
-                    NaiveDate::from_ymd_opt(1970, 1, 1)
-                        .unwrap()
-                        .checked_add_days(chrono::Days::new(birth_day_array.value(i) as u64))
-                        .unwrap(),
-                )
+                None
             };
 
-            // Parse origin based on country code
-            let origin = if origin_array.is_null(i) {
-                Origin::Unknown
-            } else {
-                match origin_array.value(i) {
-                    "5100" => Origin::Danish, // Denmark
-                    code => {
-                        let code_num = code.parse::<i32>().unwrap_or(0);
-                        if (5000..5999).contains(&code_num) {
-                            // Western countries
-                            Origin::Western
-                        } else {
-                            Origin::NonWestern
+            // Parse origin based on country code if available
+            let origin = match &origin_array {
+                Some(array) => {
+                    if array.is_null(i) {
+                        Origin::Unknown
+                    } else {
+                        match array.value(i) {
+                            "5100" => Origin::Danish, // Denmark
+                            code => {
+                                let code_num = code.parse::<i32>().unwrap_or(0);
+                                if (5000..5999).contains(&code_num) {
+                                    // Western countries
+                                    Origin::Western
+                                } else {
+                                    Origin::NonWestern
+                                }
+                            }
                         }
                     }
+                }
+                None => {
+                    // Default to Danish when OPR_LAND column is missing
+                    Origin::Danish
                 }
             };
 

@@ -3,11 +3,12 @@
 //! This module contains the adapter that maps IND registry data to Income domain models.
 //! The IND (Indkomst) registry contains income and tax information.
 
-use super::RegistryAdapter;
-use crate::error::{Error, Result};
+use super::{RegistryAdapter, adapter_utils};
+use crate::error::Result;
 use crate::models::income::{FamilyIncomeTrajectory, Income, IncomeTrajectory};
 use crate::models::parent::Parent;
 use arrow::array::{Array, Float64Array, Int8Array, StringArray};
+use arrow::datatypes::DataType;
 use arrow::record_batch::RecordBatch;
 use std::collections::HashMap;
 
@@ -206,57 +207,32 @@ impl IndIncomeAdapter {
         batch: &RecordBatch,
         base_year: i32,
     ) -> Result<()> {
-        // Get column indices
-        let pnr_idx = batch
-            .schema()
-            .index_of("PNR")
-            .map_err(|_| Error::ColumnNotFound {
-                column: "PNR".to_string(),
-            })?;
+        // Get columns with automatic type adaptation
+        let pnr_array_opt = adapter_utils::get_column(batch, "PNR", &DataType::Utf8, true)?;
 
-        let income_idx =
-            batch
-                .schema()
-                .index_of("PERINDKIALT_13")
-                .map_err(|_| Error::ColumnNotFound {
-                    column: "PERINDKIALT_13".to_string(),
-                })?;
+        // We need to get the column array directly
+        let pnr_array = match &pnr_array_opt {
+            Some(array) => adapter_utils::downcast_array::<StringArray>(array, "PNR", "String")?,
+            None => unreachable!(), // This can't happen because we specified required=true
+        };
 
-        let employment_idx =
-            batch
-                .schema()
-                .index_of("BESKST13")
-                .map_err(|_| Error::ColumnNotFound {
-                    column: "BESKST13".to_string(),
-                })?;
+        let income_array_opt =
+            adapter_utils::get_column(batch, "PERINDKIALT_13", &DataType::Float64, true)?;
 
-        // Cast columns to their appropriate types
-        let pnr_array = batch
-            .column(pnr_idx)
-            .as_any()
-            .downcast_ref::<StringArray>()
-            .ok_or_else(|| Error::InvalidDataType {
-                column: "PNR".to_string(),
-                expected: "String".to_string(),
-            })?;
+        let income_array = match &income_array_opt {
+            Some(array) => {
+                adapter_utils::downcast_array::<Float64Array>(array, "PERINDKIALT_13", "Float64")?
+            }
+            None => unreachable!(), // This can't happen because we specified required=true
+        };
 
-        let income_array = batch
-            .column(income_idx)
-            .as_any()
-            .downcast_ref::<Float64Array>()
-            .ok_or_else(|| Error::InvalidDataType {
-                column: "PERINDKIALT_13".to_string(),
-                expected: "Float64".to_string(),
-            })?;
+        let employment_array_opt =
+            adapter_utils::get_column(batch, "BESKST13", &DataType::Int8, true)?;
 
-        let employment_array = batch
-            .column(employment_idx)
-            .as_any()
-            .downcast_ref::<Int8Array>()
-            .ok_or_else(|| Error::InvalidDataType {
-                column: "BESKST13".to_string(),
-                expected: "Int8".to_string(),
-            })?;
+        let employment_array = match &employment_array_opt {
+            Some(array) => adapter_utils::downcast_array::<Int8Array>(array, "BESKST13", "Int8")?,
+            None => unreachable!(), // This can't happen because we specified required=true
+        };
 
         // Create lookup for faster access
         let mut parent_map: HashMap<String, &mut Parent> = HashMap::new();
@@ -314,56 +290,42 @@ impl RegistryAdapter<Income> for IndIncomeAdapter {
 impl IndIncomeAdapter {
     /// Convert an IND `RecordBatch` to a vector of Income objects with the year from this instance
     pub fn from_record_batch_with_year(&self, batch: &RecordBatch) -> Result<Vec<Income>> {
-        // Get column indices
-        let pnr_idx = batch
-            .schema()
-            .index_of("PNR")
-            .map_err(|_| Error::ColumnNotFound {
-                column: "PNR".to_string(),
-            })?;
+        // Get columns with automatic type adaptation
+        let pnr_array_opt = adapter_utils::get_column(batch, "PNR", &DataType::Utf8, true)?;
 
-        let total_income_idx =
-            batch
-                .schema()
-                .index_of("PERINDKIALT_13")
-                .map_err(|_| Error::ColumnNotFound {
-                    column: "PERINDKIALT_13".to_string(),
-                })?;
+        // We need to get the column array directly
+        let pnr_array = match &pnr_array_opt {
+            Some(array) => adapter_utils::downcast_array::<StringArray>(array, "PNR", "String")?,
+            None => unreachable!(), // This can't happen because we specified required=true
+        };
 
-        let salary_idx = batch.schema().index_of("LOENMV_13").ok();
+        let total_income_array_opt = adapter_utils::get_column(
+            batch,
+            "PERINDKIALT_13",
+            &DataType::Float64,
+            true,
+        )?;
 
-        // Cast columns to their appropriate types
-        let pnr_array = batch
-            .column(pnr_idx)
-            .as_any()
-            .downcast_ref::<StringArray>()
-            .ok_or_else(|| Error::InvalidDataType {
-                column: "PNR".to_string(),
-                expected: "String".to_string(),
-            })?;
+        let total_income_array = match &total_income_array_opt {
+            Some(array) => adapter_utils::downcast_array::<Float64Array>(array, "PERINDKIALT_13", "Float64")?,
+            None => unreachable!(), // This can't happen because we specified required=true
+        };
 
-        let total_income_array = batch
-            .column(total_income_idx)
-            .as_any()
-            .downcast_ref::<Float64Array>()
-            .ok_or_else(|| Error::InvalidDataType {
-                column: "PERINDKIALT_13".to_string(),
-                expected: "Float64".to_string(),
-            })?;
+        // Get salary column (optional)
+        let salary_array_opt =
+            adapter_utils::get_column(batch, "LOENMV_13", &DataType::Float64, false)?;
 
-        let salary_array = if let Some(idx) = salary_idx {
-            Some(
-                batch
-                    .column(idx)
-                    .as_any()
-                    .downcast_ref::<Float64Array>()
-                    .ok_or_else(|| Error::InvalidDataType {
-                        column: "LOENMV_13".to_string(),
-                        expected: "Float64".to_string(),
-                    })?,
-            )
-        } else {
-            None
+        let salary_array: Option<&Float64Array> = match &salary_array_opt {
+            Some(array) => {
+                match adapter_utils::downcast_array::<Float64Array>(array, "LOENMV_13", "Float64") {
+                    Ok(float_array) => Some(float_array),
+                    Err(_) => {
+                        log::warn!("Column 'LOENMV_13' has unexpected data type, expected Float64");
+                        None
+                    }
+                }
+            }
+            None => None,
         };
 
         let mut incomes = Vec::new();

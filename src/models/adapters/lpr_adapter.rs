@@ -3,8 +3,8 @@
 //! This module contains adapters that map LPR registry data to Diagnosis domain models.
 //! Supports both LPR2 and LPR3 registry formats.
 
-use super::RegistryAdapter;
-use crate::error::{Error, Result};
+use super::{RegistryAdapter, adapter_utils};
+use crate::error::Result;
 use crate::models::diagnosis::{Diagnosis, DiagnosisType, ScdResult};
 use arrow::array::{Array, Date32Array, StringArray};
 use arrow::record_batch::RecordBatch;
@@ -255,70 +255,51 @@ impl RegistryAdapter<Diagnosis> for Lpr2DiagAdapter {
 impl Lpr2DiagAdapter {
     /// Process an LPR2 batch and create Diagnosis objects
     pub fn process_batch(&self, batch: &RecordBatch) -> Result<Vec<Diagnosis>> {
-        // Get column indices
-        let record_idx = batch
-            .schema()
-            .index_of("RECNUM")
-            .map_err(|_| Error::ColumnNotFound {
-                column: "RECNUM".to_string(),
-            })?;
+        // Get columns with automatic type adaptation
+        let record_array_opt =
+            adapter_utils::get_column(batch, "RECNUM", &arrow::datatypes::DataType::Utf8, true)?;
 
-        let diag_idx = batch
-            .schema()
-            .index_of("C_DIAG")
-            .map_err(|_| Error::ColumnNotFound {
-                column: "C_DIAG".to_string(),
-            })?;
+        let record_array = match &record_array_opt {
+            Some(array) => adapter_utils::downcast_array::<StringArray>(array, "RECNUM", "String")?,
+            None => unreachable!(), // This can't happen because we specified required=true
+        };
 
-        let diag_type_idx =
-            batch
-                .schema()
-                .index_of("C_DIAGTYPE")
-                .map_err(|_| Error::ColumnNotFound {
-                    column: "C_DIAGTYPE".to_string(),
-                })?;
+        let diag_array_opt =
+            adapter_utils::get_column(batch, "C_DIAG", &arrow::datatypes::DataType::Utf8, true)?;
 
-        let date_idx = batch.schema().index_of("LEVERANCEDATO").ok();
+        let diag_array = match &diag_array_opt {
+            Some(array) => adapter_utils::downcast_array::<StringArray>(array, "C_DIAG", "String")?,
+            None => unreachable!(), // This can't happen because we specified required=true
+        };
 
-        // Cast columns to their appropriate types
-        let record_array = batch
-            .column(record_idx)
-            .as_any()
-            .downcast_ref::<StringArray>()
-            .ok_or_else(|| Error::InvalidDataType {
-                column: "RECNUM".to_string(),
-                expected: "String".to_string(),
-            })?;
+        let diag_type_array_opt = adapter_utils::get_column(
+            batch,
+            "C_DIAGTYPE",
+            &arrow::datatypes::DataType::Utf8,
+            true,
+        )?;
 
-        let diag_array = batch
-            .column(diag_idx)
-            .as_any()
-            .downcast_ref::<StringArray>()
-            .ok_or_else(|| Error::InvalidDataType {
-                column: "C_DIAG".to_string(),
-                expected: "String".to_string(),
-            })?;
+        let diag_type_array = match &diag_type_array_opt {
+            Some(array) => adapter_utils::downcast_array::<StringArray>(array, "C_DIAGTYPE", "String")?,
+            None => unreachable!(), // This can't happen because we specified required=true
+        };
 
-        let diag_type_array = batch
-            .column(diag_type_idx)
-            .as_any()
-            .downcast_ref::<StringArray>()
-            .ok_or_else(|| Error::InvalidDataType {
-                column: "C_DIAGTYPE".to_string(),
-                expected: "String".to_string(),
-            })?;
+        // Get date column with automatic conversion if needed
+        let date_array_opt = adapter_utils::get_column(
+            batch,
+            "LEVERANCEDATO",
+            &arrow::datatypes::DataType::Date32,
+            false,
+        )?;
 
-        let date_array = if let Some(idx) = date_idx {
-            Some(
-                batch
-                    .column(idx)
-                    .as_any()
-                    .downcast_ref::<Date32Array>()
-                    .ok_or_else(|| Error::InvalidDataType {
-                        column: "LEVERANCEDATO".to_string(),
-                        expected: "Date32".to_string(),
-                    })?,
-            )
+        let date_array = if let Some(array) = &date_array_opt {
+            match array.as_any().downcast_ref::<Date32Array>() {
+                Some(date_array) => Some(date_array),
+                None => {
+                    log::warn!("Failed to convert LEVERANCEDATO to Date32");
+                    None
+                }
+            }
         } else {
             None
         };
@@ -410,74 +391,62 @@ impl RegistryAdapter<Diagnosis> for Lpr3DiagnoserAdapter {
 impl Lpr3DiagnoserAdapter {
     /// Process an LPR3 batch and create Diagnosis objects
     pub fn process_batch(&self, batch: &RecordBatch) -> Result<Vec<Diagnosis>> {
-        // Get column indices
-        let kontakt_idx =
-            batch
-                .schema()
-                .index_of("DW_EK_KONTAKT")
-                .map_err(|_| Error::ColumnNotFound {
-                    column: "DW_EK_KONTAKT".to_string(),
-                })?;
+        // Get columns with automatic type adaptation
+        let kontakt_array_opt = adapter_utils::get_column(
+            batch,
+            "DW_EK_KONTAKT",
+            &arrow::datatypes::DataType::Utf8,
+            true,
+        )?;
 
-        let diag_idx =
-            batch
-                .schema()
-                .index_of("diagnosekode")
-                .map_err(|_| Error::ColumnNotFound {
-                    column: "diagnosekode".to_string(),
-                })?;
+        let kontakt_array = match &kontakt_array_opt {
+            Some(array) => adapter_utils::downcast_array::<StringArray>(array, "DW_EK_KONTAKT", "String")?,
+            None => unreachable!(), // This can't happen because we specified required=true
+        };
 
-        let diag_type_idx =
-            batch
-                .schema()
-                .index_of("diagnosetype")
-                .map_err(|_| Error::ColumnNotFound {
-                    column: "diagnosetype".to_string(),
-                })?;
+        let diag_array_opt = adapter_utils::get_column(
+            batch,
+            "diagnosekode",
+            &arrow::datatypes::DataType::Utf8,
+            true,
+        )?;
 
-        let afkraeftet_idx = batch.schema().index_of("senere_afkraeftet").ok();
+        let diag_array = match &diag_array_opt {
+            Some(array) => adapter_utils::downcast_array::<StringArray>(array, "diagnosekode", "String")?,
+            None => unreachable!(), // This can't happen because we specified required=true
+        };
 
-        // Cast columns to their appropriate types
-        let kontakt_array = batch
-            .column(kontakt_idx)
-            .as_any()
-            .downcast_ref::<StringArray>()
-            .ok_or_else(|| Error::InvalidDataType {
-                column: "DW_EK_KONTAKT".to_string(),
-                expected: "String".to_string(),
-            })?;
+        let diag_type_array_opt = adapter_utils::get_column(
+            batch,
+            "diagnosetype",
+            &arrow::datatypes::DataType::Utf8,
+            true,
+        )?;
 
-        let diag_array = batch
-            .column(diag_idx)
-            .as_any()
-            .downcast_ref::<StringArray>()
-            .ok_or_else(|| Error::InvalidDataType {
-                column: "diagnosekode".to_string(),
-                expected: "String".to_string(),
-            })?;
+        let diag_type_array = match &diag_type_array_opt {
+            Some(array) => adapter_utils::downcast_array::<StringArray>(array, "diagnosetype", "String")?,
+            None => unreachable!(), // This can't happen because we specified required=true
+        };
 
-        let diag_type_array = batch
-            .column(diag_type_idx)
-            .as_any()
-            .downcast_ref::<StringArray>()
-            .ok_or_else(|| Error::InvalidDataType {
-                column: "diagnosetype".to_string(),
-                expected: "String".to_string(),
-            })?;
+        // Get afkraeftet column (optional)
+        let afkraeftet_array_opt = adapter_utils::get_column(
+            batch,
+            "senere_afkraeftet",
+            &arrow::datatypes::DataType::Utf8,
+            false,
+        )?;
 
-        let afkraeftet_array = if let Some(idx) = afkraeftet_idx {
-            Some(
-                batch
-                    .column(idx)
-                    .as_any()
-                    .downcast_ref::<StringArray>()
-                    .ok_or_else(|| Error::InvalidDataType {
-                        column: "senere_afkraeftet".to_string(),
-                        expected: "String".to_string(),
-                    })?,
-            )
-        } else {
-            None
+        let afkraeftet_array: Option<&StringArray> = match &afkraeftet_array_opt {
+            Some(array) => {
+                match adapter_utils::downcast_array::<StringArray>(array, "senere_afkraeftet", "String") {
+                    Ok(string_array) => Some(string_array),
+                    Err(_) => {
+                        log::warn!("Column 'senere_afkraeftet' has unexpected data type, expected String");
+                        None
+                    }
+                }
+            }
+            None => None,
         };
 
         let mut diagnoses = Vec::new();

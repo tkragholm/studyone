@@ -21,6 +21,7 @@ pub mod registry {
 // Integration tests
 pub mod integration {
     pub mod async_test;
+    pub mod end_to_end_test;
     pub mod filtering_test;
     pub mod registry_integration_test;
     pub mod type_adaptation_test;
