@@ -1,10 +1,8 @@
 use par_reader::Result;
-use std::collections::HashSet;
-use std::sync::Arc;
 
 use log::info;
 
-use par_reader::algorithm::health::lpr_integration::{self, LprConfig};
+use par_reader::algorithm::health::lpr_integration::{self};
 use par_reader::algorithm::health::scd::{self, ScdConfig};
 use par_reader::algorithm::matching::balance::BalanceCalculator;
 use par_reader::algorithm::matching::criteria::{MatchingConfig, MatchingCriteria};
