@@ -385,7 +385,7 @@ where
     }
 }
 
-//// A type-erased filter that can store any filter implementation
+/// A type-erased filter that can store any filter implementation
 pub struct BoxedFilter<T: Clone + Debug + Send + Sync + 'static> {
     // Box<dyn Trait> isn't Clone, so we use an Arc to allow cloning
     inner: std::sync::Arc<dyn Filter<T> + Send + Sync>,
@@ -459,7 +459,7 @@ where
     fn required_resources(&self) -> HashSet<String> {
         // Combine required resources from both filters
         let mut resources = self.first.required_resources();
-        resources.extend(self.second.required_resources().into_iter());
+        resources.extend(self.second.required_resources());
         resources
     }
 }
@@ -505,7 +505,7 @@ where
     fn required_resources(&self) -> HashSet<String> {
         // Combine required resources from both filters
         let mut resources = self.first.required_resources();
-        resources.extend(self.second.required_resources().into_iter());
+        resources.extend(self.second.required_resources());
         resources
     }
 }
