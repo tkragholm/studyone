@@ -161,7 +161,7 @@ fn test_adapt_record_batch() {
     ]);
 
     let source_batch = RecordBatch::try_new(
-        Arc::new(source_schema.clone()),
+        Arc::new(source_schema),
         vec![id_array, name_array, date_array],
     )
     .unwrap();

@@ -37,7 +37,7 @@ fn test_filter_combinators() -> Result<()> {
 
     // Test AND filter using BoxedFilter to handle heterogeneous filter types
     let boxed_even = BoxedFilter::new(even_filter.clone());
-    let boxed_gt_five = BoxedFilter::new(gt_five_filter.clone());
+    let boxed_gt_five = BoxedFilter::new(gt_five_filter);
     
     let and_filter = AndFilter::new(vec![boxed_even.clone(), boxed_gt_five.clone()]);
     let and_results: Vec<i32> = values
@@ -47,7 +47,7 @@ fn test_filter_combinators() -> Result<()> {
     assert_eq!(and_results, vec![8, 10]);
 
     // Test OR filter using BoxedFilter to handle heterogeneous filter types
-    let or_filter = OrFilter::new(vec![boxed_even.clone(), boxed_gt_five.clone()]);
+    let or_filter = OrFilter::new(vec![boxed_even, boxed_gt_five]);
     let or_results: Vec<i32> = values
         .iter()
         .filter_map(|v| or_filter.apply(v).ok())
@@ -77,8 +77,8 @@ fn test_filter_builder() -> Result<()> {
     let values = [2, 4, 5, 7, 8, 10, 12];
 
     // Test building an AND filter using BoxedFilter for consistent types
-    let boxed_even = BoxedFilter::new(even_filter.clone());
-    let boxed_gt_five = BoxedFilter::new(gt_five_filter.clone());
+    let boxed_even = BoxedFilter::new(even_filter);
+    let boxed_gt_five = BoxedFilter::new(gt_five_filter);
     let boxed_gt_eight = BoxedFilter::new(gt_eight_filter.clone());
     
     let and_filter = FilterBuilder::new()
@@ -94,7 +94,7 @@ fn test_filter_builder() -> Result<()> {
 
     // Test building an OR filter using BoxedFilter for consistent types
     let or_filter = FilterBuilder::new()
-        .add_filter(boxed_even.clone())
+        .add_filter(boxed_even)
         .add_filter(boxed_gt_eight)
         .build_or();
 
@@ -106,8 +106,8 @@ fn test_filter_builder() -> Result<()> {
 
     // Test building a NOT-AND filter using BoxedFilter for consistent types
     let not_and_filter = FilterBuilder::new()
-        .add_filter(boxed_gt_five.clone())
-        .add_filter(BoxedFilter::new(gt_eight_filter.clone()))
+        .add_filter(boxed_gt_five)
+        .add_filter(BoxedFilter::new(gt_eight_filter))
         .build_not_and();
 
     let not_and_results: Vec<i32> = values
@@ -159,8 +159,8 @@ fn test_filter_extension_methods() -> Result<()> {
     // Test chaining extension methods with a new filter instance
     let even_filter4 = EvenNumberFilter;
     let chained_filter = even_filter4
-        .and(gt_five_filter.clone())
-        .or(gt_eight_filter.clone());
+        .and(gt_five_filter)
+        .or(gt_eight_filter);
     let chained_results: Vec<i32> = values
         .iter()
         .filter_map(|v| chained_filter.apply(v).ok())
@@ -191,7 +191,7 @@ fn test_boxed_filter() -> Result<()> {
     assert_eq!(results, vec![2, 4, 6]);
 
     // Test cloning the boxed filter
-    let cloned_filter = boxed_filter.clone();
+    let cloned_filter = boxed_filter;
     let cloned_results: Vec<i32> = values
         .iter()
         .filter_map(|v| cloned_filter.apply(v).ok())

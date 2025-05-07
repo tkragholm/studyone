@@ -88,7 +88,7 @@ use par_reader::models::{
             is_rural: true,
             has_parental_comorbidity: false,
             has_support_network: true,
-            children: vec![child1_struct.clone()],
+            children: vec![child1_struct],
             mother: Some(Arc::new(Parent::new(mother1))),
             father: Some(Arc::new(Parent::new(father1))),
             municipality_code: Some("101".to_string()),
