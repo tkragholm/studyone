@@ -15,7 +15,12 @@ pub mod individuals;
 /// Base path for test data files
 #[must_use]
 pub fn test_data_dir() -> PathBuf {
-    PathBuf::from("/Users/tobiaskragholm/generated_data/parquet")
+    match std::env::consts::OS {
+        "macos" => PathBuf::from("/Users/tobiaskragholm/generated_data/parquet"),
+        "linux" => PathBuf::from("/home/tkragholm/generated_data/parquet"),
+        //"windows" => PathBuf::from("C:\\Users\\yourusername\\generated_data\\parquet"),
+        _ => panic!("Unsupported operating system"),
+    }
 }
 
 /// Create a path to a specific registry folder
