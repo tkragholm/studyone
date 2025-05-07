@@ -28,7 +28,7 @@ impl Matcher {
 
     /// Create a new matcher with the given configuration
     #[must_use]
-    pub fn new(config: MatchingConfig) -> Self {
+    pub const fn new(config: MatchingConfig) -> Self {
         Self { config }
     }
 

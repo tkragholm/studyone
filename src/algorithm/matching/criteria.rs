@@ -142,77 +142,77 @@ impl MatchingCriteriaBuilder {
 
     /// Set the birth date window in days
     #[must_use]
-    pub fn birth_date_window_days(mut self, days: i32) -> Self {
+    pub const fn birth_date_window_days(mut self, days: i32) -> Self {
         self.criteria.birth_date_window_days = days;
         self
     }
 
     /// Set the parent birth date window in days
     #[must_use]
-    pub fn parent_birth_date_window_days(mut self, days: i32) -> Self {
+    pub const fn parent_birth_date_window_days(mut self, days: i32) -> Self {
         self.criteria.parent_birth_date_window_days = days;
         self
     }
 
     /// Set whether both parents are required
     #[must_use]
-    pub fn require_both_parents(mut self, required: bool) -> Self {
+    pub const fn require_both_parents(mut self, required: bool) -> Self {
         self.criteria.require_both_parents = required;
         self
     }
 
     /// Set whether the same gender is required
     #[must_use]
-    pub fn require_same_gender(mut self, required: bool) -> Self {
+    pub const fn require_same_gender(mut self, required: bool) -> Self {
         self.criteria.require_same_gender = required;
         self
     }
 
     /// Set whether to match on family size
     #[must_use]
-    pub fn match_family_size(mut self, match_size: bool) -> Self {
+    pub const fn match_family_size(mut self, match_size: bool) -> Self {
         self.criteria.match_family_size = match_size;
         self
     }
 
     /// Set the family size tolerance
     #[must_use]
-    pub fn family_size_tolerance(mut self, tolerance: i32) -> Self {
+    pub const fn family_size_tolerance(mut self, tolerance: i32) -> Self {
         self.criteria.family_size_tolerance = tolerance;
         self
     }
 
     /// Set whether to match on parental education level
     #[must_use]
-    pub fn match_education_level(mut self, match_education: bool) -> Self {
+    pub const fn match_education_level(mut self, match_education: bool) -> Self {
         self.criteria.match_education_level = match_education;
         self
     }
 
     /// Set whether to match on geographic location
     #[must_use]
-    pub fn match_geography(mut self, match_geography: bool) -> Self {
+    pub const fn match_geography(mut self, match_geography: bool) -> Self {
         self.criteria.match_geography = match_geography;
         self
     }
 
     /// Set whether to match on parental relationship status
     #[must_use]
-    pub fn match_parental_status(mut self, match_status: bool) -> Self {
+    pub const fn match_parental_status(mut self, match_status: bool) -> Self {
         self.criteria.match_parental_status = match_status;
         self
     }
 
     /// Set whether to match on immigrant background
     #[must_use]
-    pub fn match_immigrant_background(mut self, match_background: bool) -> Self {
+    pub const fn match_immigrant_background(mut self, match_background: bool) -> Self {
         self.criteria.match_immigrant_background = match_background;
         self
     }
 
     /// Build the matching criteria
     #[must_use]
-    pub fn build(self) -> MatchingCriteria {
+    pub const fn build(self) -> MatchingCriteria {
         self.criteria
     }
 }
@@ -285,42 +285,42 @@ impl MatchingConfigBuilder {
 
     /// Set the matching criteria
     #[must_use]
-    pub fn criteria(mut self, criteria: MatchingCriteria) -> Self {
+    pub const fn criteria(mut self, criteria: MatchingCriteria) -> Self {
         self.config.criteria = criteria;
         self
     }
 
     /// Set the matching ratio
     #[must_use]
-    pub fn matching_ratio(mut self, ratio: usize) -> Self {
+    pub const fn matching_ratio(mut self, ratio: usize) -> Self {
         self.config.matching_ratio = ratio;
         self
     }
 
     /// Set whether to use parallel processing
     #[must_use]
-    pub fn use_parallel(mut self, parallel: bool) -> Self {
+    pub const fn use_parallel(mut self, parallel: bool) -> Self {
         self.config.use_parallel = parallel;
         self
     }
 
     /// Set the random seed
     #[must_use]
-    pub fn random_seed(mut self, seed: u64) -> Self {
+    pub const fn random_seed(mut self, seed: u64) -> Self {
         self.config.random_seed = Some(seed);
         self
     }
 
     /// Set the matching date
     #[must_use]
-    pub fn matching_date(mut self, date: chrono::NaiveDate) -> Self {
+    pub const fn matching_date(mut self, date: chrono::NaiveDate) -> Self {
         self.config.matching_date = Some(date);
         self
     }
 
     /// Build the matching configuration
     #[must_use]
-    pub fn build(self) -> MatchingConfig {
+    pub const fn build(self) -> MatchingConfig {
         self.config
     }
 }

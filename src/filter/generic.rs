@@ -96,7 +96,7 @@ where
 {
     /// Create a new AND filter
     #[must_use]
-    pub fn new(filters: Vec<F>) -> Self {
+    pub const fn new(filters: Vec<F>) -> Self {
         Self {
             filters,
             _phantom: std::marker::PhantomData,
@@ -169,7 +169,7 @@ where
 {
     /// Create a new OR filter
     #[must_use]
-    pub fn new(filters: Vec<F>) -> Self {
+    pub const fn new(filters: Vec<F>) -> Self {
         Self {
             filters,
             _phantom: std::marker::PhantomData,
@@ -250,7 +250,7 @@ where
 {
     /// Create a new NOT filter
     #[must_use]
-    pub fn new(filter: F) -> Self {
+    pub const fn new(filter: F) -> Self {
         Self {
             filter,
             _phantom: std::marker::PhantomData,
@@ -341,7 +341,7 @@ where
     T: Clone + Debug + Send + Sync,
 {
     /// Create a new filter builder
-    #[must_use] pub fn new() -> Self {
+    #[must_use] pub const fn new() -> Self {
         Self {
             filters: Vec::new(),
             _phantom: std::marker::PhantomData,

@@ -65,7 +65,7 @@ pub const fn hospitalization_severity(hospitalization_count: i32) -> SeverityLev
 
 /// Calculate severity based on the number of SCD categories present
 #[must_use]
-pub fn category_severity(category_count: usize) -> SeverityLevel {
+pub const fn category_severity(category_count: usize) -> SeverityLevel {
     if category_count > 2 {
         SeverityLevel::Severe     // Many different systems affected
     } else if category_count == 2 {
@@ -77,7 +77,7 @@ pub fn category_severity(category_count: usize) -> SeverityLevel {
 
 /// Calculate severity based on age at diagnosis
 #[must_use]
-pub fn age_at_diagnosis_severity(age_in_years: i32) -> SeverityLevel {
+pub const fn age_at_diagnosis_severity(age_in_years: i32) -> SeverityLevel {
     if age_in_years < 2 {
         SeverityLevel::Severe     // Very early onset is usually more severe
     } else if age_in_years < 10 {

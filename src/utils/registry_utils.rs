@@ -260,7 +260,7 @@ pub struct BaseRegistry {
 
 impl BaseRegistry {
     /// Create a new base registry
-    #[must_use] pub fn new(name: &'static str, schema: SchemaRef) -> Self {
+    #[must_use] pub const fn new(name: &'static str, schema: SchemaRef) -> Self {
         Self { name, schema }
     }
 }

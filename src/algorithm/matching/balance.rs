@@ -255,14 +255,14 @@ impl BalanceCalculator {
 
     /// Set minimum required observations for calculating balance
     #[must_use]
-    pub fn with_min_observations(mut self, min_observations: usize) -> Self {
+    pub const fn with_min_observations(mut self, min_observations: usize) -> Self {
         self.min_observations = min_observations;
         self
     }
 
     /// Set threshold for marking a covariate as imbalanced
     #[must_use]
-    pub fn with_imbalance_threshold(mut self, threshold: f64) -> Self {
+    pub const fn with_imbalance_threshold(mut self, threshold: f64) -> Self {
         self.imbalance_threshold = threshold;
         self
     }
@@ -532,7 +532,7 @@ impl BalanceCalculator {
         let standardized_difference = if case_std == 0.0 && control_std == 0.0 {
             0.0 // Both are constants, no difference
         } else {
-            let pooled_std = ((case_std.powi(2) + control_std.powi(2)) / 2.0).sqrt();
+            let pooled_std = (control_std.mul_add(control_std, case_std.powi(2)) / 2.0).sqrt();
             if pooled_std > 0.0 {
                 (case_proportion - control_proportion) / pooled_std
             } else {
@@ -630,7 +630,7 @@ impl BalanceCalculator {
         let standardized_difference = if case_std == 0.0 && control_std == 0.0 {
             0.0 // Both are constants, no difference
         } else {
-            let pooled_std = ((case_std.powi(2) + control_std.powi(2)) / 2.0).sqrt();
+            let pooled_std = (control_std.mul_add(control_std, case_std.powi(2)) / 2.0).sqrt();
             if pooled_std > 0.0 {
                 (case_proportion - control_proportion) / pooled_std
             } else {
@@ -766,7 +766,7 @@ fn calculate_standardized_difference(mean1: f64, mean2: f64, std1: f64, std2: f6
         return 0.0; // Both are constants, no difference
     }
 
-    let pooled_std = ((std1.powi(2) + std2.powi(2)) / 2.0).sqrt();
+    let pooled_std = (std2.mul_add(std2, std1.powi(2)) / 2.0).sqrt();
 
     if pooled_std > 0.0 {
         (mean1 - mean2) / pooled_std

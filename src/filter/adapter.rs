@@ -153,7 +153,7 @@ pub struct BatchFilterAdapter<F: BatchFilter> {
 
 impl<F: BatchFilter> BatchFilterAdapter<F> {
     /// Create a new batch filter adapter
-    pub fn new(batch_filter: F) -> Self {
+    pub const fn new(batch_filter: F) -> Self {
         Self { batch_filter }
     }
 }
