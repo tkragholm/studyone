@@ -6,7 +6,7 @@ use std::collections::HashSet;
 
 /// Test basic includes and excludes filter
 #[test]
-fn test_basic_filters() -> Result<()> {
+fn test_basic_filters() -> () {
     // Test data
     let test_value = 42;
 
@@ -14,20 +14,24 @@ fn test_basic_filters() -> Result<()> {
     let include_filter = IncludeAllFilter;
     // The apply method doesn't take generic parameters
     assert!(include_filter.apply(&test_value).is_ok());
-    assert_eq!(<IncludeAllFilter as Filter<i32>>::required_resources(&include_filter).len(), 0);
+    assert_eq!(
+        <IncludeAllFilter as Filter<i32>>::required_resources(&include_filter).len(),
+        0
+    );
 
     // Exclude all filter
     let exclude_filter = ExcludeAllFilter;
     // The apply method doesn't take generic parameters
     assert!(exclude_filter.apply(&test_value).is_err());
-    assert_eq!(<ExcludeAllFilter as Filter<i32>>::required_resources(&exclude_filter).len(), 0);
-
-    Ok(())
+    assert_eq!(
+        <ExcludeAllFilter as Filter<i32>>::required_resources(&exclude_filter).len(),
+        0
+    );
 }
 
 /// Test simple filters with AND, OR, NOT operations
 #[test]
-fn test_filter_combinators() -> Result<()> {
+fn test_filter_combinators() -> () {
     // Create simple filters
     let even_filter = EvenNumberFilter;
     let gt_five_filter = GreaterThanFilter { threshold: 5 };
@@ -38,7 +42,7 @@ fn test_filter_combinators() -> Result<()> {
     // Test AND filter using BoxedFilter to handle heterogeneous filter types
     let boxed_even = BoxedFilter::new(even_filter.clone());
     let boxed_gt_five = BoxedFilter::new(gt_five_filter);
-    
+
     let and_filter = AndFilter::new(vec![boxed_even.clone(), boxed_gt_five.clone()]);
     let and_results: Vec<i32> = values
         .iter()
@@ -61,13 +65,11 @@ fn test_filter_combinators() -> Result<()> {
         .filter_map(|v| not_filter.apply(v).ok())
         .collect();
     assert_eq!(not_results, vec![5, 7]);
-
-    Ok(())
 }
 
 /// Test filter builder pattern
 #[test]
-fn test_filter_builder() -> Result<()> {
+fn test_filter_builder() -> () {
     // Create simple filters
     let even_filter = EvenNumberFilter;
     let gt_five_filter = GreaterThanFilter { threshold: 5 };
@@ -80,7 +82,7 @@ fn test_filter_builder() -> Result<()> {
     let boxed_even = BoxedFilter::new(even_filter);
     let boxed_gt_five = BoxedFilter::new(gt_five_filter);
     let boxed_gt_eight = BoxedFilter::new(gt_eight_filter.clone());
-    
+
     let and_filter = FilterBuilder::new()
         .add_filter(boxed_even.clone())
         .add_filter(boxed_gt_five.clone())
@@ -115,13 +117,11 @@ fn test_filter_builder() -> Result<()> {
         .filter_map(|v| not_and_filter.apply(v).ok())
         .collect();
     assert_eq!(not_and_results, vec![2, 4, 5, 7]);
-
-    Ok(())
 }
 
 /// Test filter extension methods
 #[test]
-fn test_filter_extension_methods() -> Result<()> {
+fn test_filter_extension_methods() -> () {
     // Create simple filters
     let even_filter1 = EvenNumberFilter;
     let even_filter2 = EvenNumberFilter;
@@ -158,21 +158,17 @@ fn test_filter_extension_methods() -> Result<()> {
 
     // Test chaining extension methods with a new filter instance
     let even_filter4 = EvenNumberFilter;
-    let chained_filter = even_filter4
-        .and(gt_five_filter)
-        .or(gt_eight_filter);
+    let chained_filter = even_filter4.and(gt_five_filter).or(gt_eight_filter);
     let chained_results: Vec<i32> = values
         .iter()
         .filter_map(|v| chained_filter.apply(v).ok())
         .collect();
     assert_eq!(chained_results, vec![8, 10, 12]);
-
-    Ok(())
 }
 
 /// Test boxed filter implementation
 #[test]
-fn test_boxed_filter() -> Result<()> {
+fn test_boxed_filter() -> () {
     // Create a simple filter
     let even_filter = EvenNumberFilter;
 
@@ -198,13 +194,11 @@ fn test_boxed_filter() -> Result<()> {
         .collect();
 
     assert_eq!(cloned_results, vec![2, 4, 6]);
-
-    Ok(())
 }
 
 /// Test resource tracking
 #[test]
-fn test_resource_tracking() -> Result<()> {
+fn test_resource_tracking() -> () {
     // Create filters with different resource requirements
     let age_filter = AgeFilter { max_age: 30 };
     let gender_filter = GenderFilter {
@@ -227,13 +221,11 @@ fn test_resource_tracking() -> Result<()> {
     assert!(combined_resources.contains("age"));
     assert!(combined_resources.contains("gender"));
     assert_eq!(combined_resources.len(), 2);
-
-    Ok(())
 }
 
 /// Test filters with domain entities
 #[test]
-fn test_domain_entity_filters() -> Result<()> {
+fn test_domain_entity_filters() -> () {
     // Create test individuals
     let individuals = individuals::create_test_individuals();
 
@@ -268,13 +260,11 @@ fn test_domain_entity_filters() -> Result<()> {
 
     assert_eq!(combined_filtered.len(), 1);
     assert_eq!(combined_filtered[0].pnr, "45678");
-
-    Ok(())
 }
 
 /// Test filters with family entities
 #[test]
-fn test_family_filters() -> Result<()> {
+fn test_family_filters() -> () {
     // Create test families
     let families = families::create_test_families();
 
@@ -310,13 +300,11 @@ fn test_family_filters() -> Result<()> {
         .collect();
 
     assert_eq!(combined_filtered.len(), 0); // No family matches both criteria
-
-    Ok(())
 }
 
 /// Test adapter pattern
 #[test]
-fn test_filter_adapters() -> Result<()> {
+fn test_filter_adapters() -> () {
     // Create test individuals
     let individuals = individuals::create_test_individuals();
 
@@ -356,8 +344,6 @@ fn test_filter_adapters() -> Result<()> {
 
     assert_eq!(combined_filtered.len(), 1);
     assert_eq!(combined_filtered[0].pnr, "45678");
-
-    Ok(())
 }
 
 // Helper functions and sample filters for testing
