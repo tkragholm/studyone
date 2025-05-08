@@ -1,6 +1,6 @@
-//! Tests for the specialized DiagnosisCollection implementation
+//! Tests for the specialized `DiagnosisCollection` implementation
 //!
-//! This module tests the functionality of the DiagnosisCollection,
+//! This module tests the functionality of the `DiagnosisCollection`,
 //! focusing on the specialized methods it provides.
 
 use chrono::NaiveDate;

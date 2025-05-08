@@ -1,6 +1,6 @@
 //! Tests for the generic collection implementation
 //!
-//! This module tests the functionality of the GenericCollection
+//! This module tests the functionality of the `GenericCollection`
 //! implementation with various model types.
 
 use chrono::NaiveDate;

@@ -1,6 +1,6 @@
-//! Tests for the specialized IndividualCollection implementation
+//! Tests for the specialized `IndividualCollection` implementation
 //!
-//! This module tests the functionality of the IndividualCollection,
+//! This module tests the functionality of the `IndividualCollection`,
 //! focusing on the specialized methods it provides.
 
 use chrono::NaiveDate;

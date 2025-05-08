@@ -66,7 +66,7 @@ where
         self.filter(|model| {
             // Valid if the model's validity period overlaps with the given range
             let valid_from = model.valid_from();
-            let valid_to = model.valid_to().unwrap_or_else(|| chrono::NaiveDate::MAX);
+            let valid_to = model.valid_to().unwrap_or(chrono::NaiveDate::MAX);
             
             valid_from <= *end_date && valid_to >= *start_date
         })
@@ -86,13 +86,13 @@ where
 /// This trait provides methods for efficient batch processing of models,
 /// including loading from `RecordBatch` and performing bulk updates.
 pub trait BatchCollection<T: EntityModel>: ModelCollection<T> {
-    /// Load models from a RecordBatch
+    /// Load models from a `RecordBatch`
     fn load_from_batch(&mut self, batch: &RecordBatch) -> Result<()>;
     
-    /// Update models with data from a RecordBatch
+    /// Update models with data from a `RecordBatch`
     fn update_from_batch(&mut self, batch: &RecordBatch) -> Result<()>;
     
-    /// Export models to a RecordBatch
+    /// Export models to a `RecordBatch`
     fn export_to_batch(&self) -> Result<RecordBatch>;
 }
 

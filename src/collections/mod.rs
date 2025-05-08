@@ -34,7 +34,7 @@ use std::sync::Arc;
 ///
 /// This collection provides a standard implementation of the `ModelCollection`
 /// trait for any model type that implements `EntityModel`. It stores models
-/// in a HashMap indexed by their ID for efficient access.
+/// in a `HashMap` indexed by their ID for efficient access.
 #[derive(Debug)]
 pub struct GenericCollection<T: EntityModel> {
     /// Models indexed by ID
@@ -375,7 +375,7 @@ where
     #[must_use]
     pub fn get_primary_for_related(&self, related_id: &C::Id) -> Vec<Arc<P>> {
         let primary_ids = self.related_to_primary.get(related_id)
-            .map_or_else(Vec::new, |ids| ids.clone());
+            .map_or_else(Vec::new, std::clone::Clone::clone);
             
         primary_ids.iter()
             .filter_map(|id| self.primary.get(id))
@@ -386,7 +386,7 @@ where
     #[must_use]
     pub fn get_related_for_primary(&self, primary_id: &P::Id) -> Vec<Arc<C>> {
         let related_ids = self.primary_to_related.get(primary_id)
-            .map_or_else(Vec::new, |ids| ids.clone());
+            .map_or_else(Vec::new, std::clone::Clone::clone);
             
         related_ids.iter()
             .filter_map(|id| self.related.get(id))
