@@ -16,10 +16,10 @@ pub mod lpr;
 pub mod mfr;
 
 // Re-export common adapters
-pub use bef::{BefIndividualAdapter, BefFamilyAdapter, BefCombinedAdapter};
-pub use ind::{IndIncomeAdapter};
-pub use lpr::{LprDiagnosisAdapter};
-pub use mfr::{MfrChildAdapter};
+pub use bef::{BefCombinedAdapter, BefFamilyAdapter, BefIndividualAdapter};
+pub use ind::IndIncomeAdapter;
+pub use lpr::LprDiagnosisAdapter;
+pub use mfr::MfrChildAdapter;
 
 /// Central adapter factory that provides consistent configuration for all adapters
 #[derive(Debug)]
@@ -40,20 +40,23 @@ impl AdapterFactoryImpl {
     /// # Returns
     ///
     /// * `Self` - A new adapter factory
-    #[must_use] pub fn new(registry_base_path: std::path::PathBuf, enable_caching: bool) -> Self {
+    #[must_use]
+    pub fn new(registry_base_path: std::path::PathBuf, enable_caching: bool) -> Self {
         Self {
             registry_base_path,
             enable_caching,
         }
     }
-    
+
     /// Get the registry base path
-    #[must_use] pub fn registry_base_path(&self) -> &std::path::Path {
+    #[must_use]
+    pub fn registry_base_path(&self) -> &std::path::Path {
         &self.registry_base_path
     }
-    
+
     /// Check if caching is enabled
-    #[must_use] pub fn caching_enabled(&self) -> bool {
+    #[must_use]
+    pub fn caching_enabled(&self) -> bool {
         self.enable_caching
     }
 }
@@ -61,18 +64,18 @@ impl AdapterFactoryImpl {
 impl AdapterFactory for AdapterFactoryImpl {
     fn create_adapter<A>(&self) -> Arc<A>
     where
-        A: Send + Sync + 'static
+        A: Send + Sync + 'static,
     {
         // This is just a placeholder implementation
         // A real implementation would create an adapter with the
         // correct registry configuration
         unimplemented!("Direct adapter creation not yet implemented")
     }
-    
+
     fn create_adapter_with_config<A, C>(&self, _config: C) -> Arc<A>
     where
         A: Send + Sync + 'static,
-        C: Send + Sync + 'static
+        C: Send + Sync + 'static,
     {
         // This is just a placeholder implementation
         unimplemented!("Configured adapter creation not yet implemented")
