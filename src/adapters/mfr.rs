@@ -21,7 +21,7 @@ pub struct MfrChildAdapter {
 
 impl MfrChildAdapter {
     /// Create a new MFR child adapter
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         Self {
             registry: MfrChildRegister::new(),
         }
@@ -56,7 +56,7 @@ impl RegistryAdapter<Child> for MfrChildAdapter {
     }
 }
 
-/// Implement ModelLookup for Child
+/// Implement `ModelLookup` for Child
 impl ModelLookup<Child, String> for Child {
     /// Create a lookup map from PNR to Child
     fn create_lookup(children: &[Child]) -> HashMap<String, Arc<Child>> {

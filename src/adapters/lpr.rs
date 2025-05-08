@@ -20,7 +20,7 @@ pub struct LprDiagnosisAdapter {
 
 impl LprDiagnosisAdapter {
     /// Create a new LPR diagnosis adapter
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         Self {
             registry: LprDiagRegister::new(),
         }
@@ -63,7 +63,7 @@ pub struct Lpr3DiagnosisAdapter {
 
 impl Lpr3DiagnosisAdapter {
     /// Create a new LPR3 diagnosis adapter
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         Self {
             registry: Lpr3DiagnoserRegister::new(),
         }
@@ -95,7 +95,7 @@ pub struct LprCombinedAdapter {
 
 impl LprCombinedAdapter {
     /// Create a new combined LPR adapter
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         Self {
             lpr2_adapter: LprDiagnosisAdapter::new(),
             lpr3_adapter: Lpr3DiagnosisAdapter::new(),
@@ -177,7 +177,7 @@ impl Default for LprCombinedAdapter {
     }
 }
 
-/// Implement ModelLookup for Diagnosis
+/// Implement `ModelLookup` for Diagnosis
 impl ModelLookup<Diagnosis, (String, String)> for Diagnosis {
     /// Create a lookup map from (PNR, diagnosis code) to Diagnosis
     fn create_lookup(diagnoses: &[Diagnosis]) -> HashMap<(String, String), Arc<Diagnosis>> {

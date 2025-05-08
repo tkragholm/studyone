@@ -34,7 +34,7 @@ pub struct IndIncomeAdapter {
 
 impl IndIncomeAdapter {
     /// Create a new income adapter for the specified income type
-    pub fn new(income_type: IncomeType) -> Self {
+    #[must_use] pub fn new(income_type: IncomeType) -> Self {
         Self {
             registry: IndRegister::new(),
             income_type,
@@ -42,7 +42,7 @@ impl IndIncomeAdapter {
     }
     
     /// Get the income type for this adapter
-    pub fn income_type(&self) -> IncomeType {
+    #[must_use] pub fn income_type(&self) -> IncomeType {
         self.income_type
     }
     
@@ -135,7 +135,7 @@ impl IndMultiYearAdapter {
     /// # Returns
     ///
     /// * A new multi-year adapter
-    pub fn new(years: Vec<u16>, income_type: IncomeType) -> Self {
+    #[must_use] pub fn new(years: Vec<u16>, income_type: IncomeType) -> Self {
         Self {
             registry: IndRegister::new(),
             years,
@@ -162,7 +162,7 @@ impl IndMultiYearAdapter {
         
         for year in &self.years {
             // Construct the year-specific path
-            let year_path = base_path.join(format!("{}", year));
+            let year_path = base_path.join(format!("{year}"));
             
             // Load data for this year
             let mut year_incomes = self.registry.load_as::<Income>(&year_path, pnr_filter)?;
@@ -207,7 +207,7 @@ impl IndMultiYearAdapter {
         
         // Create a stream of futures, each loading data for one year
         let income_futures = stream::iter(self.years.iter().map(|year| {
-            let year_path = base_path.join(format!("{}", year));
+            let year_path = base_path.join(format!("{year}"));
             let registry = &self.registry;
             let income_type = self.income_type;
             
@@ -219,19 +219,13 @@ impl IndMultiYearAdapter {
                 match income_type {
                     IncomeType::All => {}
                     IncomeType::Personal => {
-                        year_incomes = year_incomes.into_iter()
-                            .filter(|income| income.income_type == "personal")
-                            .collect();
+                        year_incomes.retain(|income| income.income_type == "personal");
                     }
                     IncomeType::Household => {
-                        year_incomes = year_incomes.into_iter()
-                            .filter(|income| income.income_type == "household")
-                            .collect();
+                        year_incomes.retain(|income| income.income_type == "household");
                     }
                     IncomeType::Disposable => {
-                        year_incomes = year_incomes.into_iter()
-                            .filter(|income| income.income_type == "disposable")
-                            .collect();
+                        year_incomes.retain(|income| income.income_type == "disposable");
                     }
                 }
                 
@@ -255,7 +249,7 @@ impl IndMultiYearAdapter {
     }
 }
 
-/// Implement ModelLookup for Income
+/// Implement `ModelLookup` for Income
 impl ModelLookup<Income, (String, i32)> for Income {
     /// Create a lookup map from (PNR, year) to Income
     fn create_lookup(incomes: &[Income]) -> HashMap<(String, i32), Arc<Income>> {

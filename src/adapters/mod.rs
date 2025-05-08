@@ -40,7 +40,7 @@ impl AdapterFactoryImpl {
     /// # Returns
     ///
     /// * `Self` - A new adapter factory
-    pub fn new(registry_base_path: std::path::PathBuf, enable_caching: bool) -> Self {
+    #[must_use] pub fn new(registry_base_path: std::path::PathBuf, enable_caching: bool) -> Self {
         Self {
             registry_base_path,
             enable_caching,
@@ -48,12 +48,12 @@ impl AdapterFactoryImpl {
     }
     
     /// Get the registry base path
-    pub fn registry_base_path(&self) -> &std::path::Path {
+    #[must_use] pub fn registry_base_path(&self) -> &std::path::Path {
         &self.registry_base_path
     }
     
     /// Check if caching is enabled
-    pub fn caching_enabled(&self) -> bool {
+    #[must_use] pub fn caching_enabled(&self) -> bool {
         self.enable_caching
     }
 }

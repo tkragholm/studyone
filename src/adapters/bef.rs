@@ -68,9 +68,15 @@ pub struct BefCombinedAdapter {
     registry: BefRegister,
 }
 
+impl Default for BefCombinedAdapter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl BefCombinedAdapter {
     /// Create a new combined adapter
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         Self {
             registry: BefRegister::new(),
         }
@@ -93,7 +99,7 @@ impl BefCombinedAdapter {
     }
     
     /// Extract family relationships from a collection of individuals
-    pub fn extract_relationships(&self, individuals: &[Individual]) -> HashMap<String, (Option<String>, Option<String>, Vec<String>)> {
+    #[must_use] pub fn extract_relationships(&self, individuals: &[Individual]) -> HashMap<String, (Option<String>, Option<String>, Vec<String>)> {
         let mut relationships: HashMap<String, (Option<String>, Option<String>, Vec<String>)> = HashMap::new();
         
         // Group individuals by family ID
@@ -124,10 +130,10 @@ impl BefCombinedAdapter {
                     // This is a parent
                     match member.gender {
                         crate::models::types::Gender::Female => {
-                            mother_pnr = Some(member.pnr.clone())
+                            mother_pnr = Some(member.pnr.clone());
                         }
                         crate::models::types::Gender::Male => {
-                            father_pnr = Some(member.pnr.clone())
+                            father_pnr = Some(member.pnr.clone());
                         }
                         crate::models::types::Gender::Unknown => {} // Skip unknown gender
                     }

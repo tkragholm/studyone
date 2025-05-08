@@ -12,14 +12,14 @@ use std::sync::Arc;
 /// Core adapter trait defining the standard functionality for all adapters
 ///
 /// This trait provides a unified interface for converting registry data (in the form
-/// of Arrow RecordBatches) to domain model objects. All registry adapters should
+/// of Arrow `RecordBatches`) to domain model objects. All registry adapters should
 /// implement this trait to ensure consistent behavior.
 pub trait RegistryAdapter<T>: Debug + Send + Sync {
     /// Convert a `RecordBatch` from a registry into domain model objects
     ///
     /// # Arguments
     ///
-    /// * `batch` - The Arrow RecordBatch containing registry data
+    /// * `batch` - The Arrow `RecordBatch` containing registry data
     ///
     /// # Returns
     ///
@@ -50,7 +50,7 @@ pub trait StatefulAdapter<T>: Debug + Send + Sync {
     ///
     /// # Arguments
     ///
-    /// * `batch` - The Arrow RecordBatch containing registry data
+    /// * `batch` - The Arrow `RecordBatch` containing registry data
     ///
     /// # Returns
     ///
@@ -75,7 +75,7 @@ pub trait StatefulAdapter<T>: Debug + Send + Sync {
     ///
     /// # Arguments
     ///
-    /// * `batch` - The Arrow RecordBatch containing registry data
+    /// * `batch` - The Arrow `RecordBatch` containing registry data
     ///
     /// # Returns
     ///
