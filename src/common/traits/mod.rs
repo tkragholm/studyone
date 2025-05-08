@@ -5,6 +5,7 @@
 
 pub mod registry;
 pub mod adapter;
+pub mod collection;
 
 // Re-export core traits for convenience
 pub use registry::{
@@ -14,4 +15,10 @@ pub use registry::{
 // Re-export adapter traits
 pub use adapter::{
     RegistryAdapter, StatefulAdapter, AdapterFactory, BatchProcessor, ModelLookup
+};
+
+// Re-export collection traits
+pub use collection::{
+    ModelCollection, TemporalCollection, BatchCollection, LookupCollection, 
+    RelatedCollection, CacheableCollection
 };

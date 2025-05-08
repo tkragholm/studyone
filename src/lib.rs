@@ -7,6 +7,7 @@
 //pub mod algorithm;
 pub mod adapters;
 pub mod async_io;
+pub mod collections;
 pub mod common;
 pub mod config;
 pub mod error;
@@ -39,6 +40,14 @@ pub use arrow::record_batch::RecordBatch;
 // Domain models
 pub use models::{Child, Diagnosis, Family, Income, Individual, Parent};
 
+// Model collections
+pub use collections::{
+    // Generic collections
+    GenericCollection, TemporalCollectionWithCache, RelatedModelCollection,
+    // Specialized collections
+    IndividualCollection, DiagnosisCollection, FamilyCollection
+};
+
 // Registry-model conversion
 pub use registry::model_conversion::{ModelConversion, ModelConversionExt};
 
@@ -61,7 +70,10 @@ pub use common::traits::{
     // Registry conversion traits
     RegistryAware, BefRegistry, IndRegistry, LprRegistry, MfrRegistry, DodRegistry,
     // Adapter traits
-    RegistryAdapter, StatefulAdapter, AdapterFactory, BatchProcessor, ModelLookup
+    RegistryAdapter, StatefulAdapter, AdapterFactory, BatchProcessor, ModelLookup,
+    // Collection traits
+    ModelCollection, TemporalCollection, BatchCollection, LookupCollection, 
+    RelatedCollection, CacheableCollection
 };
 
 // Filtering capabilities

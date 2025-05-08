@@ -5,7 +5,7 @@
 //! such as parent or child.
 
 use crate::error::Result;
-use crate::models::traits::{ArrowSchema, EntityModel, HealthStatus};
+use crate::models::traits::{ArrowSchema, EntityModel, HealthStatus, TemporalValidity};
 use crate::common::traits::{RegistryAware, BefRegistry, IndRegistry, DodRegistry};
 use crate::models::types::{EducationLevel, Gender, Origin};
 use arrow::array::{Array, BooleanArray, Date32Array, Int32Array, StringArray};
@@ -88,6 +88,29 @@ impl EntityModel for Individual {
     
     fn key(&self) -> String {
         self.pnr.clone()
+    }
+}
+
+// Implement TemporalValidity trait
+impl TemporalValidity for Individual {
+    fn was_valid_at(&self, date: &NaiveDate) -> bool {
+        self.was_alive_at(date)
+    }
+    
+    fn valid_from(&self) -> NaiveDate {
+        self.birth_date.unwrap_or_else(|| NaiveDate::from_ymd_opt(1900, 1, 1).unwrap())
+    }
+    
+    fn valid_to(&self) -> Option<NaiveDate> {
+        self.death_date
+    }
+    
+    fn snapshot_at(&self, date: &NaiveDate) -> Option<Self> {
+        if self.was_valid_at(date) {
+            Some(self.clone())
+        } else {
+            None
+        }
     }
 }
 

@@ -73,13 +73,23 @@ This structure:
 4. **Enhanced extensibility**: Adding new registry types or models is simpler with this structure
 5. **Cleaner build process**: No more circular dependency issues
 
+## Recent Improvements
+
+We've made significant progress on the refactoring roadmap:
+
+1. **Unified Adapter Interface**: We've created a standardized adapter interface that provides a consistent pattern for converting registry data to domain models across all registry types.
+
+2. **Standardized Collection Implementation**: We've implemented a unified collection framework with:
+   - Common collection traits in `src/common/traits/collection.rs`
+   - Generic implementations in `src/collections/mod.rs`
+   - Specialized collections for primary model types (Individual, Diagnosis, Family)
+
 ## Future Directions
 
-While this refactoring addresses the immediate architectural issues, future improvements could include:
+While this refactoring addresses many of the architectural issues, future improvements could include:
 
-1. Creating a unified adapter interface for all registry types
-2. Building a standardized collection implementation
-3. Consolidating async loading code
-4. Expanding documentation and test coverage
+1. Consolidating async loading code
+2. Expanding documentation and test coverage
+3. Migrating existing code to use the new collection and adapter interfaces
 
 See the `REFACTORING_PLAN.md` file for more details on future improvements.
