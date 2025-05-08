@@ -3,6 +3,7 @@
 //! The DOD registry contains death records.
 
 pub mod schema;
+pub mod conversion;
 use crate::RecordBatch;
 use crate::RegisterLoader;
 use crate::Result;

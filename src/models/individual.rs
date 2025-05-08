@@ -4,7 +4,7 @@
 //! An Individual represents any person in the study, and can be associated with various roles
 //! such as parent or child.
 
-use crate::common::traits::{BefRegistry, DodRegistry, IndRegistry, RegistryAware};
+use crate::common::traits::{BefRegistry, RegistryAware};
 use crate::error::Result;
 use crate::models::traits::{ArrowSchema, EntityModel, HealthStatus, TemporalValidity};
 use crate::models::types::{EducationLevel, Gender, Origin};
@@ -187,7 +187,6 @@ impl HealthStatus for Individual {
     }
 }
 
-// Implement ArrowSchema trait
 // Implement RegistryAware for Individual
 impl RegistryAware for Individual {
     /// Get the registry name for this model
@@ -197,79 +196,35 @@ impl RegistryAware for Individual {
 
     /// Create a model from a registry-specific record
     fn from_registry_record(batch: &RecordBatch, row: usize) -> Result<Option<Self>> {
-        // Since Individual can come from multiple registries, delegate to specific implementations
-        // Default to BEF registry format
-        Self::from_bef_record(batch, row)
-    }
-
-    /// Create models from an entire registry record batch
-    fn from_registry_batch(batch: &RecordBatch) -> Result<Vec<Self>> {
-        // Since Individual can come from multiple registries, delegate to specific implementations
-        // Default to BEF registry format
-        Self::from_bef_batch(batch)
-    }
-}
-
-// Implementation of registry-specific traits moved from models/registry.rs
-impl BefRegistry for Individual {
-    fn from_bef_record(_batch: &RecordBatch, row: usize) -> Result<Option<Self>> {
-        // Since we can't directly import the method, we'll create a stub for now
-        // This would be replaced with actual implementation that uses
-        // individual_schema_constructors.rs functionality
-
-        // Stub implementation that just creates a basic Individual
-        let pnr = format!("BEF{row}");
-        let gender = Gender::Unknown;
-        let birth_date = None;
-
-        let individual = Self::new(pnr, gender, birth_date);
-        Ok(Some(individual))
-    }
-
-    fn from_bef_batch(batch: &RecordBatch) -> Result<Vec<Self>> {
-        // Since we can't directly import the method, we'll create a stub for now
-        // This would be replaced with actual implementation that uses
-        // individual_schema_constructors.rs functionality
-
-        // Stub implementation that creates a few dummy Individuals
-        let mut result = Vec::new();
-        for row in 0..batch.num_rows().min(10) {
-            if let Some(individual) = Self::from_bef_record(batch, row)? {
-                result.push(individual);
-            }
+        // Since registry-specific implementations have been moved out,
+        // this just provides a basic implementation that works with the registry
+        // model conversion layers
+        let pnr_array_opt = get_column(batch, "PNR", &DataType::Utf8, false)?;
+        if pnr_array_opt.is_none() {
+            return Ok(None);
         }
 
-        Ok(result)
-    }
-}
+        // Create a binding to avoid temporary value error
+        let pnr_array_value = pnr_array_opt.unwrap();
+        let pnr_array = downcast_array::<StringArray>(&pnr_array_value, "PNR", "String")?;
 
-impl IndRegistry for Individual {
-    fn from_ind_record(batch: &RecordBatch, row: usize) -> Result<Option<Self>> {
-        // Extract PNR column
-        let pnr_array_opt = get_column(batch, "PNR", &DataType::Utf8, true)?;
-        let pnr_array = match &pnr_array_opt {
-            Some(array) => downcast_array::<StringArray>(array, "PNR", "String")?,
-            None => return Ok(None), // Required column missing
-        };
-
-        // Get PNR
         if row >= pnr_array.len() || pnr_array.is_null(row) {
-            return Ok(None); // No PNR data
+            return Ok(None);
         }
-        let pnr = pnr_array.value(row).to_string();
 
-        // For now, create a simple Individual with minimal data
+        let pnr = pnr_array.value(row).to_string();
         let gender = Gender::Unknown;
         let birth_date = None;
 
         Ok(Some(Self::new(pnr, gender, birth_date)))
     }
 
-    fn from_ind_batch(batch: &RecordBatch) -> Result<Vec<Self>> {
-        // Implement a simple batch conversion that just calls the record method for each row
+    /// Create models from an entire registry record batch
+    fn from_registry_batch(batch: &RecordBatch) -> Result<Vec<Self>> {
         let mut individuals = Vec::new();
+
         for row in 0..batch.num_rows() {
-            if let Some(individual) = Self::from_ind_record(batch, row)? {
+            if let Some(individual) = Self::from_registry_record(batch, row)? {
                 individuals.push(individual);
             }
         }
@@ -278,17 +233,20 @@ impl IndRegistry for Individual {
     }
 }
 
-impl DodRegistry for Individual {
-    fn enhance_with_death_data(&mut self, _batch: &RecordBatch, _row: usize) -> Result<bool> {
-        // Stub implementation
-        // This would be replaced with actual implementation from individual_schema_constructors.rs
+// Implement BefRegistry for Individual - delegate to conversion module
+impl BefRegistry for Individual {
+    fn from_bef_record(batch: &RecordBatch, row: usize) -> Result<Option<Self>> {
+        use crate::registry::bef::conversion;
+        conversion::from_bef_record(batch, row)
+    }
 
-        // Just set a dummy death date
-        self.death_date = Some(NaiveDate::from_ymd_opt(2020, 1, 1).unwrap());
-        Ok(true)
+    fn from_bef_batch(batch: &RecordBatch) -> Result<Vec<Self>> {
+        use crate::registry::bef::conversion;
+        conversion::from_bef_batch(batch)
     }
 }
 
+// Implement ArrowSchema trait
 impl ArrowSchema for Individual {
     /// Get the Arrow schema for Individual records
     fn schema() -> Schema {

@@ -45,18 +45,27 @@ This document tracks our progress implementing the code cleanup plan outlined in
    - [ ] After confirming functionality, integrate remaining _new.rs files
 
 4. **Implement Remaining Tasks**
+   - [x] Migrate BEF registry
    - [x] Migrate IND registry
    - [x] Migrate LPR registry
-   - [ ] Migrate MFR registry
+   - [x] Migrate MFR registry
+   - [x] Migrate AKM registry
+   - [x] Migrate UDDF registry 
+   - [x] Migrate VNDS registry
+   - [ ] Migrate IDAN registry (pending)
    - [ ] Clean up other model files
    - [ ] Update the factory classes
 
 ## Completed Components
 
 1. **Registry Implementations**
-   - BEF registry using trait-based approach
-   - IND registry using trait-based approach
-   - LPR registry using trait-based approach
+   - BEF registry using trait-based approach (directly implemented)
+   - IND registry using trait-based approach (migrated from _new.rs files)
+   - LPR registry using trait-based approach (migrated from _new.rs files)
+   - MFR registry using trait-based approach (directly implemented)
+   - AKM registry using trait-based approach (directly implemented)
+   - UDDF registry using trait-based approach (directly implemented)
+   - VNDS registry using trait-based approach (directly implemented)
 
 2. **Model Implementations**
    - Individual model without registry dependencies
@@ -80,7 +89,9 @@ This document tracks our progress implementing the code cleanup plan outlined in
    - Registry conversion logic can be tested independently
    - Models can be tested without registry dependencies
 
-## Lessons Learned from IND Registry Migration
+## Lessons Learned from Registry Migrations
+
+### IND Registry Migration Lessons
 
 1. **Trait Implementation Conflicts**
    - Discovered that trait implementations must be unique across the codebase
@@ -102,6 +113,64 @@ This document tracks our progress implementing the code cleanup plan outlined in
 4. **Import Management**
    - Need to be vigilant about managing imports to avoid unused imports
    - Refactoring can lead to redundant imports that must be cleaned up
+
+### BEF Registry Observations
+
+1. **Direct Implementation Approach**
+   - The BEF registry was already implemented using the trait-based approach
+   - No migration from _new.rs files was necessary
+   - This demonstrates that the refactoring effort had already started in some parts of the codebase
+
+2. **Consistent Implementation Pattern**
+   - BEF implementation follows the same pattern as other migrated registries:
+     - Uses PnrFilterableLoader
+     - Implements RegisterLoader trait with async methods
+     - Models implement BefRegistry trait with conversion methods
+
+3. **Documentation Alignment**
+   - Implementation plan and progress tracking needed updating to reflect the actual state
+   - Importance of keeping documentation in sync with code changes
+
+### MFR Registry Migration Lessons
+
+1. **Specialized Implementations**
+   - MfrChildRegister demonstrates a pattern for specialized registry implementations
+   - Shows how to build on the base registry for domain-specific functionality
+   - Leverages the underlying trait-based implementation while adding domain logic
+
+2. **Individual Lookup Pattern**
+   - Shows a clean pattern for working with related entities
+   - Uses individual lookups to enhance basic Child models from MFR data
+   - Demonstrates how trait-based conversion can be combined with lookup-based enhancement
+
+3. **Registry-Model Integration**
+   - Cleaner separation of concerns between the registry and model layers:
+     - Registry layer handles data loading via PnrFilterableLoader
+     - MfrRegistry trait provides conversion logic in the model files
+     - ModelConversion delegates to trait implementation
+   - This pattern makes it clearer how data flows through the system
+
+### AKM, UDDF, and VNDS Registry Migration Lessons
+
+1. **Simplified Migration Pattern**
+   - These registries were simple data loaders without specialized model conversion needs
+   - Direct migration to trait-based approach was straightforward
+   - Common pattern emerged:
+     - Replace direct function calls with PnrFilterableLoader
+     - Add AsyncDirectoryLoader and AsyncPnrFilterableLoader trait usage
+     - Implement comprehensive test cases
+
+2. **Consistent Implementation Benefits**
+   - Using consistent pattern across all registries:
+     - Makes codebase more maintainable and predictable
+     - Reduces cognitive load when working with different registries
+     - Allows for shared functionality across registry types
+     - Makes it easier to add new registries in the future
+
+3. **Trait-Based PNR Filtering**
+   - PnrFilterableLoader provides consistent PNR filtering across registry types
+   - Async loading with tokio runtime creates a clean separation between sync and async interfaces
+   - Direct delegation to trait methods from sync methods improves code clarity
 
 ## Remaining Challenges
 

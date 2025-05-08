@@ -3,10 +3,13 @@
 //! This module provides adapters for converting LPR registry data
 //! to Diagnosis domain models using the unified adapter interface.
 
+use crate::common::traits::{ModelLookup, RegistryAdapter, StatefulAdapter};
 use crate::error::Result;
-use crate::common::traits::{RegistryAdapter, StatefulAdapter, ModelLookup};
 use crate::models::Diagnosis;
-use crate::registry::{LprDiagRegister, Lpr3DiagnoserRegister, ModelConversion, model_conversion::ModelConversionExt};
+use crate::registry::RegisterLoader;
+use crate::registry::{
+    Lpr3DiagnoserRegister, LprDiagRegister, ModelConversion,
+};
 use arrow::record_batch::RecordBatch;
 use std::collections::HashMap;
 use std::fmt::Debug;
@@ -20,7 +23,8 @@ pub struct LprDiagnosisAdapter {
 
 impl LprDiagnosisAdapter {
     /// Create a new LPR diagnosis adapter
-    #[must_use] pub fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self {
             registry: LprDiagRegister::new(),
         }
@@ -35,23 +39,23 @@ impl Default for LprDiagnosisAdapter {
 
 impl StatefulAdapter<Diagnosis> for LprDiagnosisAdapter {
     fn convert_batch(&self, batch: &RecordBatch) -> Result<Vec<Diagnosis>> {
-        self.registry.to_models(batch)
+        ModelConversion::to_models(&self.registry, batch)
     }
-    
+
     fn transform_models(&self, models: &mut [Diagnosis]) -> Result<()> {
-        self.registry.transform_models(models)
+        ModelConversion::transform_models(&self.registry, models)
     }
 }
 
 impl RegistryAdapter<Diagnosis> for LprDiagnosisAdapter {
     fn from_record_batch(batch: &RecordBatch) -> Result<Vec<Diagnosis>> {
         let registry = LprDiagRegister::new();
-        registry.to_models(batch)
+        ModelConversion::to_models(&registry, batch)
     }
-    
+
     fn transform(models: &mut [Diagnosis]) -> Result<()> {
         let registry = LprDiagRegister::new();
-        registry.transform_models(models)
+        ModelConversion::transform_models(&registry, models)
     }
 }
 
@@ -63,7 +67,8 @@ pub struct Lpr3DiagnosisAdapter {
 
 impl Lpr3DiagnosisAdapter {
     /// Create a new LPR3 diagnosis adapter
-    #[must_use] pub fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self {
             registry: Lpr3DiagnoserRegister::new(),
         }
@@ -78,11 +83,11 @@ impl Default for Lpr3DiagnosisAdapter {
 
 impl StatefulAdapter<Diagnosis> for Lpr3DiagnosisAdapter {
     fn convert_batch(&self, batch: &RecordBatch) -> Result<Vec<Diagnosis>> {
-        self.registry.to_models(batch)
+        ModelConversion::to_models(&self.registry, batch)
     }
-    
+
     fn transform_models(&self, models: &mut [Diagnosis]) -> Result<()> {
-        self.registry.transform_models(models)
+        ModelConversion::transform_models(&self.registry, models)
     }
 }
 
@@ -95,13 +100,14 @@ pub struct LprCombinedAdapter {
 
 impl LprCombinedAdapter {
     /// Create a new combined LPR adapter
-    #[must_use] pub fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self {
             lpr2_adapter: LprDiagnosisAdapter::new(),
             lpr3_adapter: Lpr3DiagnosisAdapter::new(),
         }
     }
-    
+
     /// Load data from both LPR2 and LPR3 registries
     ///
     /// # Arguments
@@ -120,19 +126,33 @@ impl LprCombinedAdapter {
         pnr_filter: Option<&std::collections::HashSet<String>>,
     ) -> Result<Vec<Diagnosis>> {
         // Load diagnoses from LPR2
-        let lpr2_diagnoses = self.lpr2_adapter.registry.load_as::<Diagnosis>(lpr2_path, pnr_filter)?;
-        
+        let lpr2_batches = self.lpr2_adapter.registry.load(lpr2_path, pnr_filter)?;
+        let lpr2_diagnoses: Vec<Diagnosis> = lpr2_batches
+            .into_iter()
+            .flat_map(|batch| {
+                ModelConversion::to_models(&self.lpr2_adapter.registry, &batch)
+                    .unwrap_or_default()
+            })
+            .collect();
+
         // Load diagnoses from LPR3
-        let lpr3_diagnoses = self.lpr3_adapter.registry.load_as::<Diagnosis>(lpr3_path, pnr_filter)?;
-        
+        let lpr3_batches = self.lpr3_adapter.registry.load(lpr3_path, pnr_filter)?;
+        let lpr3_diagnoses: Vec<Diagnosis> = lpr3_batches
+            .into_iter()
+            .flat_map(|batch| {
+                ModelConversion::to_models(&self.lpr3_adapter.registry, &batch)
+                    .unwrap_or_default()
+            })
+            .collect();
+
         // Combine results
         let mut all_diagnoses = Vec::with_capacity(lpr2_diagnoses.len() + lpr3_diagnoses.len());
         all_diagnoses.extend(lpr2_diagnoses);
         all_diagnoses.extend(lpr3_diagnoses);
-        
+
         Ok(all_diagnoses)
     }
-    
+
     /// Load data from both LPR2 and LPR3 registries asynchronously
     ///
     /// # Arguments
@@ -151,22 +171,40 @@ impl LprCombinedAdapter {
         pnr_filter: Option<&std::collections::HashSet<String>>,
     ) -> Result<Vec<Diagnosis>> {
         use futures::future;
-        
+
         // Load diagnoses from both registries concurrently
-        let (lpr2_result, lpr3_result) = future::join(
-            self.lpr2_adapter.registry.load_as_async::<Diagnosis>(lpr2_path, pnr_filter),
-            self.lpr3_adapter.registry.load_as_async::<Diagnosis>(lpr3_path, pnr_filter),
-        ).await;
-        
+        let (lpr2_batches, lpr3_batches) = future::join(
+            self.lpr2_adapter.registry.load_async(lpr2_path, pnr_filter),
+            self.lpr3_adapter.registry.load_async(lpr3_path, pnr_filter),
+        )
+        .await;
+
         // Handle results
-        let lpr2_diagnoses = lpr2_result?;
-        let lpr3_diagnoses = lpr3_result?;
-        
+        let lpr2_batches = lpr2_batches?;
+        let lpr3_batches = lpr3_batches?;
+
+        // Convert batches to diagnoses
+        let lpr2_diagnoses: Vec<Diagnosis> = lpr2_batches
+            .into_iter()
+            .flat_map(|batch| {
+                ModelConversion::to_models(&self.lpr2_adapter.registry, &batch)
+                    .unwrap_or_default()
+            })
+            .collect();
+
+        let lpr3_diagnoses: Vec<Diagnosis> = lpr3_batches
+            .into_iter()
+            .flat_map(|batch| {
+                ModelConversion::to_models(&self.lpr3_adapter.registry, &batch)
+                    .unwrap_or_default()
+            })
+            .collect();
+
         // Combine results
         let mut all_diagnoses = Vec::with_capacity(lpr2_diagnoses.len() + lpr3_diagnoses.len());
         all_diagnoses.extend(lpr2_diagnoses);
         all_diagnoses.extend(lpr3_diagnoses);
-        
+
         Ok(all_diagnoses)
     }
 }
@@ -184,8 +222,11 @@ impl ModelLookup<Diagnosis, (String, String)> for Diagnosis {
         let mut lookup = HashMap::with_capacity(diagnoses.len());
         for diagnosis in diagnoses {
             lookup.insert(
-                (diagnosis.individual_pnr.clone(), diagnosis.diagnosis_code.clone()),
-                Arc::new(diagnosis.clone())
+                (
+                    diagnosis.individual_pnr.clone(),
+                    diagnosis.diagnosis_code.clone(),
+                ),
+                Arc::new(diagnosis.clone()),
             );
         }
         lookup

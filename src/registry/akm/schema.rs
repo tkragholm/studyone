@@ -6,12 +6,13 @@ use std::sync::Arc;
 /// Get the Arrow schema for AKM data
 ///
 /// The AKM (Arbejdsklassifikationsmodulet) registry contains employment information.
-#[must_use] pub fn akm_schema() -> Arc<Schema> {
+#[must_use]
+pub fn akm_schema() -> Arc<Schema> {
     Arc::new(Schema::new(vec![
         Field::new("PNR", DataType::Utf8, false),
         Field::new("SOCIO", DataType::Int8, true),
         Field::new("SOCIO02", DataType::Int8, true),
-        Field::new("SOCIO13", DataType::Int8, true),
+        Field::new("SOCIO13", DataType::Int8, true), // 3 digit number
         Field::new("CPRTJEK", DataType::Utf8, true),
         Field::new("CPRTYPE", DataType::Utf8, true),
         Field::new("VERSION", DataType::Utf8, true),

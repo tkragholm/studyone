@@ -4,7 +4,6 @@
 
 use crate::error::Result;
 use crate::models::{Family, Individual};
-use crate::common::traits::BefRegistry;
 use arrow::record_batch::RecordBatch;
 use chrono::Datelike;
 
@@ -15,7 +14,8 @@ impl BefCombinedRegister {
     /// Process a batch of BEF data to extract individuals and families
     pub fn process_batch(batch: &RecordBatch) -> Result<(Vec<Individual>, Vec<Family>)> {
         // This is a simplified implementation that delegates to the BEF model conversion
-        let individuals = Individual::from_bef_batch(batch)?;
+        use crate::registry::bef::conversion;
+        let individuals = conversion::from_bef_batch(batch)?;
 
         // In a complete implementation, we would also extract and construct families
         // For now, return an empty vector

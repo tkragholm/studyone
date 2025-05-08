@@ -49,7 +49,7 @@ pub use collections::{
 };
 
 // Registry-model conversion
-pub use registry::model_conversion::{ModelConversion, ModelConversionExt};
+pub use registry::model_conversion::{ModelConversion, ModelConvertingRegisterLoader};
 
 // Unified adapters
 pub use adapters::{

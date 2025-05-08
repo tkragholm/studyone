@@ -2,6 +2,8 @@
 
 This document outlines the step-by-step plan for removing old code and migrating to the new trait-based approach.
 
+> **Status Update (May 2024)**: Significant progress has been made on registry migration. See [REGISTRY_MIGRATION_PROGRESS.md](./REGISTRY_MIGRATION_PROGRESS.md) for detailed status.
+
 ## Phase 1: Setup and Preparation (Week 1)
 
 - [x] Analyze models for redundancy
@@ -15,10 +17,10 @@ This document outlines the step-by-step plan for removing old code and migrating
 ### Week 2: Initial Registry Migration
 
 1. **Migrate BEF Registry**
-   - [ ] Create trait-based BEF register implementation
-   - [ ] Update model conversion in BEF registry
-   - [ ] Add tests for the new implementation
-   - [ ] Remove old implementation
+   - [x] Create trait-based BEF register implementation
+   - [x] Update model conversion in BEF registry
+   - [x] Add tests for the new implementation
+   - [x] Remove old implementation
 
 2. **Migrate IND Registry**
    - [x] Create trait-based IND register implementation
@@ -27,18 +29,22 @@ This document outlines the step-by-step plan for removing old code and migrating
    - [x] Remove old implementation
 
 3. **Migrate LPR Registry**
-   - [ ] Create trait-based LPR register implementation
-   - [ ] Update model conversion in LPR registry
-   - [ ] Add tests for the new implementation
-   - [ ] Remove implementation
+   - [x] Create trait-based LPR register implementation
+   - [x] Update model conversion in LPR registry
+   - [x] Add tests for the new implementation
+   - [x] Remove implementation
 
 ### Week 3: Complete Registry Migration
 
 4. **Migrate Remaining Registries**
-   - [ ] Create trait-based implementations for all remaining registries
+   - [x] Create trait-based implementation for MFR registry
+   - [x] Create trait-based implementation for AKM registry
+   - [x] Create trait-based implementation for UDDF registry
+   - [x] Create trait-based implementation for VNDS registry
+   - [ ] Create trait-based implementation for IDAN registry
    - [ ] Update all model conversions
-   - [ ] Add tests for all new implementations
-   - [ ] Remove all old implementations
+   - [x] Add tests for all new implementations
+   - [x] Remove all old implementations
 
 5. **Update Factory Methods**
    - [ ] Update registry factory methods to use new implementations

@@ -6,6 +6,11 @@
 
 use crate::RecordBatch;
 use crate::Result;
+use crate::registry::RegisterLoader;
+use std::collections::HashSet;
+use std::path::Path;
+use std::future::Future;
+use std::pin::Pin;
 
 /// Trait for bidirectional conversion between registry data and domain models
 ///
@@ -25,26 +30,25 @@ pub trait ModelConversion<T> {
     }
 }
 
-/// Extension trait for registry loaders that support model conversion
-pub trait ModelConversionExt {
-    /// Load data from this registry directly as the specified model type
-    ///
-    /// # Type Parameters
-    ///
-    /// * `T` - The target model type
-    ///
-    /// # Arguments
-    ///
-    /// * `base_path` - Base directory containing the registry's parquet files
-    /// * `pnr_filter` - Optional filter to only load data for specific PNRs
-    ///
-    /// # Returns
-    ///
-    /// * `Result<Vec<T>>` - Vector of domain models
-    fn load_as<T>(&self, base_path: &std::path::Path, pnr_filter: Option<&std::collections::HashSet<String>>) -> Result<Vec<T>>
-    where
-        Self: ModelConversion<T> + crate::registry::RegisterLoader,
-    {
+/// Combined trait for registry loaders that support model conversion
+///
+/// This trait combines RegisterLoader and ModelConversion capabilities
+/// into a single trait with additional convenience methods.
+pub trait ModelConvertingRegisterLoader<T>: RegisterLoader {
+    /// Convert a `RecordBatch` from this registry to a vector of domain models
+    fn to_models(&self, batch: &RecordBatch) -> Result<Vec<T>>;
+    
+    /// Convert domain models back to a `RecordBatch` conforming to this registry's schema
+    fn from_models(&self, models: &[T]) -> Result<RecordBatch>;
+    
+    /// Apply additional transformations to models if needed
+    fn transform_models(&self, _models: &mut [T]) -> Result<()> {
+        // Default implementation does nothing
+        Ok(())
+    }
+    
+    /// Load data from this registry directly as domain models
+    fn load_as_models(&self, base_path: &Path, pnr_filter: Option<&HashSet<String>>) -> Result<Vec<T>> {
         let batches = self.load(base_path, pnr_filter)?;
         let mut models = Vec::new();
         
@@ -58,29 +62,13 @@ pub trait ModelConversionExt {
         Ok(models)
     }
     
-    /// Load data from this registry directly as the specified model type asynchronously
-    ///
-    /// # Type Parameters
-    ///
-    /// * `T` - The target model type
-    ///
-    /// # Arguments
-    ///
-    /// * `base_path` - Base directory containing the registry's parquet files
-    /// * `pnr_filter` - Optional filter to only load data for specific PNRs
-    ///
-    /// # Returns
-    ///
-    /// * `impl Future<Output = Result<Vec<T>>>` - Future resolving to vector of domain models
-    fn load_as_async<'a, T>(
+    /// Load data from this registry directly as domain models asynchronously
+    fn load_as_models_async<'a>(
         &'a self, 
-        base_path: &'a std::path::Path, 
-        pnr_filter: Option<&'a std::collections::HashSet<String>>
-    ) -> impl std::future::Future<Output = Result<Vec<T>>> + Send + 'a
-    where
-        Self: ModelConversion<T> + crate::registry::RegisterLoader,
-    {
-        async move {
+        base_path: &'a Path, 
+        pnr_filter: Option<&'a HashSet<String>>
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<T>>> + Send + 'a>> {
+        Box::pin(async move {
             let batches = self.load_async(base_path, pnr_filter).await?;
             let mut models = Vec::new();
             
@@ -92,9 +80,25 @@ pub trait ModelConversionExt {
             self.transform_models(&mut models)?;
             
             Ok(models)
-        }
+        })
     }
 }
 
-// Implement the extension trait for any type that implements RegisterLoader
-impl<R> ModelConversionExt for R where R: crate::registry::RegisterLoader {}
+// Implementation of ModelConvertingRegisterLoader for any type that implements
+// both RegisterLoader and ModelConversion
+impl<R, T> ModelConvertingRegisterLoader<T> for R 
+where 
+    R: RegisterLoader + ModelConversion<T>
+{
+    fn to_models(&self, batch: &RecordBatch) -> Result<Vec<T>> {
+        ModelConversion::to_models(self, batch)
+    }
+    
+    fn from_models(&self, models: &[T]) -> Result<RecordBatch> {
+        ModelConversion::from_models(self, models)
+    }
+    
+    fn transform_models(&self, models: &mut [T]) -> Result<()> {
+        ModelConversion::transform_models(self, models)
+    }
+}

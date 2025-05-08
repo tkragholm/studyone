@@ -81,3 +81,51 @@ pub trait DodRegistry: RegistryAware {
     /// Enhance a model with death registry data
     fn enhance_with_death_data(&mut self, batch: &RecordBatch, row: usize) -> Result<bool>;
 }
+
+/// Trait for converting AKM registry data to domain models
+pub trait AkmRegistry: RegistryAware {
+    /// Convert an AKM record to a model
+    fn from_akm_record(batch: &RecordBatch, row: usize) -> Result<Option<Self>>
+    where
+        Self: Sized;
+
+    /// Convert an AKM batch to model collection
+    fn from_akm_batch(batch: &RecordBatch) -> Result<Vec<Self>>
+    where
+        Self: Sized;
+    
+    /// Enhance an existing model with employment data from AKM
+    fn enhance_with_employment_data(&mut self, batch: &RecordBatch, row: usize) -> Result<bool>;
+}
+
+/// Trait for converting UDDF registry data to domain models
+pub trait UddfRegistry: RegistryAware {
+    /// Convert a UDDF record to a model
+    fn from_uddf_record(batch: &RecordBatch, row: usize) -> Result<Option<Self>>
+    where
+        Self: Sized;
+
+    /// Convert a UDDF batch to model collection
+    fn from_uddf_batch(batch: &RecordBatch) -> Result<Vec<Self>>
+    where
+        Self: Sized;
+    
+    /// Enhance an existing model with education data from UDDF
+    fn enhance_with_education_data(&mut self, batch: &RecordBatch, row: usize) -> Result<bool>;
+}
+
+/// Trait for converting VNDS registry data to domain models
+pub trait VndsRegistry: RegistryAware {
+    /// Convert a VNDS record to a model
+    fn from_vnds_record(batch: &RecordBatch, row: usize) -> Result<Option<Self>>
+    where
+        Self: Sized;
+
+    /// Convert a VNDS batch to model collection
+    fn from_vnds_batch(batch: &RecordBatch) -> Result<Vec<Self>>
+    where
+        Self: Sized;
+    
+    /// Enhance an existing model with migration data from VNDS
+    fn enhance_with_migration_data(&mut self, batch: &RecordBatch, row: usize) -> Result<bool>;
+}

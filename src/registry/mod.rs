@@ -108,6 +108,6 @@ pub use transform::{
 
 // Model conversion traits and implementation
 pub mod model_conversion;
-pub use model_conversion::{ModelConversion, ModelConversionExt};
+pub use model_conversion::{ModelConversion, ModelConvertingRegisterLoader};
 
 // Registry-specific model conversion implementations

@@ -16,6 +16,31 @@ use crate::registry::mfr::MfrRegister;
 use crate::registry::model_conversion::ModelConversion;
 use arrow::record_batch::RecordBatch;
 
+// Implement ModelConversion for MfrRegister
+impl ModelConversion<Child> for MfrRegister {
+    /// Convert MFR registry data to Child domain models
+    fn to_models(&self, batch: &RecordBatch) -> Result<Vec<Child>> {
+        // Use the trait implementation from Child (in models/child.rs)
+        use crate::common::traits::MfrRegistry;
+        Child::from_mfr_batch(batch)
+    }
+
+    /// Convert Child domain models back to MFR registry data
+    fn from_models(&self, _models: &[Child]) -> Result<RecordBatch> {
+        // Converting Child models back to MFR registry format is complex
+        // and not currently implemented
+        Err(anyhow::anyhow!(
+            "Converting Child models to MFR registry format is not yet implemented"
+        ))
+    }
+
+    /// Apply additional transformations to Child models if needed
+    fn transform_models(&self, _models: &mut [Child]) -> Result<()> {
+        // No additional transformations needed
+        Ok(())
+    }
+}
+
 /// MFR register with Individual lookup capability for Child model conversion
 #[derive(Debug)]
 pub struct MfrChildRegister {
@@ -125,9 +150,18 @@ impl ModelConversion<Child> for MfrChildRegister {
             return Ok(Vec::new());
         }
 
-        // Use the trait implementation
-        // For now, use simplified implementation that doesn't use lookup
-        Child::from_mfr_batch(batch)
+        // First get basic Child models using the trait implementation
+        let mut children = Child::from_mfr_batch(batch)?;
+        
+        // Then enhance them with Individual information from the lookup
+        for child in &mut children {
+            if let Some(individual) = self.individual_lookup.get(&child.individual().pnr) {
+                // Replace the individual with the one from the lookup that has more complete information
+                *child = Child::from_individual(individual.clone());
+            }
+        }
+        
+        Ok(children)
     }
 
     fn from_models(&self, _models: &[Child]) -> Result<RecordBatch> {

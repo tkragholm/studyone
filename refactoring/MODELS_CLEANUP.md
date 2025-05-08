@@ -24,6 +24,7 @@ The following entity models need to be migrated to use the new trait system:
 - `income.rs` - Same as above
 
 For each entity model:
+
 1. Remove the direct registry-specific conversion methods
 2. Keep the entity model structure itself (core fields and basic methods)
 3. Move registry-specific conversion implementations to respective registry-specific files
@@ -67,15 +68,3 @@ The `src/registry` directory has a mix of old and new approaches:
    - Remove commented-out and redundant code
    - Remove unused methods and imports
    - Apply consistent code style throughout
-
-## Testing Strategy
-
-- Create comprehensive tests for each migrated registry implementation
-- Verify that all model conversion works as expected after migration
-- Ensure no functional regressions by running integration tests
-
-## Deprecation Policy
-
-- Mark old methods as deprecated before removal
-- Provide clear migration paths in documentation
-- Maintain backward compatibility for a transitional period

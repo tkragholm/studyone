@@ -17,6 +17,7 @@ use crate::error::Result;
 // Export utility modules
 pub mod array_utils;
 pub mod arrow_utils;
+pub mod field_extractors;
 pub mod progress;
 pub mod registry_utils;
 pub mod test_utils;
