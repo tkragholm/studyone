@@ -1,91 +1,52 @@
-//! BEF registry model conversion implementations
+//! BEF registry model conversions
 //!
-//! This module implements bidirectional conversion between BEF registry data
-//! and domain models (Individual, Family).
+//! This module implements registry-specific conversions for BEF registry data.
+//! It provides trait implementations to convert from BEF registry format to domain models.
+//! It also provides compatibility with the old ModelConversion interface.
 
 use crate::RecordBatch;
-use crate::error::Result;
-use crate::models::traits::HealthStatus;
-use crate::models::types::FamilyType;
-use crate::models::{Family, Individual};
 use crate::common::traits::BefRegistry;
+use crate::error::Result;
+use crate::models::Family;
+use crate::models::Individual;
+use crate::models::traits::HealthStatus;
+use crate::models::types::{FamilyType, Gender};
 use crate::registry::{BefRegister, ModelConversion};
+use arrow::array::Array;
 use std::collections::HashMap;
 
-// Implement conversion from BEF to Individual models
+// BefRegistry trait is implemented in models/individual.rs
+// This file used to contain a duplicate implementation
+// which has been removed to avoid conflicting implementations
+
+// Maintain compatibility with the old ModelConversion interface
 impl ModelConversion<Individual> for BefRegister {
     /// Convert BEF registry data to Individual domain models
-    ///
-    /// This method uses the schema-aware constructors on the Individual model
-    /// to handle conversion with proper error handling and type adaptation.
-    ///
-    /// # Arguments
-    ///
-    /// * `batch` - The record batch with BEF schema
-    ///
-    /// # Returns
-    ///
-    /// * `Result<Vec<Individual>>` - The created Individuals or an error
     fn to_models(&self, batch: &RecordBatch) -> Result<Vec<Individual>> {
-        // Use the trait implementation with proper scoping to avoid ambiguity
+        // Use the trait implementation from Individual (in models/individual.rs)
+        use crate::common::traits::BefRegistry;
         Individual::from_bef_batch(batch)
     }
 
     /// Convert Individual domain models back to BEF registry data
-    ///
-    /// This method creates a record batch with BEF schema from Individual models.
-    ///
-    /// # Arguments
-    ///
-    /// * `models` - The Individual models to convert
-    ///
-    /// # Returns
-    ///
-    /// * `Result<RecordBatch>` - The created record batch or an error
     fn from_models(&self, _models: &[Individual]) -> Result<RecordBatch> {
-        // This would be implemented with arrow array builders for each field
-        // matching the BEF schema
         unimplemented!("Conversion from Individual models to BEF registry data not yet implemented")
     }
 
     /// Apply additional transformations to Individual models
-    ///
-    /// This method can apply additional BEF-specific transformations that aren't
-    /// handled in the basic conversion.
-    ///
-    /// # Arguments
-    ///
-    /// * `models` - The Individual models to transform
-    ///
-    /// # Returns
-    ///
-    /// * `Result<()>` - Success or error
     fn transform_models(&self, _models: &mut [Individual]) -> Result<()> {
-        // No additional transformations needed for individuals from BEF
         Ok(())
     }
 }
 
-// Implement conversion from BEF to Family models
+// Maintain compatibility with ModelConversion for Family
 impl ModelConversion<Family> for BefRegister {
     /// Convert BEF registry data to Family domain models
-    ///
-    /// This method first converts to Individual models and then derives
-    /// Family models from them.
-    ///
-    /// # Arguments
-    ///
-    /// * `batch` - The record batch with BEF schema
-    ///
-    /// # Returns
-    ///
-    /// * `Result<Vec<Family>>` - The created Family models or an error
     fn to_models(&self, batch: &RecordBatch) -> Result<Vec<Family>> {
         // First get individual data
         let individuals = Individual::from_bef_batch(batch)?;
 
-        // Generate family models - this is the same logic from bef_adapter.rs
-        // Group individuals by family_id
+        // Generate family models
         let mut families_map: HashMap<String, Vec<&Individual>> = HashMap::new();
         for individual in &individuals {
             if let Some(family_id) = &individual.family_id {
@@ -111,9 +72,9 @@ impl ModelConversion<Family> for BefRegister {
                 if let Some(age) = member.age_at(&current_date) {
                     if age >= 18 {
                         match member.gender {
-                            crate::models::Gender::Female => mothers.push(member),
-                            crate::models::Gender::Male => fathers.push(member),
-                            crate::models::Gender::Unknown => {} // Skip individuals with unknown gender
+                            Gender::Female => mothers.push(member),
+                            Gender::Male => fathers.push(member),
+                            Gender::Unknown => {} // Skip individuals with unknown gender
                         }
                     } else {
                         children.push(member);
@@ -141,31 +102,58 @@ impl ModelConversion<Family> for BefRegister {
     }
 
     /// Convert Family domain models back to BEF registry data
-    ///
-    /// # Arguments
-    ///
-    /// * `models` - The Family models to convert
-    ///
-    /// # Returns
-    ///
-    /// * `Result<RecordBatch>` - The created record batch or an error
     fn from_models(&self, _models: &[Family]) -> Result<RecordBatch> {
-        // This would be implemented with arrow array builders for each field
-        // matching the BEF schema
         unimplemented!("Conversion from Family models to BEF registry data not yet implemented")
     }
 
     /// Apply additional transformations to Family models
-    ///
-    /// # Arguments
-    ///
-    /// * `models` - The Family models to transform
-    ///
-    /// # Returns
-    ///
-    /// * `Result<()>` - Success or error
     fn transform_models(&self, _models: &mut [Family]) -> Result<()> {
-        // No additional transformations needed for families from BEF
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use arrow::array::StringBuilder;
+    use arrow::datatypes::{Field, Schema};
+
+    #[test]
+    fn test_individual_from_bef_record() -> Result<()> {
+        // Create a test batch with BEF data
+        let schema = Schema::new(vec![
+            Field::new("PNR", DataType::Utf8, false),
+            Field::new("KOEN", DataType::Utf8, true),
+        ]);
+
+        let mut batch_builder = RecordBatchBuilder::new_with_capacity(schema, 1);
+
+        // Add PNR data
+        let mut pnr_builder = StringBuilder::new_with_capacity(1, 12);
+        pnr_builder.append_value("1234567890")?;
+        batch_builder
+            .column_builder::<StringBuilder>(0)
+            .unwrap()
+            .append_builder(&pnr_builder)?;
+
+        // Add gender data
+        let mut gender_builder = StringBuilder::new_with_capacity(1, 1);
+        gender_builder.append_value("M")?;
+        batch_builder
+            .column_builder::<StringBuilder>(1)
+            .unwrap()
+            .append_builder(&gender_builder)?;
+
+        let batch = batch_builder.build()?;
+
+        // Test conversion
+        let individual = Individual::from_bef_record(&batch, 0)?;
+
+        assert!(individual.is_some());
+        let individual = individual.unwrap();
+        assert_eq!(individual.pnr, "1234567890");
+        assert!(matches!(individual.gender, Gender::Male));
+
         Ok(())
     }
 }

@@ -3,6 +3,8 @@
 //! This module provides factory functions to create registry loaders from names or paths.
 
 use super::RegisterLoader;
+use crate::DodRegister;
+use crate::DodsaarsagRegister;
 use crate::RecordBatch;
 use crate::error::{ParquetReaderError, Result};
 use std::collections::HashSet;
@@ -14,8 +16,8 @@ pub fn registry_from_name(name: &str) -> Result<Arc<dyn RegisterLoader>> {
     match name.to_lowercase().as_str() {
         "akm" => Ok(Arc::new(super::akm::AkmRegister::new())),
         "bef" => Ok(Arc::new(super::bef::BefRegister::new())),
-        "dod" => Ok(Arc::new(super::dod::DodRegister::new())),
-        "dodsaarsag" => Ok(Arc::new(super::dodsaarsag::DodsaarsagRegister::new())),
+        "dod" => Ok(Arc::new(DodRegister::new())),
+        "dodsaarsag" => Ok(Arc::new(DodsaarsagRegister::new())),
         "idan" => Ok(Arc::new(super::idan::IdanRegister::new())),
         "ind" => Ok(Arc::new(super::ind::IndRegister::new())),
         "mfr" => Ok(Arc::new(super::mfr::MfrRegister::new())),
@@ -42,9 +44,9 @@ pub fn registry_from_path(path: &Path) -> Result<Arc<dyn RegisterLoader>> {
         } else if lower_name.contains("bef") {
             return Ok(Arc::new(super::bef::BefRegister::new()));
         } else if lower_name.contains("dod") && !lower_name.contains("dodsaarsag") {
-            return Ok(Arc::new(super::dod::DodRegister::new()));
+            return Ok(Arc::new(DodRegister::new()));
         } else if lower_name.contains("dodsaarsag") {
-            return Ok(Arc::new(super::dodsaarsag::DodsaarsagRegister::new()));
+            return Ok(Arc::new(DodsaarsagRegister::new()));
         } else if lower_name.contains("idan") {
             return Ok(Arc::new(super::idan::IdanRegister::new()));
         } else if lower_name.contains("ind") {
@@ -105,7 +107,6 @@ pub fn load_multiple_registries(
 }
 
 /// Load data from multiple registries asynchronously and combine them
-#[allow(dead_code)]
 pub async fn load_multiple_registries_async(
     base_paths: &[(&str, &Path)], // (registry_name, path)
     pnr_filter: Option<&HashSet<String>>,

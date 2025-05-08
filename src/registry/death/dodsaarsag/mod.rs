@@ -1,12 +1,12 @@
-//! BEF registry loader implementation
+//! DODSAARSAG registry loader implementation
 //!
-//! The BEF (Befolkning) registry contains population demographic information.
+//! The DODSAARSAG registry contains death cause information.
 
-use super::RegisterLoader;
-use super::schemas::bef::bef_schema;
 use crate::RecordBatch;
+use crate::RegisterLoader;
 use crate::Result;
 use crate::async_io::parallel_ops::load_parquet_files_parallel_with_pnr_filter_async;
+pub mod schema;
 use crate::load_parquet_files_parallel;
 use arrow::datatypes::SchemaRef;
 use std::collections::HashSet;
@@ -14,34 +14,32 @@ use std::future::Future;
 use std::path::Path;
 use std::pin::Pin;
 
-// Import model conversion trait and models
-
-/// BEF registry loader for population demographic information
+/// DODSAARSAG registry loader for death cause information
 #[derive(Debug, Clone)]
-pub struct BefRegister {
+pub struct DodsaarsagRegister {
     schema: SchemaRef,
 }
 
-impl BefRegister {
-    /// Create a new BEF registry loader
+impl DodsaarsagRegister {
+    /// Create a new DODSAARSAG registry loader
     #[must_use]
     pub fn new() -> Self {
         Self {
-            schema: bef_schema(),
+            schema: schema::dodsaarsag_schema(),
         }
     }
 }
 
-impl Default for BefRegister {
+impl Default for DodsaarsagRegister {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl RegisterLoader for BefRegister {
+impl RegisterLoader for DodsaarsagRegister {
     /// Get the name of the register
     fn get_register_name(&self) -> &'static str {
-        "BEF"
+        "DODSAARSAG"
     }
 
     /// Get the schema for this register
@@ -49,10 +47,10 @@ impl RegisterLoader for BefRegister {
         self.schema.clone()
     }
 
-    /// Load records from the BEF register
+    /// Load records from the DODSAARSAG register
     ///
     /// # Arguments
-    /// * `base_path` - Base directory containing the BEF parquet files
+    /// * `base_path` - Base directory containing the DODSAARSAG parquet files
     /// * `pnr_filter` - Optional filter to only load data for specific PNRs
     ///
     /// # Returns
@@ -62,7 +60,7 @@ impl RegisterLoader for BefRegister {
         base_path: &Path,
         pnr_filter: Option<&HashSet<String>>,
     ) -> Result<Vec<RecordBatch>> {
-        // Use optimized parallel loading for BEF data
+        // Use optimized parallel loading for DODSAARSAG data
         let pnr_filter_arc = pnr_filter.map(|f| std::sync::Arc::new(f.clone()));
         let pnr_filter_ref = pnr_filter_arc.as_ref().map(std::convert::AsRef::as_ref);
         load_parquet_files_parallel(
@@ -74,10 +72,10 @@ impl RegisterLoader for BefRegister {
         )
     }
 
-    /// Load records from the BEF register asynchronously
+    /// Load records from the DODSAARSAG register asynchronously
     ///
     /// # Arguments
-    /// * `base_path` - Base directory containing the BEF parquet files
+    /// * `base_path` - Base directory containing the DODSAARSAG parquet files
     /// * `pnr_filter` - Optional filter to only load data for specific PNRs
     ///
     /// # Returns
@@ -88,7 +86,7 @@ impl RegisterLoader for BefRegister {
         pnr_filter: Option<&'a HashSet<String>>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<RecordBatch>>> + Send + 'a>> {
         Box::pin(async move {
-            // Use optimized async parallel loading for BEF data
+            // Use optimized async parallel loading for DODSAARSAG data
             let pnr_filter_arc = pnr_filter.map(|f| std::sync::Arc::new(f.clone()));
             let pnr_filter_ref = pnr_filter_arc.as_ref().map(std::convert::AsRef::as_ref);
             load_parquet_files_parallel_with_pnr_filter_async(

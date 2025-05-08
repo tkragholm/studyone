@@ -1,45 +1,44 @@
-//! UDDF registry loader implementation
+//! AKM registry loader implementation
 //!
-//! The UDDF (Uddannelse) registry contains educational information.
+//! The AKM (Arbejdsklassifikationsmodulet) registry contains employment information.
 
 use super::RegisterLoader;
-use super::schemas::uddf::uddf_schema;
+pub mod schema;
 use crate::RecordBatch;
 use crate::Result;
 use crate::async_io::parallel_ops::load_parquet_files_parallel_with_pnr_filter_async;
 use crate::load_parquet_files_parallel;
 use arrow::datatypes::SchemaRef;
 use std::collections::HashSet;
-use std::future::Future;
 use std::path::Path;
 use std::pin::Pin;
 
-/// UDDF registry loader for educational information
+/// AKM registry loader for employment information
 #[derive(Debug, Clone)]
-pub struct UddfRegister {
+pub struct AkmRegister {
     schema: SchemaRef,
 }
 
-impl UddfRegister {
-    /// Create a new UDDF registry loader
+impl AkmRegister {
+    /// Create a new AKM registry loader
     #[must_use]
     pub fn new() -> Self {
         Self {
-            schema: uddf_schema(),
+            schema: schema::akm_schema(),
         }
     }
 }
 
-impl Default for UddfRegister {
+impl Default for AkmRegister {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl RegisterLoader for UddfRegister {
+impl RegisterLoader for AkmRegister {
     /// Get the name of the register
     fn get_register_name(&self) -> &'static str {
-        "UDDF"
+        "AKM"
     }
 
     /// Get the schema for this register
@@ -47,10 +46,10 @@ impl RegisterLoader for UddfRegister {
         self.schema.clone()
     }
 
-    /// Load records from the UDDF register
+    /// Load records from the AKM register
     ///
     /// # Arguments
-    /// * `base_path` - Base directory containing the UDDF parquet files
+    /// * `base_path` - Base directory containing the AKM parquet files
     /// * `pnr_filter` - Optional filter to only load data for specific PNRs
     ///
     /// # Returns
@@ -60,7 +59,7 @@ impl RegisterLoader for UddfRegister {
         base_path: &Path,
         pnr_filter: Option<&HashSet<String>>,
     ) -> Result<Vec<RecordBatch>> {
-        // Use optimized parallel loading for UDDF data
+        // Use optimized parallel loading for AKM data
         let pnr_filter_arc = pnr_filter.map(|f| std::sync::Arc::new(f.clone()));
         let pnr_filter_ref = pnr_filter_arc.as_ref().map(std::convert::AsRef::as_ref);
         load_parquet_files_parallel(
@@ -72,10 +71,10 @@ impl RegisterLoader for UddfRegister {
         )
     }
 
-    /// Load records from the UDDF register asynchronously
+    /// Load records from the AKM register asynchronously
     ///
     /// # Arguments
-    /// * `base_path` - Base directory containing the UDDF parquet files
+    /// * `base_path` - Base directory containing the AKM parquet files
     /// * `pnr_filter` - Optional filter to only load data for specific PNRs
     ///
     /// # Returns
@@ -86,7 +85,7 @@ impl RegisterLoader for UddfRegister {
         pnr_filter: Option<&'a HashSet<String>>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<RecordBatch>>> + Send + 'a>> {
         Box::pin(async move {
-            // Use optimized async parallel loading for UDDF data
+            // Use optimized async parallel loading for AKM data
             let pnr_filter_arc = pnr_filter.map(|f| std::sync::Arc::new(f.clone()));
             let pnr_filter_ref = pnr_filter_arc.as_ref().map(std::convert::AsRef::as_ref);
             load_parquet_files_parallel_with_pnr_filter_async(

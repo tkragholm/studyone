@@ -1,13 +1,12 @@
-//! LPR2 registry loaders
+//! LPR3 registry loaders
 //!
-//! This module contains registry loaders for LPR2 (Danish National Patient Registry version 2).
+//! This module contains registry loaders for LPR3 (Danish National Patient Registry version 3).
 
 use crate::RecordBatch;
 use crate::Result;
 use crate::registry::RegisterLoader;
-use crate::registry::schemas::lpr_adm::lpr_adm_schema;
-use crate::registry::schemas::lpr_bes::lpr_bes_schema;
-use crate::registry::schemas::lpr_diag::lpr_diag_schema;
+pub mod schema;
+use schema::{lpr3_diagnoser_schema, lpr3_kontakter_schema};
 
 use crate::async_io::parallel_ops::load_parquet_files_parallel_with_pnr_filter_async;
 use crate::filter::async_filtering::read_parquet_with_optional_pnr_filter_async;
@@ -19,31 +18,31 @@ use std::future::Future;
 use std::path::Path;
 use std::pin::Pin;
 
-/// Loader for LPR2 Admissions data (`LPR_ADM`)
+/// Loader for LPR3 Contacts data (`LPR3_KONTAKTER`)
 #[derive(Debug, Clone)]
-pub struct LprAdmRegister {
+pub struct Lpr3KontakterRegister {
     schema: SchemaRef,
 }
 
-impl LprAdmRegister {
-    /// Create a new `LPR_ADM` registry loader
+impl Lpr3KontakterRegister {
+    /// Create a new `LPR3_KONTAKTER` registry loader
     #[must_use]
     pub fn new() -> Self {
         Self {
-            schema: lpr_adm_schema(),
+            schema: lpr3_kontakter_schema(),
         }
     }
 }
 
-impl Default for LprAdmRegister {
+impl Default for Lpr3KontakterRegister {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl RegisterLoader for LprAdmRegister {
+impl RegisterLoader for Lpr3KontakterRegister {
     fn get_register_name(&self) -> &'static str {
-        "lpr_adm"
+        "lpr3_kontakter"
     }
 
     fn get_schema(&self) -> SchemaRef {
@@ -109,53 +108,42 @@ impl RegisterLoader for LprAdmRegister {
     }
 }
 
-/// Loader for LPR2 Diagnoses data (`LPR_DIAG`)
+/// Loader for LPR3 Diagnoses data (`LPR3_DIAGNOSER`)
 #[derive(Debug, Clone)]
-pub struct LprDiagRegister {
+pub struct Lpr3DiagnoserRegister {
     schema: SchemaRef,
     pub pnr_lookup: Option<std::collections::HashMap<String, String>>,
 }
 
-impl LprDiagRegister {
-    /// Create a new `LPR_DIAG` registry loader
+impl Lpr3DiagnoserRegister {
+    /// Create a new `LPR3_DIAGNOSER` registry loader
     #[must_use]
     pub fn new() -> Self {
         Self {
-            schema: lpr_diag_schema(),
+            schema: lpr3_diagnoser_schema(),
             pnr_lookup: None,
         }
     }
-    
-    /// Create a new `LPR_DIAG` registry loader with a PNR lookup
+
+    /// Create a new `LPR3_DIAGNOSER` registry loader with a PNR lookup
     #[must_use]
     pub fn with_pnr_lookup(pnr_lookup: std::collections::HashMap<String, String>) -> Self {
         Self {
-            schema: lpr_diag_schema(),
+            schema: lpr3_diagnoser_schema(),
             pnr_lookup: Some(pnr_lookup),
         }
     }
-    
-    /// Get the PNR lookup for this registry
-    #[must_use] pub fn get_pnr_lookup(&self) -> Option<std::collections::HashMap<String, String>> {
-        self.pnr_lookup.clone()
-    }
-    
-    /// Set the PNR lookup for this registry
-    pub fn set_pnr_lookup(&mut self, lookup: std::collections::HashMap<String, String>) {
-        self.pnr_lookup = Some(lookup);
-    }
 }
 
-
-impl Default for LprDiagRegister {
+impl Default for Lpr3DiagnoserRegister {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl RegisterLoader for LprDiagRegister {
+impl RegisterLoader for Lpr3DiagnoserRegister {
     fn get_register_name(&self) -> &'static str {
-        "lpr_diag"
+        "lpr3_diagnoser"
     }
 
     fn get_schema(&self) -> SchemaRef {
@@ -169,7 +157,7 @@ impl RegisterLoader for LprDiagRegister {
     ) -> Result<Vec<RecordBatch>> {
         if base_path.is_dir() {
             // Try to load all parquet files in the directory without PNR filtering
-            // (because LPR_DIAG needs to be linked via RECNUM to get the PNR)
+            // (because LPR3_DIAGNOSER needs to be linked via DW_EK_KONTAKT)
             let batches = load_parquet_files_parallel::<std::collections::hash_map::RandomState>(
                 base_path,
                 Some(self.schema.as_ref()),
@@ -224,103 +212,6 @@ impl RegisterLoader for LprDiagRegister {
     }
 
     fn get_join_column_name(&self) -> Option<&'static str> {
-        Some("RECNUM")
-    }
-}
-
-/// Loader for LPR2 Treatments data (`LPR_BES`)
-#[derive(Debug, Clone)]
-pub struct LprBesRegister {
-    schema: SchemaRef,
-}
-
-impl LprBesRegister {
-    /// Create a new `LPR_BES` registry loader
-    #[must_use]
-    pub fn new() -> Self {
-        Self {
-            schema: lpr_bes_schema(),
-        }
-    }
-}
-
-impl Default for LprBesRegister {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl RegisterLoader for LprBesRegister {
-    fn get_register_name(&self) -> &'static str {
-        "lpr_bes"
-    }
-
-    fn get_schema(&self) -> SchemaRef {
-        self.schema.clone()
-    }
-
-    fn load(
-        &self,
-        base_path: &Path,
-        _pnr_filter: Option<&HashSet<String>>,
-    ) -> Result<Vec<RecordBatch>> {
-        if base_path.is_dir() {
-            // Try to load all parquet files in the directory without PNR filtering
-            // (because LPR_BES needs to be linked via RECNUM to get the PNR)
-            let batches = load_parquet_files_parallel::<std::collections::hash_map::RandomState>(
-                base_path,
-                Some(self.schema.as_ref()),
-                None,
-                None,
-                None,
-            )?;
-            Ok(batches)
-        } else {
-            // Try to load a single file
-            let batches = read_parquet::<std::collections::hash_map::RandomState>(
-                base_path,
-                Some(self.schema.as_ref()),
-                None,
-                None,
-                None,
-            )?;
-            Ok(batches)
-        }
-    }
-
-    fn load_async<'a>(
-        &'a self,
-        base_path: &'a Path,
-        _pnr_filter: Option<&'a HashSet<String>>,
-    ) -> Pin<Box<dyn Future<Output = Result<Vec<RecordBatch>>> + Send + 'a>> {
-        Box::pin(async move {
-            if base_path.is_dir() {
-                // Try to load all parquet files in the directory without PNR filtering
-                let batches = load_parquet_files_parallel_with_pnr_filter_async::<
-                    std::collections::hash_map::RandomState,
-                >(base_path, Some(self.schema.as_ref()), None)
-                .await?;
-                Ok(batches)
-            } else {
-                // Try to load a single file
-                let batches = read_parquet_with_optional_pnr_filter_async::<
-                    std::collections::hash_map::RandomState,
-                >(base_path, Some(self.schema.as_ref()), None)
-                .await?;
-                Ok(batches)
-            }
-        })
-    }
-
-    fn supports_pnr_filter(&self) -> bool {
-        false
-    }
-
-    fn get_pnr_column_name(&self) -> Option<&'static str> {
-        None
-    }
-
-    fn get_join_column_name(&self) -> Option<&'static str> {
-        Some("RECNUM")
+        Some("DW_EK_KONTAKT")
     }
 }

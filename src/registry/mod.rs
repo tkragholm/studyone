@@ -67,8 +67,10 @@ pub trait RegisterLoader: Send + Sync {
 // Will contain registry implementations
 pub mod akm;
 pub mod bef;
-pub mod dod;
-pub mod dodsaarsag;
+pub mod death {
+    pub mod dod;
+    pub mod dodsaarsag;
+}
 pub mod idan;
 pub mod ind;
 pub mod lpr;
@@ -76,23 +78,22 @@ pub mod mfr;
 pub mod uddf;
 pub mod vnds;
 
-// Schemas for registry data sources
-pub mod schemas;
-
 // Re-export registry structs for easier access
 pub use akm::AkmRegister;
 pub use bef::BefRegister;
-pub use dod::DodRegister;
-pub use dodsaarsag::DodsaarsagRegister;
+pub use bef::BefCombinedRegister;
+pub use death::dod::DodRegister;
+pub use death::dodsaarsag::DodsaarsagRegister;
 pub use idan::IdanRegister;
 pub use ind::IndRegister;
-pub use ind_model_conversion::YearConfiguredIndRegister;
+pub use ind::conversion::YearConfiguredIndRegister;
 pub use lpr::{
-    Lpr3DiagnoserRegister, Lpr3KontakterRegister, LprAdmRegister, LprBesRegister, LprDiagRegister,
-    LprPaths, find_lpr_files,
+    v2::{LprAdmRegister, LprBesRegister, LprDiagRegister},
+    v3::{Lpr3DiagnoserRegister, Lpr3KontakterRegister},
+    discovery::{LprPaths, find_lpr_files},
 };
 pub use mfr::MfrRegister;
-pub use mfr_model_conversion::MfrChildRegister;
+pub use mfr::conversion::MfrChildRegister;
 pub use uddf::UddfRegister;
 pub use vnds::VndsRegister;
 
@@ -110,10 +111,3 @@ pub mod model_conversion;
 pub use model_conversion::{ModelConversion, ModelConversionExt};
 
 // Registry-specific model conversion implementations
-pub mod bef_combined_register;
-pub mod bef_model_conversion;
-pub mod ind_model_conversion;
-pub mod lpr_model_conversion;
-pub mod mfr_model_conversion;
-
-pub use bef_combined_register::BefCombinedRegister;

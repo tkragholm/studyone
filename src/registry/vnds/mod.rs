@@ -1,9 +1,9 @@
-//! IDAN registry loader implementation
+//! VNDS registry loader implementation
 //!
-//! The IDAN registry contains employment information from the Integrated Database for Labor Market Research.
+//! The VNDS (Vandringer/Migration) registry contains migration information.
 
 use super::RegisterLoader;
-use super::schemas::idan::idan_schema;
+pub mod schema;
 use crate::RecordBatch;
 use crate::Result;
 use crate::async_io::parallel_ops::load_parquet_files_parallel_with_pnr_filter_async;
@@ -14,32 +14,32 @@ use std::future::Future;
 use std::path::Path;
 use std::pin::Pin;
 
-/// IDAN registry loader for employment information
+/// VNDS registry loader for migration information
 #[derive(Debug, Clone)]
-pub struct IdanRegister {
+pub struct VndsRegister {
     schema: SchemaRef,
 }
 
-impl IdanRegister {
-    /// Create a new IDAN registry loader
+impl VndsRegister {
+    /// Create a new VNDS registry loader
     #[must_use]
     pub fn new() -> Self {
         Self {
-            schema: idan_schema(),
+            schema: schema::vnds_schema(),
         }
     }
 }
 
-impl Default for IdanRegister {
+impl Default for VndsRegister {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl RegisterLoader for IdanRegister {
+impl RegisterLoader for VndsRegister {
     /// Get the name of the register
     fn get_register_name(&self) -> &'static str {
-        "IDAN"
+        "VNDS"
     }
 
     /// Get the schema for this register
@@ -47,10 +47,10 @@ impl RegisterLoader for IdanRegister {
         self.schema.clone()
     }
 
-    /// Load records from the IDAN register
+    /// Load records from the VNDS register
     ///
     /// # Arguments
-    /// * `base_path` - Base directory containing the IDAN parquet files
+    /// * `base_path` - Base directory containing the VNDS parquet files
     /// * `pnr_filter` - Optional filter to only load data for specific PNRs
     ///
     /// # Returns
@@ -60,7 +60,7 @@ impl RegisterLoader for IdanRegister {
         base_path: &Path,
         pnr_filter: Option<&HashSet<String>>,
     ) -> Result<Vec<RecordBatch>> {
-        // Use optimized parallel loading for IDAN data
+        // Use optimized parallel loading for VNDS data
         let pnr_filter_arc = pnr_filter.map(|f| std::sync::Arc::new(f.clone()));
         let pnr_filter_ref = pnr_filter_arc.as_ref().map(std::convert::AsRef::as_ref);
         load_parquet_files_parallel(
@@ -72,10 +72,10 @@ impl RegisterLoader for IdanRegister {
         )
     }
 
-    /// Load records from the IDAN register asynchronously
+    /// Load records from the VNDS register asynchronously
     ///
     /// # Arguments
-    /// * `base_path` - Base directory containing the IDAN parquet files
+    /// * `base_path` - Base directory containing the VNDS parquet files
     /// * `pnr_filter` - Optional filter to only load data for specific PNRs
     ///
     /// # Returns
@@ -86,7 +86,7 @@ impl RegisterLoader for IdanRegister {
         pnr_filter: Option<&'a HashSet<String>>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<RecordBatch>>> + Send + 'a>> {
         Box::pin(async move {
-            // Use optimized async parallel loading for IDAN data
+            // Use optimized async parallel loading for VNDS data
             let pnr_filter_arc = pnr_filter.map(|f| std::sync::Arc::new(f.clone()));
             let pnr_filter_ref = pnr_filter_arc.as_ref().map(std::convert::AsRef::as_ref);
             load_parquet_files_parallel_with_pnr_filter_async(

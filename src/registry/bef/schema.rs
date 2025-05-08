@@ -1,11 +1,11 @@
 //! BEF schema definitions
+//!
+//! The BEF (Befolkning) registry contains population demographic information.
 
 use arrow::datatypes::{DataType, Field, Schema};
 use std::sync::Arc;
 
 /// Get the Arrow schema for BEF data
-///
-/// The BEF (Befolkning) registry contains population demographic information.
 #[must_use] pub fn bef_schema() -> Arc<Schema> {
     Arc::new(Schema::new(vec![
         Field::new("PNR", DataType::Utf8, false),

@@ -1,14 +1,19 @@
-//! Example of BEF registry loader implementation using the new trait-based approach
+//! BEF registry loader implementation
 //!
-//! This file demonstrates how to migrate the existing BEF registry loader
-//! to use the new async trait-based system.
+//! The BEF (Befolkning) registry contains population demographic information.
+
+mod register;
+pub use register::BefCombinedRegister;
+
+pub mod schema;
+pub mod conversion;
 
 use super::RegisterLoader;
-use super::schemas::bef::bef_schema;
+use schema::bef_schema;
 use crate::RecordBatch;
 use crate::Result;
 use crate::common::traits::{
-    AsyncLoader, AsyncDirectoryLoader, AsyncPnrFilterableLoader, AsyncFilterableLoader
+    AsyncDirectoryLoader, AsyncPnrFilterableLoader
 };
 use crate::async_io::loader::PnrFilterableLoader;
 use arrow::datatypes::SchemaRef;
@@ -19,7 +24,7 @@ use std::pin::Pin;
 use std::sync::Arc;
 
 /// BEF registry loader for population demographic information
-/// Implemented using the new trait-based approach
+/// Implemented using the trait-based approach
 #[derive(Debug, Clone)]
 pub struct BefRegister {
     schema: SchemaRef,
@@ -31,7 +36,8 @@ impl BefRegister {
     #[must_use]
     pub fn new() -> Self {
         let schema = bef_schema();
-        let loader = PnrFilterableLoader::with_schema_ref(schema.clone());
+        let loader = PnrFilterableLoader::with_schema_ref(schema.clone())
+            .with_pnr_column("PNR");
         
         Self {
             schema,
@@ -119,7 +125,6 @@ impl RegisterLoader for BefRegister {
     }
 }
 
-// Example of how to use expression filtering
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -127,13 +132,26 @@ mod tests {
     use std::path::PathBuf;
 
     #[tokio::test]
+    async fn test_bef_basic_loading() -> Result<()> {
+        let register = BefRegister::new();
+        let test_path = PathBuf::from("test_data/bef");
+        
+        let result = register.load_async(&test_path, None).await?;
+        
+        println!("Loaded {} batches from BEF register", result.len());
+        println!("Total rows: {}", result.iter().map(|b| b.num_rows()).sum::<usize>());
+        
+        Ok(())
+    }
+    
+    #[tokio::test]
     async fn test_bef_filtering() -> Result<()> {
         let register = BefRegister::new();
         let test_path = PathBuf::from("test_data/bef");
         
         // Create an expression filter
-        let age_filter = Expr::gt("AGE".to_string(), 18.into());
-        let gender_filter = Expr::eq("GENDER".to_string(), "F".into());
+        let age_filter = Expr::Gt("AGE".to_string(), 18.into());
+        let gender_filter = Expr::Eq("GENDER".to_string(), "F".into());
         
         // Combine filters
         let combined_expr = FilterBuilder::from_expr(age_filter)

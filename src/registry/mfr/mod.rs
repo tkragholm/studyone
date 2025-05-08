@@ -1,9 +1,10 @@
-//! DODSAARSAG registry loader implementation
+//! MFR registry loader implementation
 //!
-//! The DODSAARSAG registry contains death cause information.
+//! The MFR (Medical Birth Registry) registry contains birth information.
 
 use super::RegisterLoader;
-use super::schemas::dodsaarsag::dodsaarsag_schema;
+pub mod schema;
+pub mod conversion;
 use crate::RecordBatch;
 use crate::Result;
 use crate::async_io::parallel_ops::load_parquet_files_parallel_with_pnr_filter_async;
@@ -14,32 +15,32 @@ use std::future::Future;
 use std::path::Path;
 use std::pin::Pin;
 
-/// DODSAARSAG registry loader for death cause information
+/// MFR registry loader for birth information
 #[derive(Debug, Clone)]
-pub struct DodsaarsagRegister {
+pub struct MfrRegister {
     schema: SchemaRef,
 }
 
-impl DodsaarsagRegister {
-    /// Create a new DODSAARSAG registry loader
+impl MfrRegister {
+    /// Create a new MFR registry loader
     #[must_use]
     pub fn new() -> Self {
         Self {
-            schema: dodsaarsag_schema(),
+            schema: schema::mfr_schema(),
         }
     }
 }
 
-impl Default for DodsaarsagRegister {
+impl Default for MfrRegister {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl RegisterLoader for DodsaarsagRegister {
+impl RegisterLoader for MfrRegister {
     /// Get the name of the register
     fn get_register_name(&self) -> &'static str {
-        "DODSAARSAG"
+        "MFR"
     }
 
     /// Get the schema for this register
@@ -47,10 +48,10 @@ impl RegisterLoader for DodsaarsagRegister {
         self.schema.clone()
     }
 
-    /// Load records from the DODSAARSAG register
+    /// Load records from the MFR register
     ///
     /// # Arguments
-    /// * `base_path` - Base directory containing the DODSAARSAG parquet files
+    /// * `base_path` - Base directory containing the MFR parquet files
     /// * `pnr_filter` - Optional filter to only load data for specific PNRs
     ///
     /// # Returns
@@ -60,7 +61,7 @@ impl RegisterLoader for DodsaarsagRegister {
         base_path: &Path,
         pnr_filter: Option<&HashSet<String>>,
     ) -> Result<Vec<RecordBatch>> {
-        // Use optimized parallel loading for DODSAARSAG data
+        // Use optimized parallel loading for MFR data
         let pnr_filter_arc = pnr_filter.map(|f| std::sync::Arc::new(f.clone()));
         let pnr_filter_ref = pnr_filter_arc.as_ref().map(std::convert::AsRef::as_ref);
         load_parquet_files_parallel(
@@ -72,10 +73,10 @@ impl RegisterLoader for DodsaarsagRegister {
         )
     }
 
-    /// Load records from the DODSAARSAG register asynchronously
+    /// Load records from the MFR register asynchronously
     ///
     /// # Arguments
-    /// * `base_path` - Base directory containing the DODSAARSAG parquet files
+    /// * `base_path` - Base directory containing the MFR parquet files
     /// * `pnr_filter` - Optional filter to only load data for specific PNRs
     ///
     /// # Returns
@@ -86,7 +87,7 @@ impl RegisterLoader for DodsaarsagRegister {
         pnr_filter: Option<&'a HashSet<String>>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<RecordBatch>>> + Send + 'a>> {
         Box::pin(async move {
-            // Use optimized async parallel loading for DODSAARSAG data
+            // Use optimized async parallel loading for MFR data
             let pnr_filter_arc = pnr_filter.map(|f| std::sync::Arc::new(f.clone()));
             let pnr_filter_ref = pnr_filter_arc.as_ref().map(std::convert::AsRef::as_ref);
             load_parquet_files_parallel_with_pnr_filter_async(

@@ -5,16 +5,16 @@
 //! direct model conversion capabilities.
 
 // Import submodules
+pub mod conversion;
 pub mod discovery;
-pub mod lpr2;
-pub mod lpr3;
-pub mod model_conversion;
+pub mod v2;
+pub mod v3;
 
 // Re-export specific loaders
+pub use self::conversion::PnrLookupRegistry;
 pub use self::discovery::{LprPaths, find_lpr_files};
-pub use self::lpr2::{LprAdmRegister, LprBesRegister, LprDiagRegister};
-pub use self::lpr3::{Lpr3DiagnoserRegister, Lpr3KontakterRegister};
-pub use self::model_conversion::PnrLookupRegistry;
+pub use self::v2::{LprAdmRegister, LprBesRegister, LprDiagRegister};
+pub use self::v3::{Lpr3DiagnoserRegister, Lpr3KontakterRegister};
 
 // Implement PNR lookup for LPR registries
 impl PnrLookupRegistry for LprDiagRegister {

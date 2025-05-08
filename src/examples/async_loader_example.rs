@@ -19,7 +19,7 @@ use crate::common::traits::{
 };
 use crate::error::Result;
 use crate::filter::expr::{Expr, LiteralValue};
-use crate::registry::schemas::bef::bef_schema;
+use crate::registry::bef::schema;
 
 /// Run the async loader example
 pub async fn run_async_loader_example(path: &Path) -> Result<()> {
@@ -30,7 +30,10 @@ pub async fn run_async_loader_example(path: &Path) -> Result<()> {
     println!(
         "Basic loading: {} batches with {} total rows",
         basic_result.len(),
-        basic_result.iter().map(arrow::array::RecordBatch::num_rows).sum::<usize>()
+        basic_result
+            .iter()
+            .map(arrow::array::RecordBatch::num_rows)
+            .sum::<usize>()
     );
 
     // 2. Filtered async loading
@@ -38,7 +41,10 @@ pub async fn run_async_loader_example(path: &Path) -> Result<()> {
     println!(
         "Filtered loading: {} batches with {} total rows",
         filtered_result.len(),
-        filtered_result.iter().map(arrow::array::RecordBatch::num_rows).sum::<usize>()
+        filtered_result
+            .iter()
+            .map(arrow::array::RecordBatch::num_rows)
+            .sum::<usize>()
     );
 
     // 3. PNR filtered async loading
@@ -58,7 +64,10 @@ pub async fn run_async_loader_example(path: &Path) -> Result<()> {
         println!(
             "Directory loading: {} batches with {} total rows",
             directory_result.len(),
-            directory_result.iter().map(arrow::array::RecordBatch::num_rows).sum::<usize>()
+            directory_result
+                .iter()
+                .map(arrow::array::RecordBatch::num_rows)
+                .sum::<usize>()
         );
     } else {
         println!("Skipping directory loading test as path is not a directory");
@@ -70,7 +79,10 @@ pub async fn run_async_loader_example(path: &Path) -> Result<()> {
         println!(
             "Parallel loading: {} batches with {} total rows",
             parallel_result.len(),
-            parallel_result.iter().map(arrow::array::RecordBatch::num_rows).sum::<usize>()
+            parallel_result
+                .iter()
+                .map(arrow::array::RecordBatch::num_rows)
+                .sum::<usize>()
         );
     } else {
         println!("Skipping parallel loading test as path is not a directory");
@@ -82,7 +94,7 @@ pub async fn run_async_loader_example(path: &Path) -> Result<()> {
 /// Demonstrate basic async loading
 async fn basic_async_loading(path: &Path) -> Result<Vec<RecordBatch>> {
     // Create a basic loader with a schema
-    let schema = bef_schema();
+    let schema = schema::bef_schema();
     let loader = ParquetLoader::with_schema_ref(schema);
 
     // Load a file asynchronously
@@ -106,7 +118,7 @@ async fn basic_async_loading(path: &Path) -> Result<Vec<RecordBatch>> {
 /// Demonstrate filtered async loading
 async fn filtered_async_loading(path: &Path) -> Result<Vec<RecordBatch>> {
     // Create a basic loader with a schema
-    let schema = bef_schema();
+    let schema = schema::bef_schema();
     let loader = ParquetLoader::with_schema_ref(schema);
 
     // Create a filter expression (e.g. find individuals with birth year >= 2000)
@@ -133,7 +145,7 @@ async fn filtered_async_loading(path: &Path) -> Result<Vec<RecordBatch>> {
 /// Demonstrate PNR filtered async loading
 async fn pnr_filtered_async_loading(path: &Path) -> Result<Vec<RecordBatch>> {
     // Create a PNR filterable loader with a schema
-    let schema = bef_schema();
+    let schema = schema::bef_schema();
     let loader = PnrFilterableLoader::with_schema_ref(schema)
         .with_pnr_column("PNR")
         .with_batch_size(1000);
@@ -169,7 +181,7 @@ async fn pnr_filtered_async_loading(path: &Path) -> Result<Vec<RecordBatch>> {
 /// Demonstrate loading from a directory
 async fn directory_async_loading(path: &Path) -> Result<Vec<RecordBatch>> {
     // Create a loader with a schema
-    let schema = bef_schema();
+    let schema = schema::bef_schema();
     let loader = ParquetLoader::with_schema_ref(schema);
 
     // Load all files from a directory
@@ -189,11 +201,12 @@ async fn parallel_async_loading(path: &Path) -> Result<Vec<RecordBatch>> {
     }
 
     // Create a regular loader for finding files
-    let bef_schema = bef_schema();
+    let bef_schema = schema::bef_schema();
     let file_finder = ParquetLoader::with_schema_ref(bef_schema.clone());
-    
+
     // Create two loaders to use with different files (casted to AsyncLoader trait for parallel loading)
-    let loader1: Arc<dyn AsyncLoader> = Arc::new(ParquetLoader::with_schema_ref(bef_schema.clone()));
+    let loader1: Arc<dyn AsyncLoader> =
+        Arc::new(ParquetLoader::with_schema_ref(bef_schema.clone()));
     let loader2: Arc<dyn AsyncLoader> = Arc::new(ParquetLoader::with_schema_ref(bef_schema));
 
     // Find parquet files with the regular loader that has AsyncDirectoryLoader impl
@@ -202,15 +215,13 @@ async fn parallel_async_loading(path: &Path) -> Result<Vec<RecordBatch>> {
     // If we have at least two files, demonstrate parallel loading
     if files.len() >= 2 {
         // Create a vector of (loader, path) pairs
-        let sources: Vec<(Arc<dyn AsyncLoader>, &Path)> = vec![
-            (loader1, files[0].as_path()),
-            (loader2, files[1].as_path()),
-        ];
+        let sources: Vec<(Arc<dyn AsyncLoader>, &Path)> =
+            vec![(loader1, files[0].as_path()), (loader2, files[1].as_path())];
 
         // Since AsyncParallelLoader is a trait, we need a concrete type to call
         // its methods. We'll create a helper struct for this.
         struct ParallelLoader;
-        
+
         impl AsyncLoader for ParallelLoader {
             fn load_async<'a>(
                 &'a self,
@@ -219,14 +230,14 @@ async fn parallel_async_loading(path: &Path) -> Result<Vec<RecordBatch>> {
                 // This is just a placeholder since we don't actually use it
                 Box::pin(async { Ok(Vec::new()) })
             }
-            
+
             fn get_schema(&self) -> Option<Arc<Schema>> {
                 None
             }
         }
-        
+
         impl AsyncParallelLoader for ParallelLoader {}
-        
+
         // Now use our helper struct to call the trait method
         <ParallelLoader as AsyncParallelLoader>::load_parallel_async(&sources).await
     } else {

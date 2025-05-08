@@ -1,9 +1,9 @@
-//! MFR registry loader implementation
+//! IDAN registry loader implementation
 //!
-//! The MFR (Medical Birth Registry) registry contains birth information.
+//! The IDAN registry contains employment information from the Integrated Database for Labor Market Research.
 
 use super::RegisterLoader;
-use super::schemas::mfr::mfr_schema;
+pub mod schema;
 use crate::RecordBatch;
 use crate::Result;
 use crate::async_io::parallel_ops::load_parquet_files_parallel_with_pnr_filter_async;
@@ -14,32 +14,32 @@ use std::future::Future;
 use std::path::Path;
 use std::pin::Pin;
 
-/// MFR registry loader for birth information
+/// IDAN registry loader for employment information
 #[derive(Debug, Clone)]
-pub struct MfrRegister {
+pub struct IdanRegister {
     schema: SchemaRef,
 }
 
-impl MfrRegister {
-    /// Create a new MFR registry loader
+impl IdanRegister {
+    /// Create a new IDAN registry loader
     #[must_use]
     pub fn new() -> Self {
         Self {
-            schema: mfr_schema(),
+            schema: schema::idan_schema(),
         }
     }
 }
 
-impl Default for MfrRegister {
+impl Default for IdanRegister {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl RegisterLoader for MfrRegister {
+impl RegisterLoader for IdanRegister {
     /// Get the name of the register
     fn get_register_name(&self) -> &'static str {
-        "MFR"
+        "IDAN"
     }
 
     /// Get the schema for this register
@@ -47,10 +47,10 @@ impl RegisterLoader for MfrRegister {
         self.schema.clone()
     }
 
-    /// Load records from the MFR register
+    /// Load records from the IDAN register
     ///
     /// # Arguments
-    /// * `base_path` - Base directory containing the MFR parquet files
+    /// * `base_path` - Base directory containing the IDAN parquet files
     /// * `pnr_filter` - Optional filter to only load data for specific PNRs
     ///
     /// # Returns
@@ -60,7 +60,7 @@ impl RegisterLoader for MfrRegister {
         base_path: &Path,
         pnr_filter: Option<&HashSet<String>>,
     ) -> Result<Vec<RecordBatch>> {
-        // Use optimized parallel loading for MFR data
+        // Use optimized parallel loading for IDAN data
         let pnr_filter_arc = pnr_filter.map(|f| std::sync::Arc::new(f.clone()));
         let pnr_filter_ref = pnr_filter_arc.as_ref().map(std::convert::AsRef::as_ref);
         load_parquet_files_parallel(
@@ -72,10 +72,10 @@ impl RegisterLoader for MfrRegister {
         )
     }
 
-    /// Load records from the MFR register asynchronously
+    /// Load records from the IDAN register asynchronously
     ///
     /// # Arguments
-    /// * `base_path` - Base directory containing the MFR parquet files
+    /// * `base_path` - Base directory containing the IDAN parquet files
     /// * `pnr_filter` - Optional filter to only load data for specific PNRs
     ///
     /// # Returns
@@ -86,7 +86,7 @@ impl RegisterLoader for MfrRegister {
         pnr_filter: Option<&'a HashSet<String>>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<RecordBatch>>> + Send + 'a>> {
         Box::pin(async move {
-            // Use optimized async parallel loading for MFR data
+            // Use optimized async parallel loading for IDAN data
             let pnr_filter_arc = pnr_filter.map(|f| std::sync::Arc::new(f.clone()));
             let pnr_filter_ref = pnr_filter_arc.as_ref().map(std::convert::AsRef::as_ref);
             load_parquet_files_parallel_with_pnr_filter_async(

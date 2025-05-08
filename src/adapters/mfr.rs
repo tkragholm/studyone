@@ -6,7 +6,7 @@
 use crate::common::traits::{ModelLookup, RegistryAdapter, StatefulAdapter};
 use crate::error::Result;
 use crate::models::Child;
-use crate::registry::mfr_model_conversion::MfrChildRegister;
+use crate::registry::mfr::conversion::MfrChildRegister;
 use crate::registry::ModelConversion;
 use arrow::record_batch::RecordBatch;
 use std::collections::HashMap;

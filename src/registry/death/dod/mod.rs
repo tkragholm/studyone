@@ -1,10 +1,10 @@
-//! IND registry loader implementation
+//! DOD registry loader implementation
 //!
-//! The IND (Indkomst) registry contains income and tax information.
+//! The DOD registry contains death records.
 
-use super::RegisterLoader;
-use super::schemas::ind::ind_schema;
+pub mod schema;
 use crate::RecordBatch;
+use crate::RegisterLoader;
 use crate::Result;
 use crate::async_io::parallel_ops::load_parquet_files_parallel_with_pnr_filter_async;
 use crate::load_parquet_files_parallel;
@@ -14,32 +14,32 @@ use std::future::Future;
 use std::path::Path;
 use std::pin::Pin;
 
-/// IND registry loader for income and tax information
+/// DOD registry loader for death records
 #[derive(Debug, Clone)]
-pub struct IndRegister {
+pub struct DodRegister {
     schema: SchemaRef,
 }
 
-impl IndRegister {
-    /// Create a new IND registry loader
+impl DodRegister {
+    /// Create a new DOD registry loader
     #[must_use]
     pub fn new() -> Self {
         Self {
-            schema: ind_schema(),
+            schema: schema::dod_schema(),
         }
     }
 }
 
-impl Default for IndRegister {
+impl Default for DodRegister {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl RegisterLoader for IndRegister {
+impl RegisterLoader for DodRegister {
     /// Get the name of the register
     fn get_register_name(&self) -> &'static str {
-        "IND"
+        "DOD"
     }
 
     /// Get the schema for this register
@@ -47,10 +47,10 @@ impl RegisterLoader for IndRegister {
         self.schema.clone()
     }
 
-    /// Load records from the IND register
+    /// Load records from the DOD register
     ///
     /// # Arguments
-    /// * `base_path` - Base directory containing the IND parquet files
+    /// * `base_path` - Base directory containing the DOD parquet files
     /// * `pnr_filter` - Optional filter to only load data for specific PNRs
     ///
     /// # Returns
@@ -60,7 +60,7 @@ impl RegisterLoader for IndRegister {
         base_path: &Path,
         pnr_filter: Option<&HashSet<String>>,
     ) -> Result<Vec<RecordBatch>> {
-        // Use optimized parallel loading for IND data
+        // Use optimized parallel loading for DOD data
         let pnr_filter_arc = pnr_filter.map(|f| std::sync::Arc::new(f.clone()));
         let pnr_filter_ref = pnr_filter_arc.as_ref().map(std::convert::AsRef::as_ref);
         load_parquet_files_parallel(
@@ -72,10 +72,10 @@ impl RegisterLoader for IndRegister {
         )
     }
 
-    /// Load records from the IND register asynchronously
+    /// Load records from the DOD register asynchronously
     ///
     /// # Arguments
-    /// * `base_path` - Base directory containing the IND parquet files
+    /// * `base_path` - Base directory containing the DOD parquet files
     /// * `pnr_filter` - Optional filter to only load data for specific PNRs
     ///
     /// # Returns
@@ -86,7 +86,7 @@ impl RegisterLoader for IndRegister {
         pnr_filter: Option<&'a HashSet<String>>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<RecordBatch>>> + Send + 'a>> {
         Box::pin(async move {
-            // Use optimized async parallel loading for IND data
+            // Use optimized async parallel loading for DOD data
             let pnr_filter_arc = pnr_filter.map(|f| std::sync::Arc::new(f.clone()));
             let pnr_filter_ref = pnr_filter_arc.as_ref().map(std::convert::AsRef::as_ref);
             load_parquet_files_parallel_with_pnr_filter_async(
