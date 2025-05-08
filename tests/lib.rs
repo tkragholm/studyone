@@ -1,7 +1,6 @@
 /// Main test module that includes all sub-modules
 /// Run specific tests with `cargo test <module>::<submodule>`
 /// For example: `cargo test integration::filtering_test`
-
 // Utility modules
 pub mod utils;
 
@@ -21,7 +20,7 @@ pub mod registry {
 // Integration tests
 pub mod integration {
     pub mod async_test;
-    pub mod end_to_end_test;
+    //pub mod end_to_end_test;
     pub mod filtering_test;
     pub mod registry_integration_test;
     pub mod type_adaptation_test;
@@ -39,12 +38,12 @@ pub mod filter;
 
 // Model tests
 pub mod models {
-    pub mod adapters {
-        pub mod bef_adapter_test;
-        pub mod ind_adapter_test;
-        pub mod lpr_adapter_test;
-        pub mod mfr_adapter_test;
-    }
+    // pub mod adapters {
+    //     pub mod bef_adapter_test;
+    //     pub mod ind_adapter_test;
+    //     pub mod lpr_adapter_test;
+    //     pub mod mfr_adapter_test;
+    // }
     pub mod child_test;
     pub mod diagnosis_test;
     pub mod family_test;

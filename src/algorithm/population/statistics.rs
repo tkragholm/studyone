@@ -51,7 +51,7 @@ impl PopulationStatistics {
     ) -> String {
         let mut summary = String::new();
         summary.push_str("Study Population Summary:\n");
-        summary.push_str(&format!("  Index Date: {}\n", index_date));
+        summary.push_str(&format!("  Index Date: {index_date}\n"));
         summary.push_str(&format!("  Total Individuals: {}\n", stats.individual_count));
         summary.push_str(&format!("  Total Families: {}\n", stats.family_count));
         summary.push_str(&format!("  Total Children: {}\n", stats.child_count));
@@ -115,7 +115,7 @@ impl PopulationStatistics {
                 };
 
                 let percentage = if case_count > 0 {
-                    (count as f64 / case_count as f64) * 100.0
+                    (f64::from(count) / case_count as f64) * 100.0
                 } else {
                     0.0
                 };

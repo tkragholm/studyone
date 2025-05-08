@@ -92,8 +92,8 @@ pub fn get_lpr3_diagnoser_files() -> Result<Vec<PathBuf>> {
 /// Extract year from a file path
 ///
 /// Attempts to extract the year from a file name, typically in formats like
-/// "2010.parquet", "lpr_diag_2015.parquet", etc.
-pub fn extract_year_from_file_path(path: &PathBuf) -> Option<i32> {
+/// "2010.parquet", "`lpr_diag_2015.parquet`", etc.
+#[must_use] pub fn extract_year_from_file_path(path: &PathBuf) -> Option<i32> {
     let file_stem = path.file_stem()?.to_string_lossy();
 
     // Try to parse the entire file stem as a year
@@ -116,7 +116,7 @@ pub fn extract_year_from_file_path(path: &PathBuf) -> Option<i32> {
 ///
 /// This function takes vectors of LPR file paths and matches them by year
 /// to ensure data is processed with the correct complementary files.
-pub fn match_lpr_files_by_year(
+#[must_use] pub fn match_lpr_files_by_year(
     diag_files: &[PathBuf],
     adm_files: &[PathBuf],
 ) -> Vec<(Option<PathBuf>, Option<PathBuf>)> {
@@ -141,7 +141,7 @@ pub fn match_lpr_files_by_year(
     let mut all_years: Vec<i32> = diag_by_year
         .keys()
         .chain(adm_by_year.keys())
-        .cloned()
+        .copied()
         .collect::<HashSet<i32>>()
         .into_iter()
         .collect();
@@ -160,7 +160,7 @@ pub fn match_lpr_files_by_year(
 }
 
 /// Match corresponding LPR3 files by year
-pub fn match_lpr3_files_by_year(
+#[must_use] pub fn match_lpr3_files_by_year(
     kontakter_files: &[PathBuf],
     diagnoser_files: &[PathBuf],
 ) -> Vec<(Option<PathBuf>, Option<PathBuf>)> {
@@ -185,7 +185,7 @@ pub fn match_lpr3_files_by_year(
     let mut all_years: Vec<i32> = kontakter_by_year
         .keys()
         .chain(diagnoser_by_year.keys())
-        .cloned()
+        .copied()
         .collect::<HashSet<i32>>()
         .into_iter()
         .collect();
@@ -205,9 +205,9 @@ pub fn match_lpr3_files_by_year(
 
 /// Filter diagnoses by a list of ICD-10 codes
 ///
-/// This function filters a DiagnosisCollection to only include diagnoses
+/// This function filters a `DiagnosisCollection` to only include diagnoses
 /// that match any of the provided ICD-10 codes (prefix match).
-pub fn filter_diagnoses_by_icd10(
+#[must_use] pub fn filter_diagnoses_by_icd10(
     collection: &DiagnosisCollection,
     icd10_codes: &[&str],
 ) -> DiagnosisCollection {
@@ -241,7 +241,7 @@ pub fn filter_diagnoses_by_icd10(
 ///
 /// Returns the standard mappings between registry column names and
 /// standardized column names for LPR2 and LPR3.
-pub fn get_standard_lpr_mappings() -> (HashMap<String, String>, HashMap<String, String>) {
+#[must_use] pub fn get_standard_lpr_mappings() -> (HashMap<String, String>, HashMap<String, String>) {
     let mut lpr2_mapping = HashMap::new();
     lpr2_mapping.insert("PNR".to_string(), "patient_id".to_string());
     lpr2_mapping.insert("C_ADIAG".to_string(), "primary_diagnosis".to_string());

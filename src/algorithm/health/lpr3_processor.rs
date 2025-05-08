@@ -224,11 +224,7 @@ pub fn extract_diagnoses_from_lpr3(
 
     // Diagnosis type is optional
     let diag_type_array = if let Some(type_col) = batch.column_by_name("diagnose_type") {
-        if let Some(array) = type_col.as_any().downcast_ref::<StringArray>() {
-            Some(array)
-        } else {
-            None
-        }
+        type_col.as_any().downcast_ref::<StringArray>()
     } else {
         None
     };
