@@ -30,7 +30,7 @@ pub async fn run_async_loader_example(path: &Path) -> Result<()> {
     println!(
         "Basic loading: {} batches with {} total rows",
         basic_result.len(),
-        basic_result.iter().map(|b| b.num_rows()).sum::<usize>()
+        basic_result.iter().map(arrow::array::RecordBatch::num_rows).sum::<usize>()
     );
 
     // 2. Filtered async loading
@@ -38,7 +38,7 @@ pub async fn run_async_loader_example(path: &Path) -> Result<()> {
     println!(
         "Filtered loading: {} batches with {} total rows",
         filtered_result.len(),
-        filtered_result.iter().map(|b| b.num_rows()).sum::<usize>()
+        filtered_result.iter().map(arrow::array::RecordBatch::num_rows).sum::<usize>()
     );
 
     // 3. PNR filtered async loading
@@ -48,7 +48,7 @@ pub async fn run_async_loader_example(path: &Path) -> Result<()> {
         pnr_filtered_result.len(),
         pnr_filtered_result
             .iter()
-            .map(|b| b.num_rows())
+            .map(arrow::array::RecordBatch::num_rows)
             .sum::<usize>()
     );
 
@@ -58,7 +58,7 @@ pub async fn run_async_loader_example(path: &Path) -> Result<()> {
         println!(
             "Directory loading: {} batches with {} total rows",
             directory_result.len(),
-            directory_result.iter().map(|b| b.num_rows()).sum::<usize>()
+            directory_result.iter().map(arrow::array::RecordBatch::num_rows).sum::<usize>()
         );
     } else {
         println!("Skipping directory loading test as path is not a directory");
@@ -70,7 +70,7 @@ pub async fn run_async_loader_example(path: &Path) -> Result<()> {
         println!(
             "Parallel loading: {} batches with {} total rows",
             parallel_result.len(),
-            parallel_result.iter().map(|b| b.num_rows()).sum::<usize>()
+            parallel_result.iter().map(arrow::array::RecordBatch::num_rows).sum::<usize>()
         );
     } else {
         println!("Skipping parallel loading test as path is not a directory");
