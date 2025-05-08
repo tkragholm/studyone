@@ -26,7 +26,7 @@ impl Child {
         batch: &RecordBatch,
         row: usize,
         individual_lookup: &HashMap<String, Arc<Individual>>,
-    ) -> Result<Option<Child>> {
+    ) -> Result<Option<Self>> {
         // Extract CPR_BARN (child's PNR)
         let pnr_idx = batch
             .schema()
@@ -59,7 +59,7 @@ impl Child {
         };
 
         // Create a basic Child from the Individual
-        let mut child = Child::from_individual(individual);
+        let mut child = Self::from_individual(individual);
 
         // Extract birth details
         let birth_details = Self::extract_birth_details_from_mfr(batch, row)?;
@@ -264,7 +264,7 @@ impl Child {
     pub fn from_mfr_batch(
         batch: &RecordBatch,
         individual_lookup: &HashMap<String, Arc<Individual>>,
-    ) -> Result<Vec<Child>> {
+    ) -> Result<Vec<Self>> {
         let mut children = Vec::new();
         
         // Process each row in the batch

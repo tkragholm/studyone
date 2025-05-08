@@ -102,7 +102,7 @@ impl Diagnosis {
         };
         
         // Create diagnosis
-        let mut diagnosis = Diagnosis::new(
+        let mut diagnosis = Self::new(
             individual_pnr,
             diagnosis_code.clone(),
             diagnosis_type,
@@ -236,7 +236,7 @@ impl Diagnosis {
         let diagnosis_date = None;
         
         // Create diagnosis
-        let mut diagnosis = Diagnosis::new(
+        let mut diagnosis = Self::new(
             individual_pnr,
             diagnosis_code.clone(),
             diagnosis_type,

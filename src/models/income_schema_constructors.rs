@@ -59,7 +59,7 @@ impl Income {
         year: i32,
         income_type: &IncomeType,
         adjust_inflation: Option<&dyn Fn(f64) -> f64>,
-    ) -> Result<Option<Income>> {
+    ) -> Result<Option<Self>> {
         // Extract PNR column
         let pnr_array_opt = get_column(batch, "PNR", &DataType::Utf8, true)?;
         let pnr_array = match &pnr_array_opt {
@@ -114,7 +114,7 @@ impl Income {
         let pnr = pnr_array.value(row).to_string();
 
         // Create the Income record
-        Ok(Some(Income::new(
+        Ok(Some(Self::new(
             pnr,
             year,
             adjusted_amount,
@@ -128,7 +128,7 @@ impl Income {
         row: usize,
         year: i32,
         adjust_inflation: Option<&dyn Fn(f64) -> f64>,
-    ) -> Result<Option<Income>> {
+    ) -> Result<Option<Self>> {
         // Extract PNR column
         let pnr_array_opt = get_column(batch, "PNR", &DataType::Utf8, true)?;
         let pnr_array = match &pnr_array_opt {
@@ -183,7 +183,7 @@ impl Income {
         let pnr = pnr_array.value(row).to_string();
 
         // Create the Income record
-        Ok(Some(Income::new(
+        Ok(Some(Self::new(
             pnr,
             year,
             adjusted_amount,
@@ -196,7 +196,7 @@ impl Income {
         batch: &RecordBatch,
         year: i32,
         adjust_inflation: Option<&dyn Fn(f64, i32, i32) -> f64>,
-    ) -> Result<Vec<Income>> {
+    ) -> Result<Vec<Self>> {
         let mut incomes = Vec::new();
         
         // Process each row in the batch

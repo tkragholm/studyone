@@ -69,12 +69,12 @@ impl YearConfiguredIndRegister {
     }
     
     /// Get the configured year
-    #[must_use] pub fn year(&self) -> i32 {
+    #[must_use] pub const fn year(&self) -> i32 {
         self.year
     }
     
     /// Get reference to base register
-    #[must_use] pub fn base_register(&self) -> &IndRegister {
+    #[must_use] pub const fn base_register(&self) -> &IndRegister {
         &self.base_register
     }
 }

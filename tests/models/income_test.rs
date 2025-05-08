@@ -78,11 +78,11 @@ mod tests {
             (trajectory_with_gaps.income_for_year(2011).unwrap() - (300000.0 + step)).abs() < 0.001
         );
         assert!(
-            (trajectory_with_gaps.income_for_year(2012).unwrap() - (300000.0 + 2.0 * step)).abs()
+            (trajectory_with_gaps.income_for_year(2012).unwrap() - 2.0f64.mul_add(step, 300000.0)).abs()
                 < 0.001
         );
         assert!(
-            (trajectory_with_gaps.income_for_year(2013).unwrap() - (300000.0 + 3.0 * step)).abs()
+            (trajectory_with_gaps.income_for_year(2013).unwrap() - 3.0f64.mul_add(step, 300000.0)).abs()
                 < 0.001
         );
     }

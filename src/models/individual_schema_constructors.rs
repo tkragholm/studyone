@@ -20,7 +20,7 @@ impl Individual {
     ///
     /// # Returns
     /// * `Result<Option<Individual>>` - Individual object if data is valid
-    pub fn from_ind_record(batch: &RecordBatch, row: usize) -> Result<Option<Individual>> {
+    pub fn from_ind_record(batch: &RecordBatch, row: usize) -> Result<Option<Self>> {
         // Extract PNR
         let pnr_idx = batch
             .schema()
@@ -53,7 +53,7 @@ impl Individual {
         let birth_date = Self::extract_birth_date_from_ind(batch, row)?;
         
         // Create a basic Individual
-        let mut individual = Individual::new(
+        let mut individual = Self::new(
             pnr, 
             gender.unwrap_or(Gender::Unknown), 
             birth_date
@@ -378,7 +378,7 @@ impl Individual {
     }
     
     /// Create Individual models from an entire IND record batch
-    pub fn from_ind_batch(batch: &RecordBatch) -> Result<Vec<Individual>> {
+    pub fn from_ind_batch(batch: &RecordBatch) -> Result<Vec<Self>> {
         let mut individuals = Vec::new();
         
         // Process each row in the batch
@@ -392,7 +392,7 @@ impl Individual {
     }
     
     /// Create a mapping from PNR to Individual from a collection of individuals
-    #[must_use] pub fn create_pnr_lookup(individuals: &[Individual]) -> HashMap<String, Individual> {
+    #[must_use] pub fn create_pnr_lookup(individuals: &[Self]) -> HashMap<String, Self> {
         let mut lookup = HashMap::with_capacity(individuals.len());
         for individual in individuals {
             lookup.insert(individual.pnr.clone(), individual.clone());

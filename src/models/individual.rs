@@ -269,7 +269,7 @@ impl Individual {
         };
         
         // Create the base individual
-        let mut individual = Individual::new(pnr, gender, birth_date);
+        let mut individual = Self::new(pnr, gender, birth_date);
         
         // Set origin
         individual.origin = origin;

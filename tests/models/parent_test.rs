@@ -31,7 +31,7 @@ mod tests {
     #[test]
     fn test_parent_creation() {
         let individual = Arc::new(create_test_individual());
-        let parent = Parent::from_individual(individual.clone());
+        let parent = Parent::from_individual(individual);
 
         assert_eq!(parent.individual().pnr, "1234567890");
         assert!(!parent.employment_status);
@@ -45,7 +45,7 @@ mod tests {
     #[test]
     fn test_parent_with_attributes() {
         let individual = Arc::new(create_test_individual());
-        let parent = Parent::from_individual(individual.clone())
+        let parent = Parent::from_individual(individual)
             .with_employment_status(true)
             .with_job_situation(JobSituation::EmployedFullTime)
             .with_pre_exposure_income(350000.0);
@@ -58,7 +58,7 @@ mod tests {
     #[test]
     fn test_add_diagnosis() {
         let individual = Arc::new(create_test_individual());
-        let mut parent = Parent::from_individual(individual.clone());
+        let mut parent = Parent::from_individual(individual);
 
         // Initially no comorbidity
         assert!(!parent.has_comorbidity);
@@ -83,7 +83,7 @@ mod tests {
     #[test]
     fn test_add_income() {
         let individual = Arc::new(create_test_individual());
-        let mut parent = Parent::from_individual(individual.clone());
+        let mut parent = Parent::from_individual(individual);
 
         // Add income data points
         let income1 = Income {
@@ -121,7 +121,7 @@ mod tests {
     #[test]
     fn test_had_diagnosis_before() {
         let individual = Arc::new(create_test_individual());
-        let mut parent = Parent::from_individual(individual.clone());
+        let mut parent = Parent::from_individual(individual);
 
         // Add a diagnosis from 2015
         let diagnosis = Diagnosis {
@@ -178,11 +178,11 @@ mod tests {
             immigration_date: None,
         });
 
-        let parent1 = Parent::from_individual(individual1.clone())
+        let parent1 = Parent::from_individual(individual1)
             .with_employment_status(true)
             .with_job_situation(JobSituation::EmployedFullTime);
 
-        let parent2 = Parent::from_individual(individual2.clone())
+        let parent2 = Parent::from_individual(individual2)
             .with_employment_status(false)
             .with_job_situation(JobSituation::Unemployed);
 

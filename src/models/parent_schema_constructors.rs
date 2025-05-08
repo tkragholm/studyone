@@ -27,7 +27,7 @@ impl Parent {
         batch: &RecordBatch,
         row: usize,
         individual_lookup: &HashMap<String, Arc<Individual>>,
-    ) -> Result<Option<Parent>> {
+    ) -> Result<Option<Self>> {
         // Extract PNR
         let pnr_idx = batch
             .schema()
@@ -60,7 +60,7 @@ impl Parent {
         };
 
         // Create a basic Parent from the Individual
-        let mut parent = Parent::from_individual(individual);
+        let mut parent = Self::from_individual(individual);
 
         // Extract employment status if available (SOCIO field in the schema)
         let socio_idx = batch.schema().index_of("SOCIO").ok();
@@ -155,7 +155,7 @@ impl Parent {
     pub fn from_ind_batch(
         batch: &RecordBatch,
         individual_lookup: &HashMap<String, Arc<Individual>>,
-    ) -> Result<Vec<Parent>> {
+    ) -> Result<Vec<Self>> {
         let mut parents = Vec::new();
         
         // Process each row in the batch

@@ -28,7 +28,7 @@ mod tests {
     #[test]
     fn test_child_creation() {
         let individual = Arc::new(create_test_individual());
-        let child = Child::from_individual(individual.clone());
+        let child = Child::from_individual(individual);
 
         assert_eq!(child.individual().pnr, "1234567890");
         assert!(!child.has_severe_chronic_disease);
@@ -41,7 +41,7 @@ mod tests {
     #[test]
     fn test_child_with_birth_details() {
         let individual = Arc::new(create_test_individual());
-        let child = Child::from_individual(individual.clone())
+        let child = Child::from_individual(individual)
             .with_birth_details(Some(3500), Some(40), Some(10))
             .with_birth_order(1);
 
@@ -56,7 +56,7 @@ mod tests {
         let individual = Arc::new(create_test_individual());
         let diagnosis_date = NaiveDate::from_ymd_opt(2015, 3, 10).unwrap();
 
-        let child = Child::from_individual(individual.clone())
+        let child = Child::from_individual(individual)
             .with_scd(
                 ScdCategory::RespiratoryDisorder,
                 diagnosis_date,
@@ -78,7 +78,7 @@ mod tests {
     #[test]
     fn test_add_diagnosis() {
         let individual = Arc::new(create_test_individual());
-        let mut child = Child::from_individual(individual.clone());
+        let mut child = Child::from_individual(individual);
 
         // Initially no SCD
         assert!(!child.has_severe_chronic_disease);
@@ -144,7 +144,7 @@ mod tests {
         let individual = Arc::new(create_test_individual());
         let diagnosis_date = NaiveDate::from_ymd_opt(2015, 6, 15).unwrap();
 
-        let child = Child::from_individual(individual.clone()).with_scd(
+        let child = Child::from_individual(individual).with_scd(
             ScdCategory::RespiratoryDisorder,
             diagnosis_date,
             DiseaseSeverity::Moderate,
@@ -192,14 +192,14 @@ mod tests {
             immigration_date: None,
         });
 
-        let child1 = Child::from_individual(individual1.clone()).with_scd(
+        let child1 = Child::from_individual(individual1).with_scd(
             ScdCategory::RespiratoryDisorder,
             NaiveDate::from_ymd_opt(2015, 3, 10).unwrap(),
             DiseaseSeverity::Moderate,
             DiseaseOrigin::Acquired,
         );
 
-        let child2 = Child::from_individual(individual2.clone());
+        let child2 = Child::from_individual(individual2);
 
         // Add to collection
         collection.add_child(child1);

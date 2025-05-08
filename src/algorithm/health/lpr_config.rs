@@ -59,7 +59,7 @@ impl LprConfig {
 
     /// Configure to use only LPR2 data
     #[must_use]
-    pub fn lpr2_only(mut self) -> Self {
+    pub const fn lpr2_only(mut self) -> Self {
         self.include_lpr2 = true;
         self.include_lpr3 = false;
         self
@@ -67,7 +67,7 @@ impl LprConfig {
 
     /// Configure to use only LPR3 data
     #[must_use]
-    pub fn lpr3_only(mut self) -> Self {
+    pub const fn lpr3_only(mut self) -> Self {
         self.include_lpr2 = false;
         self.include_lpr3 = true;
         self
@@ -75,7 +75,7 @@ impl LprConfig {
 
     /// Set the date range for filtering
     #[must_use]
-    pub fn with_date_range(mut self, start_date: NaiveDate, end_date: NaiveDate) -> Self {
+    pub const fn with_date_range(mut self, start_date: NaiveDate, end_date: NaiveDate) -> Self {
         self.start_date = Some(start_date);
         self.end_date = Some(end_date);
         self
@@ -83,14 +83,14 @@ impl LprConfig {
 
     /// Set the start date for filtering
     #[must_use]
-    pub fn with_start_date(mut self, start_date: NaiveDate) -> Self {
+    pub const fn with_start_date(mut self, start_date: NaiveDate) -> Self {
         self.start_date = Some(start_date);
         self
     }
 
     /// Set the end date for filtering
     #[must_use]
-    pub fn with_end_date(mut self, end_date: NaiveDate) -> Self {
+    pub const fn with_end_date(mut self, end_date: NaiveDate) -> Self {
         self.end_date = Some(end_date);
         self
     }

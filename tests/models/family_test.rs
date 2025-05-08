@@ -76,11 +76,11 @@ mod tests {
         // Create family
         let valid_from = NaiveDate::from_ymd_opt(2000, 1, 1).unwrap();
         let mut family = Family::new("FAM123".to_string(), FamilyType::TwoParent, valid_from)
-            .with_mother(mother.clone())
-            .with_father(father.clone());
+            .with_mother(mother)
+            .with_father(father);
 
-        family.add_child(child1.clone());
-        family.add_child(child2.clone());
+        family.add_child(child1);
+        family.add_child(child2);
 
         // Create snapshot
         let snapshot_date = NaiveDate::from_ymd_opt(2005, 6, 15).unwrap();

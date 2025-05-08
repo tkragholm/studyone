@@ -30,7 +30,7 @@ impl Family {
         row: usize,
         parent_lookup: &HashMap<String, Arc<Parent>>,
         child_lookup: &HashMap<String, Arc<Child>>,
-    ) -> Result<Option<Family>> {
+    ) -> Result<Option<Self>> {
         // Extract family ID
         let family_id_idx = batch
             .schema()
@@ -66,7 +66,7 @@ impl Family {
         }
         
         // Create a new family
-        let mut family = Family::new(
+        let mut family = Self::new(
             family_id,
             family_type.unwrap_or(FamilyType::Unknown),
             valid_from.unwrap(),
@@ -335,7 +335,7 @@ impl Family {
     }
     
     /// Update parental comorbidity status
-    fn update_parental_comorbidity_status(family: &mut Family) {
+    fn update_parental_comorbidity_status(family: &mut Self) {
         let mother_has_comorbidity = family
             .mother
             .as_ref()
@@ -384,7 +384,7 @@ impl Family {
         batch: &RecordBatch,
         parent_lookup: &HashMap<String, Arc<Parent>>,
         child_lookup: &HashMap<String, Arc<Child>>,
-    ) -> Result<Vec<Family>> {
+    ) -> Result<Vec<Self>> {
         let mut families = Vec::new();
         
         // Process each row in the batch

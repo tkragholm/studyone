@@ -60,12 +60,12 @@ impl MfrChildRegister {
     }
     
     /// Get a reference to the base register
-    #[must_use] pub fn base_register(&self) -> &MfrRegister {
+    #[must_use] pub const fn base_register(&self) -> &MfrRegister {
         &self.base_register
     }
     
     /// Get a reference to the individual lookup
-    #[must_use] pub fn get_individual_lookup(&self) -> &HashMap<String, Arc<Individual>> {
+    #[must_use] pub const fn get_individual_lookup(&self) -> &HashMap<String, Arc<Individual>> {
         &self.individual_lookup
     }
 }
