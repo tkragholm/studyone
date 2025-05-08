@@ -102,7 +102,7 @@ impl EntityModel for Income {
         // In a proper implementation, we would store the ID as a field
         // For now, use thread_local to avoid the static_mut_refs warning
         thread_local! {
-            static INCOME_ID: std::cell::RefCell<Option<(String, i32, String)>> = std::cell::RefCell::new(None);
+            static INCOME_ID: std::cell::RefCell<Option<(String, i32, String)>> = const { std::cell::RefCell::new(None) };
         }
         
         // Using with_borrow_mut to update the thread-local value
@@ -328,7 +328,7 @@ impl EntityModel for IncomeTrajectory {
     fn id(&self) -> &Self::Id {
         // Use thread_local to avoid the static_mut_refs warning
         thread_local! {
-            static TRAJECTORY_ID: std::cell::RefCell<Option<(String, String)>> = std::cell::RefCell::new(None);
+            static TRAJECTORY_ID: std::cell::RefCell<Option<(String, String)>> = const { std::cell::RefCell::new(None) };
         }
         
         // Using with_borrow_mut to update the thread-local value

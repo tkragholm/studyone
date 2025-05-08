@@ -153,10 +153,7 @@ impl Filterable<Individual, Vec<Arc<Individual>>> for IndividualCollection {
         let mut result = self.all();
 
         for filter in filters {
-            result = result
-                .into_iter()
-                .filter(|individual| filter(individual))
-                .collect();
+            result.retain(|individual| filter(individual));
         }
 
         result

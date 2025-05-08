@@ -25,18 +25,18 @@ pub trait EntityModel: Clone + Send + Sync + std::fmt::Debug {
     fn key(&self) -> String;
 }
 
-/// A trait for models that can be converted to and from Arrow RecordBatch.
+/// A trait for models that can be converted to and from Arrow `RecordBatch`.
 ///
 /// `ArrowSchema` provides methods for working with Arrow data structures,
-/// supporting serialization and deserialization of models to/from RecordBatch.
+/// supporting serialization and deserialization of models to/from `RecordBatch`.
 pub trait ArrowSchema: Sized {
     /// Get the Arrow schema for this model
     fn schema() -> Schema;
     
-    /// Convert a RecordBatch to a vector of this model
+    /// Convert a `RecordBatch` to a vector of this model
     fn from_record_batch(batch: &RecordBatch) -> Result<Vec<Self>>;
     
-    /// Convert a vector of this model to a RecordBatch
+    /// Convert a vector of this model to a `RecordBatch`
     fn to_record_batch(models: &[Self]) -> Result<RecordBatch>;
 }
 

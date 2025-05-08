@@ -121,7 +121,7 @@ impl EntityModel for Diagnosis {
         // In a proper implementation, we would store the ID as a field
         // For now, use thread_local to avoid the static_mut_refs warning
         thread_local! {
-            static DIAGNOSIS_ID: std::cell::RefCell<Option<(String, String)>> = std::cell::RefCell::new(None);
+            static DIAGNOSIS_ID: std::cell::RefCell<Option<(String, String)>> = const { std::cell::RefCell::new(None) };
         }
         
         // Using with_borrow_mut to update the thread-local value
@@ -721,7 +721,7 @@ impl ModelCollection<Diagnosis> for DiagnosisCollection {
     fn count(&self) -> usize {
         self.diagnoses_by_pnr
             .values()
-            .map(|diagnoses| diagnoses.len())
+            .map(std::vec::Vec::len)
             .sum()
     }
 }

@@ -194,7 +194,7 @@ impl BefRegistry for Individual {
         // individual_schema_constructors.rs functionality
 
         // Stub implementation that just creates a basic Individual
-        let pnr = format!("BEF{}", row);
+        let pnr = format!("BEF{row}");
         let gender = Gender::Unknown;
         let birth_date = None;
 
