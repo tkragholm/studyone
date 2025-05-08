@@ -2,13 +2,13 @@ use par_reader::Result;
 
 use log::info;
 
-use par_reader::algorithm::health::lpr_integration::{self};
+use par_reader::algorithm::health::lpr_loader;
 use par_reader::algorithm::health::scd::{self, ScdConfig};
 use par_reader::algorithm::matching::balance::BalanceCalculator;
 use par_reader::algorithm::matching::criteria::{MatchingConfig, MatchingCriteria};
 use par_reader::algorithm::matching::matcher::Matcher;
 use par_reader::algorithm::matching::prepare_case_control_groups;
-use par_reader::algorithm::population::core::generate_test_population;
+use par_reader::algorithm::population::generate_test_population;
 use par_reader::utils::registry_utils::collect_birth_dates;
 
 #[global_allocator]
@@ -36,7 +36,7 @@ async fn main() -> Result<()> {
 
     // Step 2: Load diagnoses and identify SCD cases
     info!("Step 2: Loading diagnoses and identifying SCD cases");
-    let diagnosis_collection = lpr_integration::load_real_diagnoses(&population)?;
+    let diagnosis_collection = lpr_loader::load_diagnoses(&population)?;
 
     // Count total diagnoses
     let mut total_diagnoses = 0;
