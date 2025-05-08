@@ -7,101 +7,16 @@
 use super::diagnosis::Diagnosis;
 use super::individual::Individual;
 use crate::error::Result;
+use crate::models::traits::{ArrowSchema, EntityModel, HealthStatus, ModelCollection};
+use crate::common::traits::{RegistryAware, MfrRegistry};
+use crate::models::types::{DiseaseSeverity, DiseaseOrigin, ScdCategory, Gender};
 use arrow::datatypes::{DataType, Field, Schema};
 use arrow::record_batch::RecordBatch;
+use arrow::array::{StringArray, Array};
+use crate::utils::array_utils::{get_column, downcast_array};
 use chrono::NaiveDate;
 use std::collections::HashMap;
 use std::sync::Arc;
-
-/// Severe Chronic Disease category
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ScdCategory {
-    /// Blood disorders
-    BloodDisorder,
-    /// Immune system disorders
-    ImmuneDisorder,
-    /// Endocrine disorders
-    EndocrineDisorder,
-    /// Neurological disorders
-    NeurologicalDisorder,
-    /// Cardiovascular disorders
-    CardiovascularDisorder,
-    /// Respiratory disorders
-    RespiratoryDisorder,
-    /// Gastrointestinal disorders
-    GastrointestinalDisorder,
-    /// Musculoskeletal disorders
-    MusculoskeletalDisorder,
-    /// Renal disorders
-    RenalDisorder,
-    /// Congenital disorders
-    CongenitalDisorder,
-    /// No SCD category
-    None,
-}
-
-impl From<i32> for ScdCategory {
-    fn from(value: i32) -> Self {
-        match value {
-            1 => Self::BloodDisorder,
-            2 => Self::ImmuneDisorder,
-            3 => Self::EndocrineDisorder,
-            4 => Self::NeurologicalDisorder,
-            5 => Self::CardiovascularDisorder,
-            6 => Self::RespiratoryDisorder,
-            7 => Self::GastrointestinalDisorder,
-            8 => Self::MusculoskeletalDisorder,
-            9 => Self::RenalDisorder,
-            10 => Self::CongenitalDisorder,
-            _ => Self::None,
-        }
-    }
-}
-
-/// Disease severity classification
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum DiseaseSeverity {
-    /// Mild conditions (e.g., asthma)
-    Mild,
-    /// Moderate conditions (most SCD algorithm conditions)
-    Moderate,
-    /// Severe conditions (e.g., cancer, organ transplantation)
-    Severe,
-    /// No disease or unknown severity
-    None,
-}
-
-impl From<i32> for DiseaseSeverity {
-    fn from(value: i32) -> Self {
-        match value {
-            1 => Self::Mild,
-            2 => Self::Moderate,
-            3 => Self::Severe,
-            _ => Self::None,
-        }
-    }
-}
-
-/// Origin of the disease
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum DiseaseOrigin {
-    /// Congenital disease (present at birth)
-    Congenital,
-    /// Acquired disease (developed after birth)
-    Acquired,
-    /// No disease or unknown origin
-    None,
-}
-
-impl From<i32> for DiseaseOrigin {
-    fn from(value: i32) -> Self {
-        match value {
-            1 => Self::Congenital,
-            2 => Self::Acquired,
-            _ => Self::None,
-        }
-    }
-}
 
 /// Representation of a child with health-related attributes
 #[derive(Debug, Clone)]
@@ -273,10 +188,101 @@ impl Child {
             None
         }
     }
+}
 
+// Implement EntityModel trait
+impl EntityModel for Child {
+    type Id = String;
+    
+    fn id(&self) -> &Self::Id {
+        &self.individual().pnr
+    }
+    
+    fn key(&self) -> String {
+        self.individual().pnr.clone()
+    }
+}
+
+// Delegate HealthStatus to the underlying Individual
+impl HealthStatus for Child {
+    fn age_at(&self, reference_date: &NaiveDate) -> Option<i32> {
+        self.individual().age_at(reference_date)
+    }
+    
+    fn was_alive_at(&self, date: &NaiveDate) -> bool {
+        self.individual().was_alive_at(date)
+    }
+    
+    fn was_resident_at(&self, date: &NaiveDate) -> bool {
+        self.individual().was_resident_at(date)
+    }
+}
+
+// Implement RegistryAware trait
+impl RegistryAware for Child {
+    /// Get the registry name for this model
+    fn registry_name() -> &'static str {
+        "MFR" // Child is primarily from MFR registry
+    }
+    
+    /// Create a model from a registry-specific record
+    fn from_registry_record(batch: &RecordBatch, row: usize) -> Result<Option<Self>> {
+        // Delegate to the MFR registry trait implementation
+        Self::from_mfr_record(batch, row)
+    }
+    
+    /// Create models from an entire registry record batch
+    fn from_registry_batch(batch: &RecordBatch) -> Result<Vec<Self>> {
+        // Delegate to the MFR registry trait implementation
+        Self::from_mfr_batch(batch)
+    }
+}
+
+// Implement MfrRegistry trait for Child
+impl MfrRegistry for Child {
+    fn from_mfr_record(batch: &RecordBatch, row: usize) -> Result<Option<Self>> {
+        // Basic implementation - in a real scenario, this would extract data from MFR records
+        
+        // Try to get PNR of child
+        let pnr_col = get_column(batch, "PNR", &DataType::Utf8, false)?;
+        let pnr = if let Some(array) = pnr_col {
+            let string_array = downcast_array::<StringArray>(&array, "PNR", "String")?;
+            if row < string_array.len() && !string_array.is_null(row) {
+                string_array.value(row).to_string()
+            } else {
+                return Ok(None); // No valid PNR
+            }
+        } else {
+            return Ok(None); // No PNR column
+        };
+        
+        // Create a basic individual and wrap it in a Child
+        let individual = Individual::new(
+            pnr,
+            Gender::Unknown, // Would be determined from data
+            None, // Birth date would come from the data
+        );
+        
+        Ok(Some(Self::from_individual(Arc::new(individual))))
+    }
+    
+    fn from_mfr_batch(batch: &RecordBatch) -> Result<Vec<Self>> {
+        let mut children = Vec::new();
+        
+        for row in 0..batch.num_rows() {
+            if let Some(child) = Self::from_mfr_record(batch, row)? {
+                children.push(child);
+            }
+        }
+        
+        Ok(children)
+    }
+}
+
+// Implement ArrowSchema trait
+impl ArrowSchema for Child {
     /// Get the Arrow schema for Child records
-    #[must_use]
-    pub fn schema() -> Schema {
+    fn schema() -> Schema {
         Schema::new(vec![
             Field::new("pnr", DataType::Utf8, false),
             Field::new("birth_weight", DataType::Int32, true),
@@ -292,9 +298,14 @@ impl Child {
             Field::new("birth_order", DataType::Int32, true),
         ])
     }
-
-    /// Convert a vector of Child objects to a `RecordBatch`
-    pub fn to_record_batch(_children: &[Self]) -> Result<RecordBatch> {
+    
+    fn from_record_batch(_batch: &RecordBatch) -> Result<Vec<Self>> {
+        // This would require having Individual objects available
+        // This functionality is implemented in child_schema_constructors.rs
+        unimplemented!("Conversion from RecordBatch to Child requires Individual objects")
+    }
+    
+    fn to_record_batch(_children: &[Self]) -> Result<RecordBatch> {
         // Implementation of conversion to RecordBatch
         // This would create Arrow arrays for each field and then combine them
         // For brevity, this is left as a placeholder
@@ -303,16 +314,10 @@ impl Child {
 }
 
 /// A collection of children that can be efficiently queried
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct ChildCollection {
     /// Children indexed by PNR
     children: HashMap<String, Arc<Child>>,
-}
-
-impl Default for ChildCollection {
-    fn default() -> Self {
-        Self::new()
-    }
 }
 
 impl ChildCollection {
@@ -322,37 +327,6 @@ impl ChildCollection {
         Self {
             children: HashMap::new(),
         }
-    }
-
-    /// Add a child to the collection
-    pub fn add_child(&mut self, child: Child) {
-        let pnr = child.individual().pnr.clone();
-        let child_arc = Arc::new(child);
-        self.children.insert(pnr, child_arc);
-    }
-
-    /// Get a child by PNR
-    #[must_use]
-    pub fn get_child(&self, pnr: &str) -> Option<Arc<Child>> {
-        self.children.get(pnr).cloned()
-    }
-
-    /// Get all children in the collection
-    #[must_use]
-    pub fn all_children(&self) -> Vec<Arc<Child>> {
-        self.children.values().cloned().collect()
-    }
-
-    /// Filter children by a predicate function
-    pub fn filter<F>(&self, predicate: F) -> Vec<Arc<Child>>
-    where
-        F: Fn(&Child) -> bool,
-    {
-        self.children
-            .values()
-            .filter(|child| predicate(child))
-            .cloned()
-            .collect()
     }
 
     /// Get children with SCD
@@ -391,15 +365,41 @@ impl ChildCollection {
         self.filter(|child| child.is_index_case)
     }
 
-    /// Count total number of children in the collection
-    #[must_use]
-    pub fn count(&self) -> usize {
-        self.children.len()
-    }
-
     /// Count children with SCD
     #[must_use]
     pub fn scd_count(&self) -> usize {
         self.children_with_scd().len()
+    }
+}
+
+// Implement ModelCollection trait
+impl ModelCollection<Child> for ChildCollection {
+    fn add(&mut self, child: Child) {
+        let pnr = child.individual().pnr.clone();
+        let child_arc = Arc::new(child);
+        self.children.insert(pnr, child_arc);
+    }
+
+    fn get(&self, id: &String) -> Option<Arc<Child>> {
+        self.children.get(id).cloned()
+    }
+
+    fn all(&self) -> Vec<Arc<Child>> {
+        self.children.values().cloned().collect()
+    }
+
+    fn filter<F>(&self, predicate: F) -> Vec<Arc<Child>>
+    where
+        F: Fn(&Child) -> bool,
+    {
+        self.children
+            .values()
+            .filter(|child| predicate(child))
+            .cloned()
+            .collect()
+    }
+
+    fn count(&self) -> usize {
+        self.children.len()
     }
 }

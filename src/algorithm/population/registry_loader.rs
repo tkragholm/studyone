@@ -13,6 +13,7 @@ use crate::error::Result;
 use crate::models::family::FamilyCollection;
 
 use crate::models::child::{DiseaseOrigin, DiseaseSeverity, ScdCategory};
+use crate::models::registry::{BefRegistry, IndRegistry, LprRegistry, MfrRegistry};
 use crate::models::{Child, Diagnosis, Family, Income, Individual, Parent};
 use crate::registry::BefCombinedRegister;
 use crate::registry::model_conversion::ModelConversion;
@@ -274,7 +275,8 @@ impl RegistryIntegration {
         let adapter = YearConfiguredIndRegister::new(year);
 
         for batch in batches {
-            // Use the to_models method
+            // Use the IndRegistry trait through to_models method
+            // This now relies on the new trait system internally
             let batch_incomes = adapter.to_models(&batch)?;
 
             // Group incomes by individual

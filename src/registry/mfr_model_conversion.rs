@@ -10,6 +10,7 @@ use std::sync::Arc;
 use crate::error::Result;
 use crate::models::child::Child;
 use crate::models::individual::Individual;
+use crate::common::traits::MfrRegistry;
 use crate::registry::mfr::MfrRegister;
 use crate::registry::model_conversion::ModelConversion;
 use crate::registry::RegisterLoader;
@@ -114,8 +115,9 @@ impl ModelConversion<Child> for MfrChildRegister {
             return Ok(Vec::new());
         }
         
-        // Use the schema-aware constructor to convert the batch
-        Child::from_mfr_batch(batch, &self.individual_lookup)
+        // Use the trait implementation
+        // For now, use simplified implementation that doesn't use lookup
+        Child::from_mfr_batch(batch)
     }
     
     fn from_models(&self, _models: &[Child]) -> Result<RecordBatch> {

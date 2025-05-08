@@ -3,10 +3,14 @@
 //! This module implements bidirectional conversion between BEF registry data
 //! and domain models (Individual, Family).
 
-use crate::registry::{BefRegister, ModelConversion};
-use crate::error::Result;
-use crate::models::{Individual, Family};
 use crate::RecordBatch;
+use crate::error::Result;
+use crate::models::traits::HealthStatus;
+use crate::models::types::FamilyType;
+use crate::models::{Family, Individual};
+use crate::common::traits::BefRegistry;
+use crate::registry::{BefRegister, ModelConversion};
+use std::collections::HashMap;
 
 // Implement conversion from BEF to Individual models
 impl ModelConversion<Individual> for BefRegister {
@@ -23,14 +27,14 @@ impl ModelConversion<Individual> for BefRegister {
     ///
     /// * `Result<Vec<Individual>>` - The created Individuals or an error
     fn to_models(&self, batch: &RecordBatch) -> Result<Vec<Individual>> {
-        // Use the schema-aware constructor on Individual
+        // Use the trait implementation with proper scoping to avoid ambiguity
         Individual::from_bef_batch(batch)
     }
-    
+
     /// Convert Individual domain models back to BEF registry data
     ///
     /// This method creates a record batch with BEF schema from Individual models.
-    /// 
+    ///
     /// # Arguments
     ///
     /// * `models` - The Individual models to convert
@@ -43,7 +47,7 @@ impl ModelConversion<Individual> for BefRegister {
         // matching the BEF schema
         unimplemented!("Conversion from Individual models to BEF registry data not yet implemented")
     }
-    
+
     /// Apply additional transformations to Individual models
     ///
     /// This method can apply additional BEF-specific transformations that aren't
@@ -66,7 +70,7 @@ impl ModelConversion<Individual> for BefRegister {
 impl ModelConversion<Family> for BefRegister {
     /// Convert BEF registry data to Family domain models
     ///
-    /// This method first converts to Individual models and then derives 
+    /// This method first converts to Individual models and then derives
     /// Family models from them.
     ///
     /// # Arguments
@@ -79,11 +83,8 @@ impl ModelConversion<Family> for BefRegister {
     fn to_models(&self, batch: &RecordBatch) -> Result<Vec<Family>> {
         // First get individual data
         let individuals = Individual::from_bef_batch(batch)?;
-        
+
         // Generate family models - this is the same logic from bef_adapter.rs
-        use crate::models::family::{Family, FamilyType};
-        use std::collections::HashMap;
-        
         // Group individuals by family_id
         let mut families_map: HashMap<String, Vec<&Individual>> = HashMap::new();
         for individual in &individuals {
@@ -94,32 +95,32 @@ impl ModelConversion<Family> for BefRegister {
                     .push(individual);
             }
         }
-        
+
         // Create Family objects from grouped individuals
         let mut families = Vec::new();
         let current_date = chrono::Utc::now().naive_utc().date();
-        
+
         for (family_id, members) in families_map {
             // Find parents and children in the family
             let mut mothers = Vec::new();
             let mut fathers = Vec::new();
             let mut children = Vec::new();
-            
+
             for member in &members {
                 // Simple heuristic: adults (18+) are potential parents, others are children
                 if let Some(age) = member.age_at(&current_date) {
                     if age >= 18 {
                         match member.gender {
-                            crate::models::individual::Gender::Female => mothers.push(member),
-                            crate::models::individual::Gender::Male => fathers.push(member),
-                            crate::models::individual::Gender::Unknown => {} // Skip individuals with unknown gender
+                            crate::models::Gender::Female => mothers.push(member),
+                            crate::models::Gender::Male => fathers.push(member),
+                            crate::models::Gender::Unknown => {} // Skip individuals with unknown gender
                         }
                     } else {
                         children.push(member);
                     }
                 }
             }
-            
+
             // Determine family type
             let family_type = match (mothers.len(), fathers.len()) {
                 (1.., 1..) => FamilyType::TwoParent,
@@ -127,18 +128,18 @@ impl ModelConversion<Family> for BefRegister {
                 (0, 1..) => FamilyType::SingleFather,
                 (0, 0) => FamilyType::NoParent,
             };
-            
+
             // Create a new family
             // Since we don't have specific valid_from dates, we'll use a default
             let default_valid_from = chrono::NaiveDate::from_ymd_opt(2000, 1, 1).unwrap();
             let family = Family::new(family_id, family_type, default_valid_from);
-            
+
             families.push(family);
         }
-        
+
         Ok(families)
     }
-    
+
     /// Convert Family domain models back to BEF registry data
     ///
     /// # Arguments
@@ -153,7 +154,7 @@ impl ModelConversion<Family> for BefRegister {
         // matching the BEF schema
         unimplemented!("Conversion from Family models to BEF registry data not yet implemented")
     }
-    
+
     /// Apply additional transformations to Family models
     ///
     /// # Arguments

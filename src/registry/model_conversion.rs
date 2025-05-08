@@ -19,7 +19,7 @@ pub trait ModelConversion<T> {
     fn from_models(&self, models: &[T]) -> Result<RecordBatch>;
     
     /// Apply additional transformations to models if needed
-    fn transform_models(&self, models: &mut [T]) -> Result<()> {
+    fn transform_models(&self, _models: &mut [T]) -> Result<()> {
         // Default implementation does nothing
         Ok(())
     }
@@ -71,26 +71,28 @@ pub trait ModelConversionExt {
     ///
     /// # Returns
     ///
-    /// * `Result<Vec<T>>` - Vector of domain models
-    async fn load_as_async<'a, T>(
+    /// * `impl Future<Output = Result<Vec<T>>>` - Future resolving to vector of domain models
+    fn load_as_async<'a, T>(
         &'a self, 
         base_path: &'a std::path::Path, 
         pnr_filter: Option<&'a std::collections::HashSet<String>>
-    ) -> Result<Vec<T>>
+    ) -> impl std::future::Future<Output = Result<Vec<T>>> + Send + 'a
     where
         Self: ModelConversion<T> + crate::registry::RegisterLoader,
     {
-        let batches = self.load_async(base_path, pnr_filter).await?;
-        let mut models = Vec::new();
-        
-        for batch in &batches {
-            models.extend(self.to_models(batch)?);
+        async move {
+            let batches = self.load_async(base_path, pnr_filter).await?;
+            let mut models = Vec::new();
+            
+            for batch in &batches {
+                models.extend(self.to_models(batch)?);
+            }
+            
+            // Apply any needed transformations
+            self.transform_models(&mut models)?;
+            
+            Ok(models)
         }
-        
-        // Apply any needed transformations
-        self.transform_models(&mut models)?;
-        
-        Ok(models)
     }
 }
 

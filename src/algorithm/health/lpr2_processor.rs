@@ -6,11 +6,12 @@
 use crate::algorithm::health::lpr_config::LprConfig;
 use crate::error::{ParquetReaderError, Result};
 use crate::models::diagnosis::{Diagnosis, DiagnosisCollection, DiagnosisType};
+use crate::models::traits::HealthStatus;
 use crate::utils::array_utils::get_column;
 use crate::utils::arrow_utils::arrow_array_to_date;
 
-use arrow::datatypes::DataType;
 use arrow::array::{Array, StringArray};
+use arrow::datatypes::DataType;
 use arrow::record_batch::RecordBatch;
 use std::collections::HashMap;
 
@@ -156,7 +157,7 @@ pub fn integrate_lpr2_components(
                 diagnosis_date,
             );
 
-            diagnosis_collection.add_diagnosis(diagnosis);
+            diagnosis_collection.get_diagnosis(diagnosis);
         }
 
         // Add secondary diagnoses if available
@@ -180,7 +181,7 @@ pub fn integrate_lpr2_components(
                         diagnosis_date,
                     );
 
-                    diagnosis_collection.add_diagnosis(diagnosis);
+                    diagnosis_collection.get_diagnosis(diagnosis);
                 }
             }
         }
@@ -199,7 +200,7 @@ pub fn integrate_lpr2_components(
 #[must_use]
 pub fn create_recnum_index(batch: &RecordBatch) -> HashMap<String, usize> {
     let mut index = HashMap::new();
-    
+
     // Try to get the RECNUM column
     if let Ok(Some(recnum_col)) = get_column(batch, "RECNUM", &DataType::Utf8, false) {
         if let Some(recnum_array) = recnum_col.as_any().downcast_ref::<StringArray>() {
@@ -210,7 +211,7 @@ pub fn create_recnum_index(batch: &RecordBatch) -> HashMap<String, usize> {
             }
         }
     }
-    
+
     index
 }
 
@@ -222,7 +223,7 @@ pub fn is_valid_lpr2_diagnosis(code: &str) -> bool {
     if code.is_empty() {
         return false;
     }
-    
+
     let first_char = code.chars().next().unwrap();
     first_char.is_ascii_alphabetic() && code.len() >= 3
 }

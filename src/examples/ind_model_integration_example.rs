@@ -1,13 +1,14 @@
 //! Examples demonstrating IND registry direct model integration
 //!
-//! These examples show how to use direct registry-to-model conversion 
+//! These examples show how to use the registry traits system
 //! for Income data from the IND registry.
 
 use std::collections::HashMap;
 use std::path::Path;
 
 use crate::error::Result;
-use crate::models::income::{Income, IncomeTrajectory};
+use crate::models::income::{Income, IncomeTrajectory, IncomeType};
+use crate::models::registry::IndRegistry;
 use crate::registry::ind::IndRegister;
 use crate::registry::ind_model_conversion::YearConfiguredIndRegister;
 use crate::registry::model_conversion::ModelConversionExt;
@@ -16,13 +17,20 @@ use crate::registry::model_conversion::ModelConversionExt;
 pub fn load_incomes_example(base_path: &Path) -> Result<()> {
     let ind_registry = IndRegister::new();
     
-    // Load incomes for all individuals
-    let incomes = ind_registry.load_as::<Income>(base_path, None)?;
+    // Load record batches first
+    let batches = ind_registry.load(base_path, None)?;
     
-    println!("Loaded {} income records from IND registry", incomes.len());
+    // Process each batch using the IndRegistry trait
+    let mut all_incomes = Vec::new();
+    for batch in &batches {
+        let incomes = Income::from_ind_batch(batch)?;
+        all_incomes.extend(incomes);
+    }
+    
+    println!("Loaded {} income records from IND registry", all_incomes.len());
     
     // Print a sample of the data
-    for (i, income) in incomes.iter().take(5).enumerate() {
+    for (i, income) in all_incomes.iter().take(5).enumerate() {
         println!(
             "Income {}: PNR={}, Year={}, Type={}, Amount={}",
             i + 1,
@@ -32,6 +40,10 @@ pub fn load_incomes_example(base_path: &Path) -> Result<()> {
             income.amount
         );
     }
+    
+    // Can also use the ModelConversionExt which now uses IndRegistry trait internally
+    let incomes_alt = ind_registry.load_as::<Income>(base_path, None)?;
+    println!("Alternative loading method found {} records", incomes_alt.len());
     
     Ok(())
 }
@@ -54,7 +66,7 @@ pub fn load_inflation_adjusted_incomes_example(base_path: &Path) -> Result<()> {
     let ind_registry = YearConfiguredIndRegister::new(2019)
         .with_cpi_indices(cpi_indices);
     
-    // Load incomes for all individuals
+    // Load incomes for all individuals using the ModelConversionExt (uses to_models internally)
     let incomes = ind_registry.load_as::<Income>(base_path, None)?;
     
     println!(
@@ -73,19 +85,24 @@ pub fn create_income_trajectories_example(base_path: &Path) -> Result<()> {
     // Load data for multiple years
     for year in 2015..=2020 {
         let ind_registry = YearConfiguredIndRegister::new(year);
-        let incomes = ind_registry.load_as::<Income>(base_path, None)?;
         
-        // Add each income to appropriate trajectory
-        for income in incomes {
-            let key = (income.individual_pnr.clone(), income.income_type.clone());
+        // Load batches and process using IndRegistry trait
+        let batches = ind_registry.load(base_path, None)?;
+        for batch in &batches {
+            let incomes = ind_registry.to_models(batch)?;
             
-            // Get or create trajectory
-            let trajectory = trajectories
-                .entry(key.clone())
-                .or_insert_with(|| IncomeTrajectory::new(key.0.clone(), key.1.clone()));
-            
-            // Add income to trajectory
-            trajectory.add_income(income.year, income.amount);
+            // Add each income to appropriate trajectory
+            for income in incomes {
+                let key = (income.individual_pnr.clone(), income.income_type.clone());
+                
+                // Get or create trajectory
+                let trajectory = trajectories
+                    .entry(key.clone())
+                    .or_insert_with(|| IncomeTrajectory::new(key.0.clone(), key.1.clone()));
+                
+                // Add income to trajectory
+                trajectory.add_income(income.year, income.amount);
+            }
         }
     }
     
@@ -114,10 +131,21 @@ pub fn create_income_trajectories_example(base_path: &Path) -> Result<()> {
 pub async fn load_incomes_async_example(base_path: &Path) -> Result<()> {
     let ind_registry = IndRegister::new();
     
-    // Load incomes asynchronously
-    let incomes = ind_registry.load_as_async::<Income>(base_path, None).await?;
+    // Load batches asynchronously
+    let batches = ind_registry.load_async(base_path, None).await?;
     
-    println!("Asynchronously loaded {} income records from IND registry", incomes.len());
+    // Process each batch using the IndRegistry trait
+    let mut all_incomes = Vec::new();
+    for batch in &batches {
+        let incomes = Income::from_ind_batch(batch)?;
+        all_incomes.extend(incomes);
+    }
+    
+    println!("Asynchronously loaded {} income records from IND registry", all_incomes.len());
+    
+    // Can also use the ModelConversionExt
+    let incomes_alt = ind_registry.load_as_async::<Income>(base_path, None).await?;
+    println!("Alternative async loading method found {} records", incomes_alt.len());
     
     Ok(())
 }

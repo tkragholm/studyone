@@ -10,10 +10,6 @@ pub mod lpr_config;
 pub mod lpr_loader;
 pub mod lpr_utility;
 
-// Original LPR module, kept for compatibility
-// This will be deprecated in a future release
-//pub mod lpr_integration;
-
 // SCD algorithm module
 pub mod scd;
 

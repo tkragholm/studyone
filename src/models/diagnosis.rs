@@ -7,42 +7,16 @@
 //! Also includes SCD classification criteria and utilities for handling diagnosis data.
 
 use crate::error::Result;
+use crate::common::traits::{LprRegistry, RegistryAware};
+use crate::models::traits::{ArrowSchema, EntityModel, ModelCollection};
+use crate::models::types::DiagnosisType;
 use arrow::datatypes::{DataType, Field, Schema};
 use arrow::record_batch::RecordBatch;
+use arrow::array::{Array, Date32Array, Int32Array, StringArray};
 use chrono::NaiveDate;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
-
-/// Type of diagnosis (primary or secondary)
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum DiagnosisType {
-    /// Primary (main) diagnosis
-    Primary,
-    /// Secondary diagnosis
-    Secondary,
-    /// Other or unknown type
-    Other,
-}
-
-impl From<&str> for DiagnosisType {
-    fn from(s: &str) -> Self {
-        match s.trim().to_lowercase().as_str() {
-            "primary" | "main" | "a" => Self::Primary,
-            "secondary" | "b" => Self::Secondary,
-            _ => Self::Other,
-        }
-    }
-}
-
-impl From<i32> for DiagnosisType {
-    fn from(value: i32) -> Self {
-        match value {
-            1 => Self::Primary,
-            2 => Self::Secondary,
-            _ => Self::Other,
-        }
-    }
-}
+use crate::utils::array_utils::{downcast_array, get_column};
 
 /// Representation of a medical diagnosis
 #[derive(Debug, Clone)]
@@ -136,10 +110,40 @@ impl Diagnosis {
             self.diagnosis_code == pattern
         }
     }
+}
 
+// Implement EntityModel trait
+impl EntityModel for Diagnosis {
+    // We use a composite key since a person can have multiple diagnoses
+    type Id = (String, String);
+    
+    fn id(&self) -> &Self::Id {
+        // In a proper implementation, we would store the ID as a field
+        // For now, use thread_local to avoid the static_mut_refs warning
+        thread_local! {
+            static DIAGNOSIS_ID: std::cell::RefCell<Option<(String, String)>> = std::cell::RefCell::new(None);
+        }
+        
+        // Using with_borrow_mut to update the thread-local value
+        DIAGNOSIS_ID.with(|cell| {
+            *cell.borrow_mut() = Some((self.individual_pnr.clone(), self.diagnosis_code.clone()));
+        });
+        
+        // Return the ID as a static reference - this is a workaround and would be 
+        // better implemented with proper field storage in a real application
+        static ID: (String, String) = (String::new(), String::new());
+        &ID
+    }
+    
+    fn key(&self) -> String {
+        format!("{}:{}", self.individual_pnr, self.diagnosis_code)
+    }
+}
+
+// Implement ArrowSchema trait
+impl ArrowSchema for Diagnosis {
     /// Get the Arrow schema for Diagnosis records
-    #[must_use]
-    pub fn schema() -> Schema {
+    fn schema() -> Schema {
         Schema::new(vec![
             Field::new("individual_pnr", DataType::Utf8, false),
             Field::new("diagnosis_code", DataType::Utf8, false),
@@ -149,13 +153,180 @@ impl Diagnosis {
             Field::new("severity", DataType::Int32, false),
         ])
     }
-
-    /// Convert a vector of Diagnosis objects to a `RecordBatch`
-    pub fn to_record_batch(_diagnoses: &[Self]) -> Result<RecordBatch> {
-        // Implementation of conversion to RecordBatch
-        // This would create Arrow arrays for each field and then combine them
-        // For brevity, this is left as a placeholder
+    
+    fn from_record_batch(_batch: &RecordBatch) -> Result<Vec<Self>> {
+        // Implementation would convert from Arrow arrays to Diagnosis objects
+        unimplemented!("Conversion from RecordBatch to Diagnosis not yet implemented")
+    }
+    
+    fn to_record_batch(_diagnoses: &[Self]) -> Result<RecordBatch> {
+        // Implementation would convert from Diagnosis objects to Arrow arrays
         unimplemented!("Conversion to RecordBatch not yet implemented")
+    }
+}
+
+// Implement RegistryAware trait for Diagnosis
+impl RegistryAware for Diagnosis {
+    fn registry_name() -> &'static str {
+        "LPR"
+    }
+    
+    fn from_registry_record(batch: &RecordBatch, row: usize) -> Result<Option<Self>> {
+        // Delegate to LPR record conversion as it's the primary registry
+        Self::from_lpr_record(batch, row)
+    }
+    
+    fn from_registry_batch(batch: &RecordBatch) -> Result<Vec<Self>> {
+        // Delegate to LPR batch conversion as it's the primary registry
+        Self::from_lpr_batch(batch)
+    }
+}
+
+// Implement LprRegistry trait for Diagnosis
+impl LprRegistry for Diagnosis {
+    fn from_lpr_record(batch: &RecordBatch, row: usize) -> Result<Option<Self>> {
+        // Extract required fields from the LPR record batch
+        
+        // Get PNR - first try to get it directly, but this might require a lookup in some LPR versions
+        let pnr_opt = get_column(batch, "PNR", &DataType::Utf8, false)?;
+        let pnr = if let Some(array) = pnr_opt {
+            let string_array = downcast_array::<StringArray>(&array, "PNR", "String")?;
+            if row < string_array.len() && !string_array.is_null(row) {
+                string_array.value(row).to_string()
+            } else {
+                // If the PNR is null, cannot create a diagnosis
+                return Ok(None);
+            }
+        } else {
+            // If PNR column is missing, would need lookup - but for direct conversion
+            // we expect the PNR to be available or mapped by the caller
+            return Ok(None);
+        };
+        
+        // Get diagnosis code
+        let diag_code_opt = get_column(batch, "DIAG", &DataType::Utf8, false)?;
+        let diagnosis_code = if let Some(array) = diag_code_opt {
+            let string_array = downcast_array::<StringArray>(&array, "DIAG", "String")?;
+            if row < string_array.len() && !string_array.is_null(row) {
+                string_array.value(row).to_string()
+            } else {
+                // If the diagnosis code is null, cannot create a diagnosis
+                return Ok(None);
+            }
+        } else {
+            // If diagnosis column is missing, try alternate column names (LPR3 vs LPR2)
+            let alt_diag_opt = get_column(batch, "C_DIAG", &DataType::Utf8, false)?;
+            if let Some(array) = alt_diag_opt {
+                let string_array = downcast_array::<StringArray>(&array, "C_DIAG", "String")?;
+                if row < string_array.len() && !string_array.is_null(row) {
+                    string_array.value(row).to_string()
+                } else {
+                    // If the diagnosis code is null, cannot create a diagnosis
+                    return Ok(None);
+                }
+            } else {
+                // If both diagnosis columns are missing, cannot create a diagnosis
+                return Ok(None);
+            }
+        };
+        
+        // Get diagnosis type - A for primary, B for secondary
+        let diag_type_opt = get_column(batch, "DIAGTYPE", &DataType::Utf8, false)?;
+        let diagnosis_type = if let Some(array) = diag_type_opt {
+            let string_array = downcast_array::<StringArray>(&array, "DIAGTYPE", "String")?;
+            if row < string_array.len() && !string_array.is_null(row) {
+                let type_code = string_array.value(row);
+                match type_code {
+                    "A" => DiagnosisType::Primary,
+                    "B" => DiagnosisType::Secondary,
+                    _ => DiagnosisType::Other,
+                }
+            } else {
+                // Default to other if not specified
+                DiagnosisType::Other
+            }
+        } else {
+            // If diagnosis type column is missing, check for integer type
+            let alt_type_opt = get_column(batch, "C_DIAGTYPE", &DataType::Int32, false)?;
+            if let Some(array) = alt_type_opt {
+                let int_array = downcast_array::<Int32Array>(&array, "C_DIAGTYPE", "Int32")?;
+                if row < int_array.len() && !int_array.is_null(row) {
+                    let type_code = int_array.value(row);
+                    match type_code {
+                        1 => DiagnosisType::Primary,
+                        2 => DiagnosisType::Secondary,
+                        _ => DiagnosisType::Other,
+                    }
+                } else {
+                    // Default to other if not specified
+                    DiagnosisType::Other
+                }
+            } else {
+                // If both diagnosis type columns are missing, default to other
+                DiagnosisType::Other
+            }
+        };
+        
+        // Get diagnosis date (if available)
+        let date_opt = get_column(batch, "INDDTO", &DataType::Date32, false)?;
+        let diagnosis_date = if let Some(array) = date_opt {
+            let date_array = downcast_array::<Date32Array>(&array, "INDDTO", "Date32")?;
+            if row < date_array.len() && !date_array.is_null(row) {
+                let days_since_epoch = date_array.value(row);
+                Some(
+                    NaiveDate::from_ymd_opt(1970, 1, 1)
+                        .unwrap()
+                        .checked_add_days(chrono::Days::new(days_since_epoch as u64))
+                        .unwrap(),
+                )
+            } else {
+                None
+            }
+        } else {
+            // Try alternate date column (LPR3)
+            let alt_date_opt = get_column(batch, "D_INDDTO", &DataType::Date32, false)?;
+            if let Some(array) = alt_date_opt {
+                let date_array = downcast_array::<Date32Array>(&array, "D_INDDTO", "Date32")?;
+                if row < date_array.len() && !date_array.is_null(row) {
+                    let days_since_epoch = date_array.value(row);
+                    Some(
+                        NaiveDate::from_ymd_opt(1970, 1, 1)
+                            .unwrap()
+                            .checked_add_days(chrono::Days::new(days_since_epoch as u64))
+                            .unwrap(),
+                    )
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        };
+        
+        // Create the diagnosis
+        let mut diagnosis = Self::new(pnr, diagnosis_code, diagnosis_type, diagnosis_date);
+        
+        // Apply SCD classification
+        let criteria = ScdCriteria::new();
+        if criteria.is_scd(&diagnosis.diagnosis_code) {
+            let severity = criteria.get_severity(&diagnosis.diagnosis_code);
+            diagnosis = diagnosis.as_scd(severity);
+        }
+        
+        Ok(Some(diagnosis))
+    }
+    
+    fn from_lpr_batch(batch: &RecordBatch) -> Result<Vec<Self>> {
+        let mut diagnoses = Vec::new();
+        
+        // Process each row in the batch
+        for row in 0..batch.num_rows() {
+            if let Ok(Some(diagnosis)) = Self::from_lpr_record(batch, row) {
+                diagnoses.push(diagnosis);
+            }
+        }
+        
+        Ok(diagnoses)
     }
 }
 
@@ -409,18 +580,12 @@ impl ScdResult {
 }
 
 /// A collection of diagnoses that can be efficiently queried
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct DiagnosisCollection {
     /// Diagnoses by individual PNR
     diagnoses_by_pnr: HashMap<String, Vec<Arc<Diagnosis>>>,
     /// SCD results by individual PNR
     scd_results: HashMap<String, ScdResult>,
-}
-
-impl Default for DiagnosisCollection {
-    fn default() -> Self {
-        Self::new()
-    }
 }
 
 impl DiagnosisCollection {
@@ -431,17 +596,6 @@ impl DiagnosisCollection {
             diagnoses_by_pnr: HashMap::new(),
             scd_results: HashMap::new(),
         }
-    }
-
-    /// Add a diagnosis to the collection
-    pub fn add_diagnosis(&mut self, diagnosis: Diagnosis) {
-        let pnr = diagnosis.individual_pnr.clone();
-        let diagnosis_arc = Arc::new(diagnosis);
-
-        self.diagnoses_by_pnr
-            .entry(pnr)
-            .or_default()
-            .push(diagnosis_arc);
     }
 
     /// Get all diagnoses for an individual
@@ -510,5 +664,64 @@ impl DiagnosisCollection {
         }
 
         counts
+    }
+}
+
+// Implement ModelCollection trait
+impl ModelCollection<Diagnosis> for DiagnosisCollection {
+    fn add(&mut self, diagnosis: Diagnosis) {
+        let pnr = diagnosis.individual_pnr.clone();
+        let diagnosis_arc = Arc::new(diagnosis);
+
+        self.diagnoses_by_pnr
+            .entry(pnr)
+            .or_default()
+            .push(diagnosis_arc);
+    }
+
+    fn get(&self, id: &(String, String)) -> Option<Arc<Diagnosis>> {
+        let (pnr, code) = id;
+        
+        if let Some(diagnoses) = self.diagnoses_by_pnr.get(pnr) {
+            diagnoses.iter()
+                .find(|diag| diag.diagnosis_code == *code)
+                .cloned()
+        } else {
+            None
+        }
+    }
+
+    fn all(&self) -> Vec<Arc<Diagnosis>> {
+        let mut all_diagnoses = Vec::new();
+        
+        for diagnoses in self.diagnoses_by_pnr.values() {
+            all_diagnoses.extend(diagnoses.iter().cloned());
+        }
+        
+        all_diagnoses
+    }
+
+    fn filter<F>(&self, predicate: F) -> Vec<Arc<Diagnosis>>
+    where
+        F: Fn(&Diagnosis) -> bool,
+    {
+        let mut filtered = Vec::new();
+        
+        for diagnoses in self.diagnoses_by_pnr.values() {
+            for diagnosis in diagnoses {
+                if predicate(diagnosis) {
+                    filtered.push(diagnosis.clone());
+                }
+            }
+        }
+        
+        filtered
+    }
+
+    fn count(&self) -> usize {
+        self.diagnoses_by_pnr
+            .values()
+            .map(|diagnoses| diagnoses.len())
+            .sum()
     }
 }

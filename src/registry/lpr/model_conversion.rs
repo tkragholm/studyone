@@ -6,6 +6,7 @@
 use crate::registry::{Lpr3DiagnoserRegister, LprDiagRegister, ModelConversion};
 use crate::error::Result;
 use crate::models::diagnosis::{Diagnosis, ScdCriteria, ScdResult};
+use crate::common::traits::LprRegistry;
 use crate::RecordBatch;
 
 /// `ModelConversion` implementation for LPR2 DIAG registry
@@ -28,11 +29,24 @@ impl ModelConversion<Diagnosis> for LprDiagRegister {
             return Ok(Vec::new());
         };
         
-        // Use the SCD criteria for classification
-        let scd_criteria = ScdCriteria::new();
+        // Use the LprRegistry trait to convert the batch
+        let mut diagnoses = Diagnosis::from_lpr_batch(batch)?;
         
-        // Use the schema-aware constructor
-        Diagnosis::from_lpr2_diag_batch(batch, &pnr_lookup, Some(&scd_criteria))
+        // Since LprRegistry doesn't handle PNR lookup directly, we need to apply it here
+        // This is a transition step until we fully migrate to the trait-based approach
+        for diagnosis in &mut diagnoses {
+            // Check if we have a lookup entry for this record
+            if let Some(record_num) = diagnosis.individual_pnr.strip_prefix("RECORD:") {
+                if let Some(pnr) = pnr_lookup.get(record_num) {
+                    diagnosis.individual_pnr = pnr.clone();
+                }
+            }
+        }
+        
+        // Remove any records that don't have valid PNRs
+        diagnoses.retain(|d| !d.individual_pnr.starts_with("RECORD:"));
+        
+        Ok(diagnoses)
     }
     
     /// Convert Diagnosis domain models back to LPR2 DIAG registry data
@@ -85,11 +99,24 @@ impl ModelConversion<Diagnosis> for Lpr3DiagnoserRegister {
             return Ok(Vec::new());
         };
         
-        // Use the SCD criteria for classification
-        let scd_criteria = ScdCriteria::new();
+        // Use the LprRegistry trait to convert the batch
+        let mut diagnoses = Diagnosis::from_lpr_batch(batch)?;
         
-        // Use the schema-aware constructor
-        Diagnosis::from_lpr3_diagnoser_batch(batch, &pnr_lookup, Some(&scd_criteria))
+        // Since LprRegistry doesn't handle PNR lookup directly, we need to apply it here
+        // This is a transition step until we fully migrate to the trait-based approach
+        for diagnosis in &mut diagnoses {
+            // Check if we have a lookup entry for this record - LPR3 might use KONTAKT_ID instead of RECNUM
+            if let Some(kontakt_id) = diagnosis.individual_pnr.strip_prefix("KONTAKT:") {
+                if let Some(pnr) = pnr_lookup.get(kontakt_id) {
+                    diagnosis.individual_pnr = pnr.clone();
+                }
+            }
+        }
+        
+        // Remove any records that don't have valid PNRs
+        diagnoses.retain(|d| !d.individual_pnr.starts_with("KONTAKT:"));
+        
+        Ok(diagnoses)
     }
     
     /// Convert Diagnosis domain models back to LPR3 DIAGNOSER registry data

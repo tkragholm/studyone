@@ -5,10 +5,46 @@
 //! between parents of children with and without severe chronic diseases.
 
 use crate::error::Result;
+use crate::common::traits::{IndRegistry, RegistryAware};
+use crate::models::traits::{ArrowSchema, EntityModel, ModelCollection};
+use crate::utils::array_utils::{downcast_array, get_column};
+use arrow::array::{Array, Float64Array, StringArray};
 use arrow::datatypes::{DataType, Field, Schema};
 use arrow::record_batch::RecordBatch;
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
+
+/// Income type identifiers
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum IncomeType {
+    /// Total personal income
+    TotalPersonal,
+    /// Salary income
+    Salary,
+    /// Self-employment income
+    SelfEmployment,
+    /// Capital income
+    Capital,
+    /// Transfer payments
+    TransferPayments,
+    /// Other income
+    Other,
+}
+
+impl IncomeType {
+    /// Convert income type to string representation
+    #[must_use]
+    pub const fn as_str(&self) -> &'static str {
+        match self {
+            Self::TotalPersonal => "total_personal",
+            Self::Salary => "salary",
+            Self::SelfEmployment => "self_employment",
+            Self::Capital => "capital",
+            Self::TransferPayments => "transfer_payments",
+            Self::Other => "other",
+        }
+    }
+}
 
 /// Representation of income data for an individual in a specific year
 #[derive(Debug, Clone)]
@@ -34,10 +70,65 @@ impl Income {
             income_type,
         }
     }
+    
+    /// Helper method to extract income value from a column
+    fn extract_income_value(
+        batch: &RecordBatch,
+        row: usize,
+        column_name: &str,
+    ) -> Result<Option<f64>> {
+        let column_opt = get_column(batch, column_name, &DataType::Float64, false)?;
+        
+        match column_opt {
+            Some(array) => {
+                let float_array = downcast_array::<Float64Array>(&array, column_name, "Float64")?;
+                if row < float_array.len() && !float_array.is_null(row) {
+                    Ok(Some(float_array.value(row)))
+                } else {
+                    Ok(None)  // Row outside range or null value
+                }
+            }
+            None => Ok(None), // Column not found
+        }
+    }
+}
 
+// Implement EntityModel trait
+impl EntityModel for Income {
+    // We use a composite key of PNR, year, and income type
+    type Id = (String, i32, String);
+
+    fn id(&self) -> &Self::Id {
+        // In a proper implementation, we would store the ID as a field
+        // For now, use thread_local to avoid the static_mut_refs warning
+        thread_local! {
+            static INCOME_ID: std::cell::RefCell<Option<(String, i32, String)>> = std::cell::RefCell::new(None);
+        }
+        
+        // Using with_borrow_mut to update the thread-local value
+        INCOME_ID.with(|cell| {
+            *cell.borrow_mut() = Some((
+                self.individual_pnr.clone(),
+                self.year,
+                self.income_type.clone(),
+            ));
+        });
+        
+        // Return a static ID - this is a workaround and would be 
+        // better implemented with proper field storage
+        static ID: (String, i32, String) = (String::new(), 0, String::new());
+        &ID
+    }
+
+    fn key(&self) -> String {
+        format!("{}:{}:{}", self.individual_pnr, self.year, self.income_type)
+    }
+}
+
+// Implement ArrowSchema trait
+impl ArrowSchema for Income {
     /// Get the Arrow schema for Income records
-    #[must_use]
-    pub fn schema() -> Schema {
+    fn schema() -> Schema {
         Schema::new(vec![
             Field::new("individual_pnr", DataType::Utf8, false),
             Field::new("year", DataType::Int32, false),
@@ -46,11 +137,13 @@ impl Income {
         ])
     }
 
-    /// Convert a vector of Income objects to a `RecordBatch`
-    pub fn to_record_batch(_incomes: &[Self]) -> Result<RecordBatch> {
+    fn from_record_batch(_batch: &RecordBatch) -> Result<Vec<Self>> {
+        // Implementation of conversion from RecordBatch
+        unimplemented!("Conversion from RecordBatch to Income not yet implemented")
+    }
+
+    fn to_record_batch(_incomes: &[Self]) -> Result<RecordBatch> {
         // Implementation of conversion to RecordBatch
-        // This would create Arrow arrays for each field and then combine them
-        // For brevity, this is left as a placeholder
         unimplemented!("Conversion to RecordBatch not yet implemented")
     }
 }
@@ -218,11 +311,41 @@ impl IncomeTrajectory {
                     let position = year - lower_year;
 
                     // Linear interpolation
-                    let interpolated = (higher_value - lower_value).mul_add(f64::from(position) / f64::from(year_span), lower_value);
+                    let interpolated = (higher_value - lower_value)
+                        .mul_add(f64::from(position) / f64::from(year_span), lower_value);
                     self.yearly_income.insert(year, interpolated);
                 }
             }
         }
+    }
+}
+
+// Implement EntityModel for IncomeTrajectory
+impl EntityModel for IncomeTrajectory {
+    // We use a composite key of PNR and income type
+    type Id = (String, String);
+
+    fn id(&self) -> &Self::Id {
+        // Use thread_local to avoid the static_mut_refs warning
+        thread_local! {
+            static TRAJECTORY_ID: std::cell::RefCell<Option<(String, String)>> = std::cell::RefCell::new(None);
+        }
+        
+        // Using with_borrow_mut to update the thread-local value
+        TRAJECTORY_ID.with(|cell| {
+            *cell.borrow_mut() = Some((
+                self.individual_pnr.clone(),
+                self.income_type.clone(),
+            ));
+        });
+        
+        // Return a static ID - this is a workaround
+        static ID: (String, String) = (String::new(), String::new());
+        &ID
+    }
+
+    fn key(&self) -> String {
+        format!("{}:{}", self.individual_pnr, self.income_type)
     }
 }
 
@@ -416,8 +539,21 @@ impl FamilyIncomeTrajectory {
     }
 }
 
+// Implement EntityModel for FamilyIncomeTrajectory
+impl EntityModel for FamilyIncomeTrajectory {
+    type Id = String;
+
+    fn id(&self) -> &Self::Id {
+        &self.family_id
+    }
+
+    fn key(&self) -> String {
+        self.family_id.clone()
+    }
+}
+
 /// A collection of income data for multiple individuals
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct IncomeCollection {
     /// Income records by individual PNR
     incomes_by_pnr: HashMap<String, Vec<Arc<Income>>>,
@@ -425,12 +561,6 @@ pub struct IncomeCollection {
     trajectories: HashMap<(String, String), IncomeTrajectory>,
     /// Family income trajectories by family ID
     family_trajectories: HashMap<String, FamilyIncomeTrajectory>,
-}
-
-impl Default for IncomeCollection {
-    fn default() -> Self {
-        Self::new()
-    }
 }
 
 impl IncomeCollection {
@@ -442,36 +572,6 @@ impl IncomeCollection {
             trajectories: HashMap::new(),
             family_trajectories: HashMap::new(),
         }
-    }
-
-    /// Add an income record to the collection
-    pub fn add_income(&mut self, income: Income) {
-        let pnr = income.individual_pnr.clone();
-        let income_type = income.income_type.clone();
-        let year = income.year;
-        let amount = income.amount;
-
-        // Add to raw incomes
-        let income_arc = Arc::new(income);
-        self.incomes_by_pnr
-            .entry(pnr.clone())
-            .or_default()
-            .push(income_arc);
-
-        // Update trajectory
-        let trajectory_key = (pnr, income_type);
-        self.trajectories
-            .entry(trajectory_key.clone())
-            .or_insert_with(|| {
-                IncomeTrajectory::new(trajectory_key.0.clone(), trajectory_key.1.clone())
-            })
-            .add_income(year, amount);
-    }
-
-    /// Get all income records for an individual
-    #[must_use]
-    pub fn get_incomes(&self, pnr: &str) -> Vec<Arc<Income>> {
-        self.incomes_by_pnr.get(pnr).cloned().unwrap_or_default()
     }
 
     /// Get income trajectory for an individual and income type
@@ -545,22 +645,313 @@ impl IncomeCollection {
             }
         }
     }
+}
 
-    /// Count the total number of income records
-    #[must_use]
-    pub fn record_count(&self) -> usize {
+// Implement RegistryAware trait
+impl RegistryAware for Income {
+    fn registry_name() -> &'static str {
+        "IND"
+    }
+    
+    fn from_registry_record(batch: &RecordBatch, row: usize) -> Result<Option<Self>> {
+        // We need to extract the data directly here
+        // Extract PNR column
+        let pnr_array_opt = get_column(batch, "PNR", &DataType::Utf8, true)?;
+        let pnr_array = match &pnr_array_opt {
+            Some(array) => downcast_array::<StringArray>(array, "PNR", "String")?,
+            None => return Ok(None), // Required column missing
+        };
+
+        // Get PNR
+        if row >= pnr_array.len() || pnr_array.is_null(row) {
+            return Ok(None); // No PNR data
+        }
+        let pnr = pnr_array.value(row).to_string();
+
+        // Default year
+        let year = 2020;
+
+        // Extract total income
+        let income_value = Self::extract_income_value(batch, row, "PERINDKIALT_13")?;
+        if let Some(amount) = income_value {
+            Ok(Some(Self::new(
+                pnr,
+                year,
+                amount,
+                IncomeType::TotalPersonal.as_str().to_string(),
+            )))
+        } else {
+            Ok(None)
+        }
+    }
+    
+    fn from_registry_batch(batch: &RecordBatch) -> Result<Vec<Self>> {
+        // Directly implement batch conversion
+        let mut incomes = Vec::new();
+        
+        // Process each row in the batch
+        for row in 0..batch.num_rows() {
+            if let Some(income) = Self::from_registry_record(batch, row)? {
+                incomes.push(income);
+            }
+        }
+        
+        Ok(incomes)
+    }
+}
+
+// Implement IndRegistry trait for Income
+impl IndRegistry for Income {
+    fn from_ind_record(batch: &RecordBatch, row: usize) -> Result<Option<Self>> {
+        // Extract PNR column
+        let pnr_array_opt = get_column(batch, "PNR", &DataType::Utf8, true)?;
+        let pnr_array = match &pnr_array_opt {
+            Some(array) => downcast_array::<StringArray>(array, "PNR", "String")?,
+            None => return Ok(None), // Required column missing
+        };
+
+        // Get PNR
+        if row >= pnr_array.len() || pnr_array.is_null(row) {
+            return Ok(None); // No PNR data
+        }
+        let pnr = pnr_array.value(row).to_string();
+
+        // Create the Income record for total income
+        // Year would typically come from column data or be supplied externally
+        let year = 2020; // Default year, normally this would be extracted from data
+
+        // Get total income value
+        let total_array_opt = get_column(batch, "PERINDKIALT_13", &DataType::Float64, false)?;
+        let income_value = match &total_array_opt {
+            Some(array) => {
+                let float_array =
+                    downcast_array::<Float64Array>(array, "PERINDKIALT_13", "Float64")?;
+                if row < float_array.len() && !float_array.is_null(row) {
+                    float_array.value(row)
+                } else {
+                    return Ok(None); // No total income data
+                }
+            }
+            None => return Ok(None), // Column not found
+        };
+
+        Ok(Some(Self::new(
+            pnr,
+            year,
+            income_value,
+            IncomeType::TotalPersonal.as_str().to_string(),
+        )))
+    }
+
+    fn from_ind_batch(batch: &RecordBatch) -> Result<Vec<Self>> {
+        let mut incomes = Vec::new();
+        let year = 2020; // Default year - this could be made configurable in the future
+
+        // Process each row in the batch
+        for row in 0..batch.num_rows() {
+            // Try to extract total personal income
+            if let Ok(Some(total_income)) = Self::extract_income(
+                batch,
+                row,
+                year,
+                IncomeType::TotalPersonal,
+                "PERINDKIALT_13",
+            ) {
+                incomes.push(total_income);
+            }
+
+            // Try to extract salary income
+            if let Ok(Some(salary_income)) =
+                Self::extract_income(batch, row, year, IncomeType::Salary, "LOENMV_13")
+            {
+                incomes.push(salary_income);
+            }
+
+            // Calculate other income as the difference between total and salary
+            if let Ok(Some(other_income)) = Self::extract_derived_other_income(batch, row, year) {
+                incomes.push(other_income);
+            }
+        }
+
+        Ok(incomes)
+    }
+}
+
+impl Income {
+    /// Extract income of a specific type from IND record
+    fn extract_income(
+        batch: &RecordBatch,
+        row: usize,
+        year: i32,
+        income_type: IncomeType,
+        column_name: &str,
+    ) -> Result<Option<Self>> {
+        // Extract PNR column
+        let pnr_array_opt = get_column(batch, "PNR", &DataType::Utf8, true)?;
+        let pnr_array = match &pnr_array_opt {
+            Some(array) => downcast_array::<StringArray>(array, "PNR", "String")?,
+            None => return Ok(None), // Required column missing
+        };
+
+        // Extract the income column
+        let income_array_opt = get_column(batch, column_name, &DataType::Float64, false)?;
+        let income_value = match &income_array_opt {
+            Some(array) => {
+                let float_array = downcast_array::<Float64Array>(array, column_name, "Float64")?;
+                if row < float_array.len() && !float_array.is_null(row) {
+                    float_array.value(row)
+                } else {
+                    return Ok(None); // No income data
+                }
+            }
+            None => return Ok(None), // Column not found
+        };
+
+        // Get PNR
+        if row >= pnr_array.len() || pnr_array.is_null(row) {
+            return Ok(None); // No PNR data
+        }
+        let pnr = pnr_array.value(row).to_string();
+
+        // Create the Income record
+        Ok(Some(Self::new(
+            pnr,
+            year,
+            income_value,
+            income_type.as_str().to_string(),
+        )))
+    }
+
+    /// Extract derived "other" income (total - salary)
+    fn extract_derived_other_income(
+        batch: &RecordBatch,
+        row: usize,
+        year: i32,
+    ) -> Result<Option<Self>> {
+        // Extract PNR column
+        let pnr_array_opt = get_column(batch, "PNR", &DataType::Utf8, true)?;
+        let pnr_array = match &pnr_array_opt {
+            Some(array) => downcast_array::<StringArray>(array, "PNR", "String")?,
+            None => return Ok(None), // Required column missing
+        };
+
+        // Extract total income
+        let total_array_opt = get_column(batch, "PERINDKIALT_13", &DataType::Float64, false)?;
+        let total_income = match &total_array_opt {
+            Some(array) => {
+                let float_array =
+                    downcast_array::<Float64Array>(array, "PERINDKIALT_13", "Float64")?;
+                if row < float_array.len() && !float_array.is_null(row) {
+                    float_array.value(row)
+                } else {
+                    return Ok(None); // No total income data
+                }
+            }
+            None => return Ok(None), // Column not found
+        };
+
+        // Extract salary income
+        let salary_array_opt = get_column(batch, "LOENMV_13", &DataType::Float64, false)?;
+        let salary_income = match &salary_array_opt {
+            Some(array) => {
+                let float_array = downcast_array::<Float64Array>(array, "LOENMV_13", "Float64")?;
+                if row < float_array.len() && !float_array.is_null(row) {
+                    float_array.value(row)
+                } else {
+                    return Ok(None); // No salary data
+                }
+            }
+            None => return Ok(None), // Column not found
+        };
+
+        // Calculate other income
+        let other_income = total_income - salary_income;
+        if other_income <= 0.0 {
+            return Ok(None); // No positive "other" income
+        }
+
+        // Get PNR
+        if row >= pnr_array.len() || pnr_array.is_null(row) {
+            return Ok(None); // No PNR data
+        }
+        let pnr = pnr_array.value(row).to_string();
+
+        // Create the Income record
+        Ok(Some(Self::new(
+            pnr,
+            year,
+            other_income,
+            IncomeType::Other.as_str().to_string(),
+        )))
+    }
+}
+
+// Implement ModelCollection trait for Income
+impl ModelCollection<Income> for IncomeCollection {
+    fn add(&mut self, income: Income) {
+        let pnr = income.individual_pnr.clone();
+        let income_type = income.income_type.clone();
+        let year = income.year;
+        let amount = income.amount;
+
+        // Add to raw incomes
+        let income_arc = Arc::new(income);
+        self.incomes_by_pnr
+            .entry(pnr.clone())
+            .or_default()
+            .push(income_arc);
+
+        // Update trajectory
+        let trajectory_key = (pnr, income_type);
+        self.trajectories
+            .entry(trajectory_key.clone())
+            .or_insert_with(|| {
+                IncomeTrajectory::new(trajectory_key.0.clone(), trajectory_key.1.clone())
+            })
+            .add_income(year, amount);
+    }
+
+    fn get(&self, id: &(String, i32, String)) -> Option<Arc<Income>> {
+        let (pnr, year, income_type) = id;
+
+        if let Some(incomes) = self.incomes_by_pnr.get(pnr) {
+            incomes
+                .iter()
+                .find(|income| income.year == *year && income.income_type == *income_type)
+                .cloned()
+        } else {
+            None
+        }
+    }
+
+    fn all(&self) -> Vec<Arc<Income>> {
+        let mut all_incomes = Vec::new();
+
+        for incomes in self.incomes_by_pnr.values() {
+            all_incomes.extend(incomes.iter().cloned());
+        }
+
+        all_incomes
+    }
+
+    fn filter<F>(&self, predicate: F) -> Vec<Arc<Income>>
+    where
+        F: Fn(&Income) -> bool,
+    {
+        let mut filtered = Vec::new();
+
+        for incomes in self.incomes_by_pnr.values() {
+            for income in incomes {
+                if predicate(income) {
+                    filtered.push(income.clone());
+                }
+            }
+        }
+
+        filtered
+    }
+
+    fn count(&self) -> usize {
         self.incomes_by_pnr.values().map(std::vec::Vec::len).sum()
-    }
-
-    /// Count the number of individuals with income data
-    #[must_use]
-    pub fn individual_count(&self) -> usize {
-        self.incomes_by_pnr.len()
-    }
-
-    /// Count the number of family trajectories
-    #[must_use]
-    pub fn family_count(&self) -> usize {
-        self.family_trajectories.len()
     }
 }

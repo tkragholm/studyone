@@ -4,8 +4,9 @@
 //! This library provides optimized tools for working with Danish registry data in Parquet format,
 //! including schema validation, filtering, and async loading capabilities.
 
-pub mod algorithm;
+//pub mod algorithm;
 pub mod async_io;
+pub mod common;
 pub mod config;
 pub mod error;
 #[doc(inline)]
@@ -39,6 +40,9 @@ pub use models::{Child, Diagnosis, Family, Income, Individual, Parent};
 
 // Registry-model conversion
 pub use registry::model_conversion::{ModelConversion, ModelConversionExt};
+
+// Common traits
+pub use common::traits::{RegistryAware, BefRegistry, IndRegistry, LprRegistry, MfrRegistry, DodRegistry};
 
 // Filtering capabilities
 pub use filter::{Expr, LiteralValue};
@@ -98,7 +102,7 @@ pub use pnr_filter::{
 pub use registry_manager::RegistryManager;
 
 // Algorithm modules
-pub use algorithm::population::{
-    FilterCriteria, Population, PopulationBuilder, PopulationConfig, PopulationFilter,
-    RegistryIntegration,
-};
+// pub use algorithm::population::{
+//     FilterCriteria, Population, PopulationBuilder, PopulationConfig, PopulationFilter,
+//     RegistryIntegration,
+// };

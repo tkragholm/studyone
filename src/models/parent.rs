@@ -8,47 +8,13 @@ use super::diagnosis::Diagnosis;
 use super::income::Income;
 use super::individual::Individual;
 use crate::error::Result;
+use crate::models::traits::{ArrowSchema, EntityModel, HealthStatus, ModelCollection};
+use crate::models::types::JobSituation;
 use arrow::datatypes::{DataType, Field, Schema};
 use arrow::record_batch::RecordBatch;
 use chrono::NaiveDate;
 use std::collections::HashMap;
 use std::sync::Arc;
-
-/// Job situation category
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum JobSituation {
-    /// Employed full-time
-    EmployedFullTime,
-    /// Employed part-time
-    EmployedPartTime,
-    /// Self-employed
-    SelfEmployed,
-    /// Unemployed
-    Unemployed,
-    /// Student
-    Student,
-    /// Retired
-    Retired,
-    /// On leave (e.g., parental leave, sick leave)
-    OnLeave,
-    /// Other or unknown job situation
-    Other,
-}
-
-impl From<i32> for JobSituation {
-    fn from(value: i32) -> Self {
-        match value {
-            1 => Self::EmployedFullTime,
-            2 => Self::EmployedPartTime,
-            3 => Self::SelfEmployed,
-            4 => Self::Unemployed,
-            5 => Self::Student,
-            6 => Self::Retired,
-            7 => Self::OnLeave,
-            _ => Self::Other,
-        }
-    }
-}
 
 /// A parent in the study with parental attributes
 #[derive(Debug, Clone)]
@@ -168,10 +134,40 @@ impl Parent {
             }
         })
     }
+}
 
+// Implement EntityModel trait
+impl EntityModel for Parent {
+    type Id = String;
+    
+    fn id(&self) -> &Self::Id {
+        &self.individual().pnr
+    }
+    
+    fn key(&self) -> String {
+        self.individual().pnr.clone()
+    }
+}
+
+// Delegate HealthStatus to the underlying Individual
+impl HealthStatus for Parent {
+    fn age_at(&self, reference_date: &NaiveDate) -> Option<i32> {
+        self.individual().age_at(reference_date)
+    }
+    
+    fn was_alive_at(&self, date: &NaiveDate) -> bool {
+        self.individual().was_alive_at(date)
+    }
+    
+    fn was_resident_at(&self, date: &NaiveDate) -> bool {
+        self.individual().was_resident_at(date)
+    }
+}
+
+// Implement ArrowSchema trait
+impl ArrowSchema for Parent {
     /// Get the Arrow schema for Parent records
-    #[must_use]
-    pub fn schema() -> Schema {
+    fn schema() -> Schema {
         Schema::new(vec![
             Field::new("pnr", DataType::Utf8, false),
             Field::new("employment_status", DataType::Boolean, false),
@@ -180,9 +176,14 @@ impl Parent {
             Field::new("pre_exposure_income", DataType::Float64, true),
         ])
     }
-
-    /// Convert a vector of Parent objects to a `RecordBatch`
-    pub fn to_record_batch(_parents: &[Self]) -> Result<RecordBatch> {
+    
+    fn from_record_batch(_batch: &RecordBatch) -> Result<Vec<Self>> {
+        // This would require having Individual objects available
+        // This functionality is implemented in parent_schema_constructors.rs
+        unimplemented!("Conversion from RecordBatch to Parent requires Individual objects")
+    }
+    
+    fn to_record_batch(_parents: &[Self]) -> Result<RecordBatch> {
         // Implementation of conversion to RecordBatch
         // This would create Arrow arrays for each field and then combine them
         // For brevity, this is left as a placeholder
@@ -191,16 +192,10 @@ impl Parent {
 }
 
 /// A collection of parents that can be efficiently queried
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct ParentCollection {
     /// Parents indexed by PNR
     parents: HashMap<String, Arc<Parent>>,
-}
-
-impl Default for ParentCollection {
-    fn default() -> Self {
-        Self::new()
-    }
 }
 
 impl ParentCollection {
@@ -210,37 +205,6 @@ impl ParentCollection {
         Self {
             parents: HashMap::new(),
         }
-    }
-
-    /// Add a parent to the collection
-    pub fn add_parent(&mut self, parent: Parent) {
-        let pnr = parent.individual().pnr.clone();
-        let parent_arc = Arc::new(parent);
-        self.parents.insert(pnr, parent_arc);
-    }
-
-    /// Get a parent by PNR
-    #[must_use]
-    pub fn get_parent(&self, pnr: &str) -> Option<Arc<Parent>> {
-        self.parents.get(pnr).cloned()
-    }
-
-    /// Get all parents in the collection
-    #[must_use]
-    pub fn all_parents(&self) -> Vec<Arc<Parent>> {
-        self.parents.values().cloned().collect()
-    }
-
-    /// Filter parents by a predicate function
-    pub fn filter<F>(&self, predicate: F) -> Vec<Arc<Parent>>
-    where
-        F: Fn(&Parent) -> bool,
-    {
-        self.parents
-            .values()
-            .filter(|parent| predicate(parent))
-            .cloned()
-            .collect()
     }
 
     /// Get employed parents
@@ -260,10 +224,48 @@ impl ParentCollection {
     pub fn parents_with_comorbidity(&self) -> Vec<Arc<Parent>> {
         self.filter(|parent| parent.has_comorbidity)
     }
-
-    /// Count total number of parents in the collection
+    
+    /// Get parents with specific job situation
     #[must_use]
-    pub fn count(&self) -> usize {
+    pub fn parents_by_job_situation(&self, situation: JobSituation) -> Vec<Arc<Parent>> {
+        self.filter(|parent| parent.job_situation == situation)
+    }
+    
+    /// Get parents with income above threshold
+    #[must_use]
+    pub fn parents_with_income_above(&self, threshold: f64) -> Vec<Arc<Parent>> {
+        self.filter(|parent| parent.pre_exposure_income.unwrap_or(0.0) > threshold)
+    }
+}
+
+// Implement ModelCollection trait
+impl ModelCollection<Parent> for ParentCollection {
+    fn add(&mut self, parent: Parent) {
+        let pnr = parent.individual().pnr.clone();
+        let parent_arc = Arc::new(parent);
+        self.parents.insert(pnr, parent_arc);
+    }
+
+    fn get(&self, id: &String) -> Option<Arc<Parent>> {
+        self.parents.get(id).cloned()
+    }
+
+    fn all(&self) -> Vec<Arc<Parent>> {
+        self.parents.values().cloned().collect()
+    }
+
+    fn filter<F>(&self, predicate: F) -> Vec<Arc<Parent>>
+    where
+        F: Fn(&Parent) -> bool,
+    {
+        self.parents
+            .values()
+            .filter(|parent| predicate(parent))
+            .cloned()
+            .collect()
+    }
+
+    fn count(&self) -> usize {
         self.parents.len()
     }
 }

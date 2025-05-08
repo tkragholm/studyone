@@ -53,7 +53,8 @@ pub struct DateRangeConfig {
 
 impl DateRangeConfig {
     /// Create a new date range configuration
-    #[must_use] pub fn new(
+    #[must_use]
+    pub fn new(
         start_date: Option<NaiveDate>,
         end_date: Option<NaiveDate>,
         date_column: &str,
@@ -66,7 +67,8 @@ impl DateRangeConfig {
     }
 
     /// Check if a date is within the configured range
-    #[must_use] pub fn is_in_range(&self, date: &NaiveDate) -> bool {
+    #[must_use]
+    pub fn is_in_range(&self, date: &NaiveDate) -> bool {
         // Check start date constraint
         if let Some(start) = self.start_date {
             if date < &start {
@@ -86,10 +88,12 @@ impl DateRangeConfig {
 }
 
 /// Convert Arrow Date32 value to `NaiveDate`
-#[must_use] pub fn arrow_date_to_naive_date(days_since_epoch: i32) -> NaiveDate {
+#[must_use]
+pub fn arrow_date_to_naive_date(days_since_epoch: i32) -> NaiveDate {
     // Using checked_add_days instead of + operator for compatibility with const fn
     let epoch = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap();
-    epoch.checked_add_days(chrono::Days::new(days_since_epoch as u64))
+    epoch
+        .checked_add_days(chrono::Days::new(days_since_epoch as u64))
         .unwrap_or(epoch)
 }
 
@@ -102,7 +106,8 @@ pub struct ColumnMappingConfig {
 
 impl ColumnMappingConfig {
     /// Create a new empty column mapping
-    #[must_use] pub fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self {
             mappings: HashMap::new(),
         }
@@ -115,12 +120,14 @@ impl ColumnMappingConfig {
     }
 
     /// Get the target column name for a source column
-    #[must_use] pub fn get_target(&self, source: &str) -> Option<&String> {
+    #[must_use]
+    pub fn get_target(&self, source: &str) -> Option<&String> {
         self.mappings.get(source)
     }
 
     /// Create a column mapping for LPR2 registry
-    #[must_use] pub fn lpr2_default() -> Self {
+    #[must_use]
+    pub fn lpr2_default() -> Self {
         let mut config = Self::new();
         config
             .add_mapping("PNR", "patient_id")
@@ -132,7 +139,8 @@ impl ColumnMappingConfig {
     }
 
     /// Create a column mapping for LPR3 registry
-    #[must_use] pub fn lpr3_default() -> Self {
+    #[must_use]
+    pub fn lpr3_default() -> Self {
         let mut config = Self::new();
         config
             .add_mapping("cpr", "patient_id")
@@ -260,7 +268,8 @@ pub struct BaseRegistry {
 
 impl BaseRegistry {
     /// Create a new base registry
-    #[must_use] pub const fn new(name: &'static str, schema: SchemaRef) -> Self {
+    #[must_use]
+    pub const fn new(name: &'static str, schema: SchemaRef) -> Self {
         Self { name, schema }
     }
 }
@@ -306,7 +315,8 @@ pub struct RegistryIntegrator {
 
 impl RegistryIntegrator {
     /// Create a new registry integrator
-    #[must_use] pub fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self {
             registries: HashMap::new(),
         }
@@ -320,7 +330,8 @@ impl RegistryIntegrator {
     }
 
     /// Get a registry by name
-    #[must_use] pub fn get_registry(&self, name: &str) -> Option<&Arc<dyn Registry>> {
+    #[must_use]
+    pub fn get_registry(&self, name: &str) -> Option<&Arc<dyn Registry>> {
         self.registries.get(name)
     }
 
@@ -340,7 +351,8 @@ impl RegistryIntegrator {
     }
 
     /// Load data from a registry asynchronously
-    #[must_use] pub fn load_registry_async<'a>(
+    #[must_use]
+    pub fn load_registry_async<'a>(
         &'a self,
         name: &'a str,
         path: &'a Path,
@@ -389,19 +401,19 @@ impl DateConversionExt for NaiveDate {
     }
 }
 
-/// Collect birth dates from a population
-///
-/// Creates a map from PNR to birth date for all individuals in the population
-/// which can be used for faster lookups in algorithms that need birth dates.
-#[must_use] pub fn collect_birth_dates(population: &crate::algorithm::population::Population) -> HashMap<String, NaiveDate> {
-    let mut birth_dates = HashMap::new();
+// /// Collect birth dates from a population
+// ///
+// /// Creates a map from PNR to birth date for all individuals in the population
+// /// which can be used for faster lookups in algorithms that need birth dates.
+// #[must_use] pub fn collect_birth_dates(population: &crate::algorithm::population::Population) -> HashMap<String, NaiveDate> {
+//     let mut birth_dates = HashMap::new();
 
-    // Extract individuals from the family collection
-    for individual in population.collection.get_individuals() {
-        if let Some(birthdate) = individual.birth_date {
-            birth_dates.insert(individual.pnr.clone(), birthdate);
-        }
-    }
+//     // Extract individuals from the family collection
+//     for individual in population.collection.get_individuals() {
+//         if let Some(birthdate) = individual.birth_date {
+//             birth_dates.insert(individual.pnr.clone(), birthdate);
+//         }
+//     }
 
-    birth_dates
-}
+//     birth_dates
+// }

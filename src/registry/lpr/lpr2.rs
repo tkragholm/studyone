@@ -113,7 +113,7 @@ impl RegisterLoader for LprAdmRegister {
 #[derive(Debug, Clone)]
 pub struct LprDiagRegister {
     schema: SchemaRef,
-    pnr_lookup: Option<std::collections::HashMap<String, String>>,
+    pub pnr_lookup: Option<std::collections::HashMap<String, String>>,
 }
 
 impl LprDiagRegister {
@@ -145,6 +145,7 @@ impl LprDiagRegister {
         self.pnr_lookup = Some(lookup);
     }
 }
+
 
 impl Default for LprDiagRegister {
     fn default() -> Self {

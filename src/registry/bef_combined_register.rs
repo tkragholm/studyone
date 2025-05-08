@@ -4,6 +4,7 @@
 
 use crate::error::Result;
 use crate::models::{Family, Individual};
+use crate::common::traits::BefRegistry;
 use arrow::record_batch::RecordBatch;
 use chrono::Datelike;
 
@@ -24,7 +25,8 @@ impl BefCombinedRegister {
     }
 
     /// Extract family relationships from a set of individuals
-    #[must_use] pub fn extract_relationships(
+    #[must_use]
+    pub fn extract_relationships(
         individuals: &[Individual],
     ) -> Vec<(String, (Option<String>, Option<String>, Vec<String>))> {
         let mut relationships = Vec::new();
