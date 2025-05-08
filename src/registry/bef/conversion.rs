@@ -2,7 +2,7 @@
 //!
 //! This module implements registry-specific conversions for BEF registry data.
 //! It provides trait implementations to convert from BEF registry format to domain models.
-//! It also provides compatibility with the old ModelConversion interface.
+//! It also provides compatibility with the old `ModelConversion` interface.
 
 use crate::RecordBatch;
 use crate::common::traits::BefRegistry;
