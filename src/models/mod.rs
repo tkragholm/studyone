@@ -15,7 +15,10 @@ pub mod parent;
 // Schema-aware model constructors (direct registry integration)
 pub mod child_schema_constructors;
 pub mod diagnosis_schema_constructors;
+pub mod family_schema_constructors;
 pub mod income_schema_constructors;
+pub mod individual_schema_constructors;
+pub mod parent_schema_constructors;
 
 // Re-export commonly used types
 pub use child::Child;

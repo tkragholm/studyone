@@ -238,7 +238,6 @@ impl RegistryIntegration {
             let pnr_lookup: HashMap<String, String> = HashMap::new();
 
             // Create the adapter with lookup
-            use crate::registry::lpr_model_conversion::PnrLookupRegistry;
             let mut adapter = LprDiagRegister::new();
             adapter.set_pnr_lookup(pnr_lookup);
 

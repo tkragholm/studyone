@@ -11,7 +11,7 @@ use crate::error::Result;
 use crate::models::child::Child;
 use crate::models::individual::Individual;
 use crate::registry::mfr::MfrRegister;
-use crate::registry::model_conversion::{ModelConversion, ModelConversionExt};
+use crate::registry::model_conversion::ModelConversion;
 use crate::registry::RegisterLoader;
 use arrow::record_batch::RecordBatch;
 
