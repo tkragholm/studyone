@@ -23,7 +23,7 @@ pub mod schema;
 pub mod utils;
 
 // Examples
-// pub mod examples;
+pub mod examples;
 
 // Re-export the most common types for easier use
 // Core types
@@ -73,7 +73,10 @@ pub use common::traits::{
     RegistryAdapter, StatefulAdapter, AdapterFactory, BatchProcessor, ModelLookup,
     // Collection traits
     ModelCollection, TemporalCollection, BatchCollection, LookupCollection, 
-    RelatedCollection, CacheableCollection
+    RelatedCollection, CacheableCollection,
+    // Async loading traits
+    AsyncLoader, AsyncFilterableLoader, AsyncPnrFilterableLoader, 
+    AsyncDirectoryLoader, AsyncParallelLoader
 };
 
 // Filtering capabilities
@@ -87,6 +90,8 @@ pub use utils::{DEFAULT_BATCH_SIZE, load_parquet_files_parallel, read_parquet};
 pub use async_io::{
     load_parquet_files_parallel_async, load_parquet_files_parallel_with_filter_async,
     read_parquet_async, read_parquet_with_filter_async,
+    // Standard async loaders
+    ParquetLoader, PnrFilterableLoader
 };
 pub use filter::async_filtering::read_parquet_with_pnr_filter_async;
 

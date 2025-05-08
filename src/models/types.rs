@@ -4,7 +4,7 @@
 //! domain models to ensure consistency and facilitate code reuse.
 
 /// Gender of an individual
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Gender {
     /// Male gender
     Male,

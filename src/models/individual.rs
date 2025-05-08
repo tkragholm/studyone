@@ -4,14 +4,14 @@
 //! An Individual represents any person in the study, and can be associated with various roles
 //! such as parent or child.
 
+use crate::common::traits::{BefRegistry, DodRegistry, IndRegistry, RegistryAware};
 use crate::error::Result;
 use crate::models::traits::{ArrowSchema, EntityModel, HealthStatus, TemporalValidity};
-use crate::common::traits::{RegistryAware, BefRegistry, IndRegistry, DodRegistry};
 use crate::models::types::{EducationLevel, Gender, Origin};
+use crate::utils::array_utils::{downcast_array, get_column};
 use arrow::array::{Array, BooleanArray, Date32Array, Int32Array, StringArray};
 use arrow::datatypes::{DataType, Field, Schema};
 use arrow::record_batch::RecordBatch;
-use crate::utils::array_utils::{get_column, downcast_array};
 use chrono::{Datelike, NaiveDate};
 use std::collections::HashMap;
 
@@ -66,7 +66,7 @@ impl Individual {
             immigration_date: None,
         }
     }
-    
+
     /// Create a lookup map from PNR to Individual
     #[must_use]
     pub fn create_pnr_lookup(individuals: &[Self]) -> HashMap<String, Self> {
@@ -81,11 +81,11 @@ impl Individual {
 // Implement EntityModel trait
 impl EntityModel for Individual {
     type Id = String;
-    
+
     fn id(&self) -> &Self::Id {
         &self.pnr
     }
-    
+
     fn key(&self) -> String {
         self.pnr.clone()
     }
@@ -96,15 +96,16 @@ impl TemporalValidity for Individual {
     fn was_valid_at(&self, date: &NaiveDate) -> bool {
         self.was_alive_at(date)
     }
-    
+
     fn valid_from(&self) -> NaiveDate {
-        self.birth_date.unwrap_or_else(|| NaiveDate::from_ymd_opt(1900, 1, 1).unwrap())
+        self.birth_date
+            .unwrap_or_else(|| NaiveDate::from_ymd_opt(1900, 1, 1).unwrap())
     }
-    
+
     fn valid_to(&self) -> Option<NaiveDate> {
         self.death_date
     }
-    
+
     fn snapshot_at(&self, date: &NaiveDate) -> Option<Self> {
         if self.was_valid_at(date) {
             Some(self.clone())
@@ -193,14 +194,14 @@ impl RegistryAware for Individual {
     fn registry_name() -> &'static str {
         "BEF" // Individual is primarily from BEF registry
     }
-    
+
     /// Create a model from a registry-specific record
     fn from_registry_record(batch: &RecordBatch, row: usize) -> Result<Option<Self>> {
         // Since Individual can come from multiple registries, delegate to specific implementations
         // Default to BEF registry format
         Self::from_bef_record(batch, row)
     }
-    
+
     /// Create models from an entire registry record batch
     fn from_registry_batch(batch: &RecordBatch) -> Result<Vec<Self>> {
         // Since Individual can come from multiple registries, delegate to specific implementations
@@ -256,11 +257,11 @@ impl IndRegistry for Individual {
             return Ok(None); // No PNR data
         }
         let pnr = pnr_array.value(row).to_string();
-        
+
         // For now, create a simple Individual with minimal data
         let gender = Gender::Unknown;
         let birth_date = None;
-        
+
         Ok(Some(Self::new(pnr, gender, birth_date)))
     }
 

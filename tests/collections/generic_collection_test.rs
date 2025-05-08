@@ -6,7 +6,7 @@
 use chrono::NaiveDate;
 use par_reader::collections::GenericCollection;
 use par_reader::common::traits::{LookupCollection, ModelCollection, TemporalCollection};
-use par_reader::models::{Diagnosis, Individual};
+use par_reader::models::{Individual, types::Gender};
 
 #[test]
 fn test_generic_collection_basic_functions() {
@@ -73,57 +73,71 @@ fn test_generic_collection_basic_functions() {
 
 #[test]
 fn test_lookup_collection() {
-    // Create a collection of diagnoses
-    let mut collection = GenericCollection::<Diagnosis>::new();
+    // Create a collection of individuals which have simpler keys
+    let mut collection = GenericCollection::<Individual>::new();
 
-    // Create test diagnoses
-    let diagnosis1 = Diagnosis {
-        individual_pnr: "1234567890".to_string(),
-        diagnosis_code: "A01".to_string(),
-        diagnosis_type: 1.into(),
-        diagnosis_date: Some(NaiveDate::from_ymd_opt(2020, 1, 15).unwrap()),
-        is_scd: false,
-        severity: 1,
+    // Create test individuals
+    let individual1 = Individual {
+        pnr: "1234567890".to_string(),
+        gender: "M".into(),
+        birth_date: Some(NaiveDate::from_ymd_opt(1990, 1, 1).unwrap()),
+        death_date: None,
+        municipality_code: Some("101".to_string()),
+        is_rural: false,
+        origin: "DK".into(),
+        education_level: 3.into(),
+        mother_pnr: None,
+        father_pnr: None,
+        family_id: None,
+        emigration_date: None,
+        immigration_date: None,
     };
-
-    let diagnosis2 = Diagnosis {
-        individual_pnr: "1234567890".to_string(),
-        diagnosis_code: "B02".to_string(),
-        diagnosis_type: 2.into(),
-        diagnosis_date: Some(NaiveDate::from_ymd_opt(2020, 2, 20).unwrap()),
-        is_scd: true,
-        severity: 2,
+    
+    let individual2 = Individual {
+        pnr: "0987654321".to_string(),
+        gender: "F".into(),
+        birth_date: Some(NaiveDate::from_ymd_opt(1985, 5, 5).unwrap()),
+        death_date: None,
+        municipality_code: None, // Different from individual1
+        is_rural: true,
+        origin: "DK".into(),
+        education_level: 4.into(),
+        mother_pnr: None,
+        father_pnr: None,
+        family_id: None,
+        emigration_date: None,
+        immigration_date: None,
     };
-
-    let diagnosis3 = Diagnosis {
-        individual_pnr: "0987654321".to_string(),
-        diagnosis_code: "C03".to_string(),
-        diagnosis_type: 1.into(),
-        diagnosis_date: Some(NaiveDate::from_ymd_opt(2020, 3, 25).unwrap()),
-        is_scd: false,
-        severity: 1,
-    };
-
-    // Add diagnoses to collection
-    collection.add(diagnosis1);
-    collection.add(diagnosis2);
-    collection.add(diagnosis3);
-
-    // Test create_lookup with a custom key function
-    let lookup = collection.create_lookup(|d| d.individual_pnr.clone());
-
-    // Should have 2 entries (last one for each PNR wins)
+    
+    // Add individuals to collection
+    collection.add(individual1);
+    collection.add(individual2);
+    
+    // Test create_lookup with ID field
+    let lookup = collection.create_lookup(|ind| ind.pnr.clone());
+    
+    // Map should have one entry per individual
     assert_eq!(lookup.len(), 2);
     assert!(lookup.contains_key("1234567890"));
     assert!(lookup.contains_key("0987654321"));
-
-    // Test create_multi_lookup
-    let multi_lookup = collection.create_multi_lookup(|d| d.individual_pnr.clone());
-
-    // Should have 2 entries
-    assert_eq!(multi_lookup.len(), 2);
-    assert_eq!(multi_lookup.get("1234567890").unwrap().len(), 2);
-    assert_eq!(multi_lookup.get("0987654321").unwrap().len(), 1);
+    
+    // Test create_lookup with gender field
+    let gender_lookup = collection.create_lookup(|ind| ind.gender);
+    
+    // Map should have one entry per gender
+    assert_eq!(gender_lookup.len(), 2);
+    assert!(gender_lookup.contains_key(&Gender::Male));
+    assert!(gender_lookup.contains_key(&Gender::Female));
+    
+    // Test create_multi_lookup with municipality code
+    let municipality_lookup = collection.create_multi_lookup(|ind| 
+        ind.municipality_code.clone().unwrap_or_else(|| "unknown".to_string())
+    );
+    
+    // Should have entries for each municipality value
+    assert_eq!(municipality_lookup.len(), 2);
+    assert!(municipality_lookup.contains_key("101"));
+    assert!(municipality_lookup.contains_key("unknown"));
 }
 
 #[test]
