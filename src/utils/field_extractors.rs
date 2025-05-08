@@ -183,6 +183,17 @@ pub fn extract_int32(
         }
     }
     
+    // Try with Int8 if Int32 is not available
+    let array_opt = get_column(batch, column_name, &DataType::Int8, required)?;
+    
+    if let Some(array) = array_opt {
+        let int_array = downcast_array::<Int8Array>(&array, column_name, "Int8")?;
+        
+        if row < int_array.len() && !int_array.is_null(row) {
+            return Ok(Some(int_array.value(row) as i32));
+        }
+    }
+    
     Ok(None)
 }
 

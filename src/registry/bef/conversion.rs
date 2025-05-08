@@ -11,7 +11,6 @@ use crate::models::Individual;
 use crate::models::traits::HealthStatus;
 use crate::models::types::{FamilyType, Gender};
 use crate::registry::{BefRegister, ModelConversion};
-use arrow::array::Array;
 use std::collections::HashMap;
 
 // Implementation of BEF registry conversion functions
@@ -19,9 +18,11 @@ use std::collections::HashMap;
 
 /// Convert a BEF registry record to an Individual model
 pub fn from_bef_record(batch: &RecordBatch, row: usize) -> Result<Option<Individual>> {
-    use crate::utils::field_extractors::{extract_string, extract_date32, extract_int8_as_padded_string};
-    use crate::models::types::Origin;
-    
+    use crate::models::types::{CitizenshipStatus, HousingType, MaritalStatus, Origin};
+    use crate::utils::field_extractors::{
+        extract_date32, extract_int32, extract_int8_as_padded_string, extract_string,
+    };
+
     // Extract PNR - required for identification
     let pnr = match extract_string(batch, row, "PNR", true)? {
         Some(pnr) => pnr,
@@ -64,13 +65,56 @@ pub fn from_bef_record(batch: &RecordBatch, row: usize) -> Result<Option<Individ
             } else {
                 Origin::NonWestern
             }
-        },
+        }
         None => Origin::Unknown,
     };
 
     // Extract municipality code
     let municipality_code = extract_int8_as_padded_string(batch, row, "KOM", false, 3)?;
-
+    
+    // Extract marital status
+    let marital_status = match extract_string(batch, row, "CIVST", false)? {
+        Some(status_code) => MaritalStatus::from(status_code.as_str()),
+        None => MaritalStatus::Unknown,
+    };
+    
+    // Extract citizenship status from STATSB field
+    let citizenship_status = match extract_int32(batch, row, "STATSB", false)? {
+        Some(code) => {
+            if code == 5100 {
+                CitizenshipStatus::Danish
+            } else if (5001..=5999).contains(&code) {
+                CitizenshipStatus::EuropeanUnion
+            } else {
+                CitizenshipStatus::NonEUWithResidence
+            }
+        },
+        None => CitizenshipStatus::Unknown,
+    };
+    
+    // Extract housing type from HUSTYPE field
+    let housing_type = match extract_int32(batch, row, "HUSTYPE", false)? {
+        Some(code) => match code {
+            1 => HousingType::SingleFamilyHouse,
+            2 => HousingType::Apartment,
+            3 => HousingType::TerracedHouse,
+            4 => HousingType::Dormitory,
+            5 => HousingType::Institution,
+            _ => HousingType::Other,
+        },
+        None => HousingType::Unknown,
+    };
+    
+    // Extract household size from ANTPERSF or ANTPERSH field
+    let household_size = match (
+        extract_int32(batch, row, "ANTPERSF", false)?,
+        extract_int32(batch, row, "ANTPERSH", false)?,
+    ) {
+        (Some(family_size), _) => Some(family_size),
+        (None, Some(household_size)) => Some(household_size),
+        _ => None,
+    };
+    
     // Create a new Individual with all extracted data
     let mut individual = Individual::new(pnr, gender, birth_date);
     individual.family_id = family_id;
@@ -78,7 +122,21 @@ pub fn from_bef_record(batch: &RecordBatch, row: usize) -> Result<Option<Individ
     individual.father_pnr = father_pnr;
     individual.origin = origin;
     individual.municipality_code = municipality_code;
-    // Default other fields that we don't populate from BEF
+    
+    // Set additional demographic information fields
+    individual.marital_status = marital_status;
+    individual.citizenship_status = citizenship_status;
+    individual.housing_type = housing_type;
+    individual.household_size = household_size;
+    
+    // Set is_rural field based on municipality code
+    // This is a simplified approximation - in a real implementation, 
+    // this would use a proper lookup table of rural municipalities
+    if let Some(code) = &individual.municipality_code {
+        let code_num = code.parse::<i32>().unwrap_or(0);
+        // Rural areas often have municipality codes in specific ranges
+        individual.is_rural = !(400..=600).contains(&code_num);
+    }
 
     Ok(Some(individual))
 }

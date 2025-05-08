@@ -66,7 +66,7 @@ impl ModelConversion<Individual> for DodRegister {
         unimplemented!("Conversion from Individual to DOD record batch not implemented")
     }
 
-    fn transform_models(&self, models: &mut [Individual]) -> Result<()> {
+    fn transform_models(&self, _models: &mut [Individual]) -> Result<()> {
         // Load the DOD registry and enhance models with death information
         // This would need to be implemented in a way that accesses the actual data
         // Here we just provide a placeholder

@@ -287,3 +287,204 @@ impl From<i32> for FamilyType {
         }
     }
 }
+
+/// Marital status according to Danish registries
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MaritalStatus {
+    /// Unmarried
+    Unmarried,
+    /// Married
+    Married,
+    /// Divorced
+    Divorced,
+    /// Widowed
+    Widowed,
+    /// Registered partnership (similar to marriage)
+    RegisteredPartnership,
+    /// Dissolved partnership
+    DissolvedPartnership,
+    /// Longest living partner (widow/widower from registered partnership)
+    LongestLivingPartner,
+    /// Unknown or not specified
+    Unknown,
+}
+
+impl From<&str> for MaritalStatus {
+    fn from(s: &str) -> Self {
+        match s.trim().to_uppercase().as_str() {
+            "U" => Self::Unmarried,
+            "G" => Self::Married,
+            "F" => Self::Divorced,
+            "E" => Self::Widowed,
+            "P" => Self::RegisteredPartnership,
+            "O" => Self::DissolvedPartnership,
+            "L" => Self::LongestLivingPartner,
+            _ => Self::Unknown,
+        }
+    }
+}
+
+impl From<i32> for MaritalStatus {
+    fn from(value: i32) -> Self {
+        match value {
+            1 => Self::Unmarried,
+            2 => Self::Married,
+            3 => Self::Divorced,
+            4 => Self::Widowed,
+            5 => Self::RegisteredPartnership,
+            6 => Self::DissolvedPartnership,
+            7 => Self::LongestLivingPartner,
+            _ => Self::Unknown,
+        }
+    }
+}
+
+/// Citizenship status
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CitizenshipStatus {
+    /// Danish citizen
+    Danish,
+    /// EU/EEA citizen
+    EuropeanUnion,
+    /// Non-EU foreigner with residence permit
+    NonEUWithResidence,
+    /// Foreign with temporary permit
+    TemporaryPermit,
+    /// Stateless
+    Stateless,
+    /// Unknown or not specified
+    Unknown,
+}
+
+impl From<i32> for CitizenshipStatus {
+    fn from(value: i32) -> Self {
+        match value {
+            1 => Self::Danish,
+            2 => Self::EuropeanUnion,
+            3 => Self::NonEUWithResidence,
+            4 => Self::TemporaryPermit,
+            5 => Self::Stateless,
+            _ => Self::Unknown,
+        }
+    }
+}
+
+/// Housing type categories
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HousingType {
+    /// Single-family house
+    SingleFamilyHouse,
+    /// Apartment
+    Apartment,
+    /// Terraced house or townhouse
+    TerracedHouse,
+    /// Dormitory or student housing
+    Dormitory,
+    /// Institution (care home, etc.)
+    Institution,
+    /// Other or unspecified
+    Other,
+    /// Unknown
+    Unknown,
+}
+
+impl From<i32> for HousingType {
+    fn from(value: i32) -> Self {
+        match value {
+            1 => Self::SingleFamilyHouse,
+            2 => Self::Apartment,
+            3 => Self::TerracedHouse,
+            4 => Self::Dormitory,
+            5 => Self::Institution,
+            6 => Self::Other,
+            _ => Self::Unknown,
+        }
+    }
+}
+
+/// Socioeconomic status classification
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SocioeconomicStatus {
+    /// Self-employed with employees
+    SelfEmployedWithEmployees,
+    /// Self-employed without employees
+    SelfEmployedWithoutEmployees,
+    /// Top-level employee (management)
+    TopLevelEmployee,
+    /// Medium-level employee (professionals)
+    MediumLevelEmployee,
+    /// Basic-level employee (clerical, service, etc.)
+    BasicLevelEmployee,
+    /// Other employees
+    OtherEmployee,
+    /// Unemployed
+    Unemployed,
+    /// Student
+    Student,
+    /// Pensioner
+    Pensioner,
+    /// Other not economically active
+    OtherInactive,
+    /// Unknown
+    Unknown,
+}
+
+impl From<i32> for SocioeconomicStatus {
+    fn from(value: i32) -> Self {
+        match value {
+            1 => Self::SelfEmployedWithEmployees,
+            2 => Self::SelfEmployedWithoutEmployees,
+            3 => Self::TopLevelEmployee,
+            4 => Self::MediumLevelEmployee,
+            5 => Self::BasicLevelEmployee,
+            6 => Self::OtherEmployee,
+            7 => Self::Unemployed,
+            8 => Self::Student,
+            9 => Self::Pensioner,
+            10 => Self::OtherInactive,
+            _ => Self::Unknown,
+        }
+    }
+}
+
+/// Primary field of education
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EducationField {
+    /// General education (non-specialized)
+    General,
+    /// Education (teaching)
+    Education,
+    /// Humanities and arts
+    HumanitiesArts,
+    /// Social sciences, business, law
+    SocialScienceBusinessLaw,
+    /// Science, mathematics, computing
+    ScienceMathematicsComputing,
+    /// Engineering, manufacturing, construction
+    EngineeringManufacturingConstruction,
+    /// Agriculture and veterinary
+    AgricultureVeterinary,
+    /// Health and welfare
+    HealthWelfare,
+    /// Services
+    Services,
+    /// Unknown or not specified
+    Unknown,
+}
+
+impl From<i32> for EducationField {
+    fn from(value: i32) -> Self {
+        match value {
+            0 => Self::General,
+            1 => Self::Education,
+            2 => Self::HumanitiesArts,
+            3 => Self::SocialScienceBusinessLaw,
+            4 => Self::ScienceMathematicsComputing,
+            5 => Self::EngineeringManufacturingConstruction,
+            6 => Self::AgricultureVeterinary,
+            7 => Self::HealthWelfare,
+            8 => Self::Services,
+            _ => Self::Unknown,
+        }
+    }
+}
