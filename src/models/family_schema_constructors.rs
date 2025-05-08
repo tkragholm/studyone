@@ -145,7 +145,7 @@ impl Family {
         }
     }
     
-    /// Extract valid_from date from BEF record
+    /// Extract `valid_from` date from BEF record
     fn extract_valid_from(
         batch: &RecordBatch,
         row: usize,
@@ -171,7 +171,7 @@ impl Family {
         }
     }
     
-    /// Extract valid_to date from BEF record
+    /// Extract `valid_to` date from BEF record
     fn extract_valid_to(
         batch: &RecordBatch,
         row: usize,
@@ -207,21 +207,17 @@ impl Family {
             Err(_) => return Ok(None), // Column not found
         };
 
-        let code_array = match downcast_array::<StringArray>(batch.column(code_idx), "KOM", "String") {
-            Ok(arr) => arr,
-            Err(_) => {
-                // Try as Int32 if not String
-                let int_array = match downcast_array::<Int32Array>(batch.column(code_idx), "KOM", "Int32") {
-                    Ok(arr) => arr,
-                    Err(_) => return Ok(None), // Invalid data type
-                };
-                
-                if row < int_array.len() && !int_array.is_null(row) {
-                    return Ok(Some(int_array.value(row).to_string()));
-                } else {
-                    return Ok(None);
-                }
+        let code_array = if let Ok(arr) = downcast_array::<StringArray>(batch.column(code_idx), "KOM", "String") { arr } else {
+            // Try as Int32 if not String
+            let int_array = match downcast_array::<Int32Array>(batch.column(code_idx), "KOM", "Int32") {
+                Ok(arr) => arr,
+                Err(_) => return Ok(None), // Invalid data type
+            };
+            
+            if row < int_array.len() && !int_array.is_null(row) {
+                return Ok(Some(int_array.value(row).to_string()));
             }
+            return Ok(None);
         };
 
         if row < code_array.len() && !code_array.is_null(row) {
@@ -241,21 +237,17 @@ impl Family {
             Err(_) => return Ok(None), // Column not found
         };
 
-        let rural_array = match downcast_array::<BooleanArray>(batch.column(rural_idx), "IS_RURAL", "Boolean") {
-            Ok(arr) => arr,
-            Err(_) => {
-                // Try as Int32 if not Boolean
-                let int_array = match downcast_array::<Int32Array>(batch.column(rural_idx), "IS_RURAL", "Int32") {
-                    Ok(arr) => arr,
-                    Err(_) => return Ok(None), // Invalid data type
-                };
-                
-                if row < int_array.len() && !int_array.is_null(row) {
-                    return Ok(Some(int_array.value(row) == 1));
-                } else {
-                    return Ok(None);
-                }
+        let rural_array = if let Ok(arr) = downcast_array::<BooleanArray>(batch.column(rural_idx), "IS_RURAL", "Boolean") { arr } else {
+            // Try as Int32 if not Boolean
+            let int_array = match downcast_array::<Int32Array>(batch.column(rural_idx), "IS_RURAL", "Int32") {
+                Ok(arr) => arr,
+                Err(_) => return Ok(None), // Invalid data type
+            };
+            
+            if row < int_array.len() && !int_array.is_null(row) {
+                return Ok(Some(int_array.value(row) == 1));
             }
+            return Ok(None);
         };
 
         if row < rural_array.len() && !rural_array.is_null(row) {
@@ -329,7 +321,7 @@ impl Family {
         
         // Try individual columns for each child (up to 5 for this example)
         for i in 1..=5 {
-            let col_name = format!("BARN{}_PNR", i);
+            let col_name = format!("BARN{i}_PNR");
             if let Ok(idx) = batch.schema().index_of(&col_name) {
                 if let Ok(pnr_array) = downcast_array::<StringArray>(batch.column(idx), &col_name, "String") {
                     if row < pnr_array.len() && !pnr_array.is_null(row) {
@@ -347,12 +339,12 @@ impl Family {
         let mother_has_comorbidity = family
             .mother
             .as_ref()
-            .map_or(false, |m| m.has_comorbidity);
+            .is_some_and(|m| m.has_comorbidity);
             
         let father_has_comorbidity = family
             .father
             .as_ref()
-            .map_or(false, |f| f.has_comorbidity);
+            .is_some_and(|f| f.has_comorbidity);
             
         family.has_parental_comorbidity = mother_has_comorbidity || father_has_comorbidity;
     }
@@ -367,21 +359,17 @@ impl Family {
             Err(_) => return Ok(None), // Column not found
         };
 
-        let support_array = match downcast_array::<BooleanArray>(batch.column(support_idx), "HAS_SUPPORT", "Boolean") {
-            Ok(arr) => arr,
-            Err(_) => {
-                // Try as Int32 if not Boolean
-                let int_array = match downcast_array::<Int32Array>(batch.column(support_idx), "HAS_SUPPORT", "Int32") {
-                    Ok(arr) => arr,
-                    Err(_) => return Ok(None), // Invalid data type
-                };
-                
-                if row < int_array.len() && !int_array.is_null(row) {
-                    return Ok(Some(int_array.value(row) == 1));
-                } else {
-                    return Ok(None);
-                }
+        let support_array = if let Ok(arr) = downcast_array::<BooleanArray>(batch.column(support_idx), "HAS_SUPPORT", "Boolean") { arr } else {
+            // Try as Int32 if not Boolean
+            let int_array = match downcast_array::<Int32Array>(batch.column(support_idx), "HAS_SUPPORT", "Int32") {
+                Ok(arr) => arr,
+                Err(_) => return Ok(None), // Invalid data type
+            };
+            
+            if row < int_array.len() && !int_array.is_null(row) {
+                return Ok(Some(int_array.value(row) == 1));
             }
+            return Ok(None);
         };
 
         if row < support_array.len() && !support_array.is_null(row) {

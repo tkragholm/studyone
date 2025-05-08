@@ -136,7 +136,7 @@ impl LprDiagRegister {
     }
     
     /// Get the PNR lookup for this registry
-    pub fn get_pnr_lookup(&self) -> Option<std::collections::HashMap<String, String>> {
+    #[must_use] pub fn get_pnr_lookup(&self) -> Option<std::collections::HashMap<String, String>> {
         self.pnr_lookup.clone()
     }
     

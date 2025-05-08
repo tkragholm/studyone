@@ -25,7 +25,7 @@ pub struct MfrChildRegister {
 
 impl MfrChildRegister {
     /// Create a new MFR Child register with an empty individual lookup
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         Self {
             base_register: MfrRegister::new(),
             individual_lookup: HashMap::new(),
@@ -33,7 +33,7 @@ impl MfrChildRegister {
     }
     
     /// Create a new MFR Child register with a provided individual lookup
-    pub fn new_with_lookup(lookup: HashMap<String, Arc<Individual>>) -> Self {
+    #[must_use] pub fn new_with_lookup(lookup: HashMap<String, Arc<Individual>>) -> Self {
         Self {
             base_register: MfrRegister::new(),
             individual_lookup: lookup,
@@ -60,12 +60,12 @@ impl MfrChildRegister {
     }
     
     /// Get a reference to the base register
-    pub fn base_register(&self) -> &MfrRegister {
+    #[must_use] pub fn base_register(&self) -> &MfrRegister {
         &self.base_register
     }
     
     /// Get a reference to the individual lookup
-    pub fn get_individual_lookup(&self) -> &HashMap<String, Arc<Individual>> {
+    #[must_use] pub fn get_individual_lookup(&self) -> &HashMap<String, Arc<Individual>> {
         &self.individual_lookup
     }
 }

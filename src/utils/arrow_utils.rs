@@ -36,7 +36,7 @@ pub fn arrow_array_to_string(array: &ArrayRef, index: usize) -> Option<String> {
 }
 
 /// Convert Arrow Date32 value to `NaiveDate`
-pub fn arrow_date_to_naive_date(days_since_epoch: i32) -> NaiveDate {
+#[must_use] pub fn arrow_date_to_naive_date(days_since_epoch: i32) -> NaiveDate {
     // Using a non-const approach for the date calculation
     let epoch = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap();
     epoch

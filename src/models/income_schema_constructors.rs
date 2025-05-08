@@ -140,7 +140,7 @@ impl Income {
         let total_array_opt = get_column(batch, "PERINDKIALT_13", &DataType::Float64, false)?;
         let total_income = match &total_array_opt {
             Some(array) => {
-                let float_array = downcast_array::<Float64Array>(&array, "PERINDKIALT_13", "Float64")?;
+                let float_array = downcast_array::<Float64Array>(array, "PERINDKIALT_13", "Float64")?;
                 if row < float_array.len() && !float_array.is_null(row) {
                     float_array.value(row)
                 } else {
@@ -154,7 +154,7 @@ impl Income {
         let salary_array_opt = get_column(batch, "LOENMV_13", &DataType::Float64, false)?;
         let salary_income = match &salary_array_opt {
             Some(array) => {
-                let float_array = downcast_array::<Float64Array>(&array, "LOENMV_13", "Float64")?;
+                let float_array = downcast_array::<Float64Array>(array, "LOENMV_13", "Float64")?;
                 if row < float_array.len() && !float_array.is_null(row) {
                     float_array.value(row)
                 } else {

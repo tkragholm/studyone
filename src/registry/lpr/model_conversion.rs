@@ -8,7 +8,7 @@ use crate::error::Result;
 use crate::models::diagnosis::{Diagnosis, ScdCriteria, ScdResult};
 use crate::RecordBatch;
 
-/// ModelConversion implementation for LPR2 DIAG registry
+/// `ModelConversion` implementation for LPR2 DIAG registry
 impl ModelConversion<Diagnosis> for LprDiagRegister {
     /// Convert LPR2 DIAG registry data to Diagnosis domain models
     ///
@@ -23,12 +23,9 @@ impl ModelConversion<Diagnosis> for LprDiagRegister {
     ///
     /// * `Result<Vec<Diagnosis>>` - The created Diagnosis models or an error
     fn to_models(&self, batch: &RecordBatch) -> Result<Vec<Diagnosis>> {
-        let pnr_lookup = match self.get_pnr_lookup() {
-            Some(lookup) => lookup,
-            None => {
-                log::warn!("No PNR lookup set for LprDiagRegister, cannot convert to models");
-                return Ok(Vec::new());
-            }
+        let pnr_lookup = if let Some(lookup) = self.get_pnr_lookup() { lookup } else {
+            log::warn!("No PNR lookup set for LprDiagRegister, cannot convert to models");
+            return Ok(Vec::new());
         };
         
         // Use the SCD criteria for classification
@@ -68,7 +65,7 @@ impl ModelConversion<Diagnosis> for LprDiagRegister {
     }
 }
 
-/// ModelConversion implementation for LPR3 DIAGNOSER registry
+/// `ModelConversion` implementation for LPR3 DIAGNOSER registry
 impl ModelConversion<Diagnosis> for Lpr3DiagnoserRegister {
     /// Convert LPR3 DIAGNOSER registry data to Diagnosis domain models
     ///
@@ -83,12 +80,9 @@ impl ModelConversion<Diagnosis> for Lpr3DiagnoserRegister {
     ///
     /// * `Result<Vec<Diagnosis>>` - The created Diagnosis models or an error
     fn to_models(&self, batch: &RecordBatch) -> Result<Vec<Diagnosis>> {
-        let pnr_lookup = match self.get_pnr_lookup() {
-            Some(lookup) => lookup,
-            None => {
-                log::warn!("No PNR lookup set for Lpr3DiagnoserRegister, cannot convert to models");
-                return Ok(Vec::new());
-            }
+        let pnr_lookup = if let Some(lookup) = self.get_pnr_lookup() { lookup } else {
+            log::warn!("No PNR lookup set for Lpr3DiagnoserRegister, cannot convert to models");
+            return Ok(Vec::new());
         };
         
         // Use the SCD criteria for classification

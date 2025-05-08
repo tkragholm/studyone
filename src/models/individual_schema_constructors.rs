@@ -313,21 +313,17 @@ impl Individual {
             }
         };
 
-        let family_array = match downcast_array::<StringArray>(batch.column(family_idx), "Family ID", "String") {
-            Ok(arr) => arr,
-            Err(_) => {
-                // Try as integer
-                let int_array = match downcast_array::<Int32Array>(batch.column(family_idx), "Family ID", "Int32") {
-                    Ok(arr) => arr,
-                    Err(_) => return Ok(None), // Invalid data type
-                };
-                
-                if row < int_array.len() && !int_array.is_null(row) {
-                    return Ok(Some(int_array.value(row).to_string()));
-                } else {
-                    return Ok(None);
-                }
+        let family_array = if let Ok(arr) = downcast_array::<StringArray>(batch.column(family_idx), "Family ID", "String") { arr } else {
+            // Try as integer
+            let int_array = match downcast_array::<Int32Array>(batch.column(family_idx), "Family ID", "Int32") {
+                Ok(arr) => arr,
+                Err(_) => return Ok(None), // Invalid data type
+            };
+            
+            if row < int_array.len() && !int_array.is_null(row) {
+                return Ok(Some(int_array.value(row).to_string()));
             }
+            return Ok(None);
         };
 
         if row < family_array.len() && !family_array.is_null(row) {
@@ -396,7 +392,7 @@ impl Individual {
     }
     
     /// Create a mapping from PNR to Individual from a collection of individuals
-    pub fn create_pnr_lookup(individuals: &[Individual]) -> HashMap<String, Individual> {
+    #[must_use] pub fn create_pnr_lookup(individuals: &[Individual]) -> HashMap<String, Individual> {
         let mut lookup = HashMap::with_capacity(individuals.len());
         for individual in individuals {
             lookup.insert(individual.pnr.clone(), individual.clone());

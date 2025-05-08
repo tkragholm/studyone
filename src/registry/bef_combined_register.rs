@@ -24,7 +24,7 @@ impl BefCombinedRegister {
     }
 
     /// Extract family relationships from a set of individuals
-    pub fn extract_relationships(
+    #[must_use] pub fn extract_relationships(
         individuals: &[Individual],
     ) -> Vec<(String, (Option<String>, Option<String>, Vec<String>))> {
         let mut relationships = Vec::new();
@@ -53,16 +53,16 @@ impl BefCombinedRegister {
                 // In a complete implementation, we would use proper role flags
                 // For now, use gender and age to infer roles
                 if member.gender == "F".into()
-                    && member.birth_date.map_or(false, |bd| bd.year() < 1990)
+                    && member.birth_date.is_some_and(|bd| bd.year() < 1990)
                 {
                     // Assume adult females are mothers
                     mother_pnr = Some(member.pnr.clone());
                 } else if member.gender == "M".into()
-                    && member.birth_date.map_or(false, |bd| bd.year() < 1990)
+                    && member.birth_date.is_some_and(|bd| bd.year() < 1990)
                 {
                     // Assume adult males are fathers
                     father_pnr = Some(member.pnr.clone());
-                } else if member.birth_date.map_or(false, |bd| bd.year() >= 1990) {
+                } else if member.birth_date.is_some_and(|bd| bd.year() >= 1990) {
                     // Assume anyone born after 1990 is a child
                     children_pnrs.push(member.pnr.clone());
                 }

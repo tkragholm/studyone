@@ -12,10 +12,10 @@ use crate::Result;
 /// This trait enables registry types to directly convert their data to domain models
 /// and vice versa, reducing the need for separate adapter modules.
 pub trait ModelConversion<T> {
-    /// Convert a RecordBatch from this registry to a vector of domain models
+    /// Convert a `RecordBatch` from this registry to a vector of domain models
     fn to_models(&self, batch: &RecordBatch) -> Result<Vec<T>>;
     
-    /// Convert domain models back to a RecordBatch conforming to this registry's schema
+    /// Convert domain models back to a `RecordBatch` conforming to this registry's schema
     fn from_models(&self, models: &[T]) -> Result<RecordBatch>;
     
     /// Apply additional transformations to models if needed

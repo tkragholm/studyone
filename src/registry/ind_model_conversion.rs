@@ -42,7 +42,7 @@ impl ModelConversion<Income> for IndRegister {
     }
 }
 
-/// IndRegister with year configuration
+/// `IndRegister` with year configuration
 pub struct YearConfiguredIndRegister {
     /// Base register
     base_register: IndRegister,
@@ -54,7 +54,7 @@ pub struct YearConfiguredIndRegister {
 
 impl YearConfiguredIndRegister {
     /// Create a new year-configured IND register
-    pub fn new(year: i32) -> Self {
+    #[must_use] pub fn new(year: i32) -> Self {
         Self {
             base_register: IndRegister::new(),
             year,
@@ -63,18 +63,18 @@ impl YearConfiguredIndRegister {
     }
     
     /// Set CPI indices for inflation adjustment
-    pub fn with_cpi_indices(mut self, indices: HashMap<i32, f64>) -> Self {
+    #[must_use] pub fn with_cpi_indices(mut self, indices: HashMap<i32, f64>) -> Self {
         self.cpi_indices = Some(indices);
         self
     }
     
     /// Get the configured year
-    pub fn year(&self) -> i32 {
+    #[must_use] pub fn year(&self) -> i32 {
         self.year
     }
     
     /// Get reference to base register
-    pub fn base_register(&self) -> &IndRegister {
+    #[must_use] pub fn base_register(&self) -> &IndRegister {
         &self.base_register
     }
 }
