@@ -5,6 +5,7 @@
 //! including schema validation, filtering, and async loading capabilities.
 
 //pub mod algorithm;
+pub mod adapters;
 pub mod async_io;
 pub mod common;
 pub mod config;
@@ -41,8 +42,27 @@ pub use models::{Child, Diagnosis, Family, Income, Individual, Parent};
 // Registry-model conversion
 pub use registry::model_conversion::{ModelConversion, ModelConversionExt};
 
+// Unified adapters
+pub use adapters::{
+    // Adapter factory and utils
+    AdapterFactoryImpl, create_lookup_with,
+    // BEF adapters
+    BefIndividualAdapter, BefFamilyAdapter, BefCombinedAdapter,
+    // IND adapters
+    IndIncomeAdapter,
+    // LPR adapters
+    LprDiagnosisAdapter,
+    // MFR adapters
+    MfrChildAdapter,
+};
+
 // Common traits
-pub use common::traits::{RegistryAware, BefRegistry, IndRegistry, LprRegistry, MfrRegistry, DodRegistry};
+pub use common::traits::{
+    // Registry conversion traits
+    RegistryAware, BefRegistry, IndRegistry, LprRegistry, MfrRegistry, DodRegistry,
+    // Adapter traits
+    RegistryAdapter, StatefulAdapter, AdapterFactory, BatchProcessor, ModelLookup
+};
 
 // Filtering capabilities
 pub use filter::{Expr, LiteralValue};
