@@ -1,7 +1,8 @@
-//! IND registry model conversion implementation
+//! IND registry model conversions
 //!
-//! This module implements direct conversion between IND registry data and
-//! Income domain models using the registry trait system.
+//! This module implements registry-specific conversions for IND registry data.
+//! It provides trait implementations to convert from IND registry format to domain models.
+//! It also implements the conversion between IND registry data and Income domain models.
 
 use std::collections::{HashMap, HashSet};
 use std::future::Future;
@@ -9,13 +10,13 @@ use std::path::Path;
 use std::pin::Pin;
 use std::sync::Arc;
 
+use crate::RecordBatch;
+use crate::common::traits::{IndRegistry, RegistryAware};
 use crate::error::Result;
 use crate::models::income::Income;
-use crate::common::traits::RegistryAware;
 use crate::registry::RegisterLoader;
 use crate::registry::ind::IndRegister;
 use crate::registry::model_conversion::ModelConversion;
-use arrow::record_batch::RecordBatch;
 
 impl ModelConversion<Income> for IndRegister {
     /// Convert IND registry data to Income models
@@ -41,6 +42,9 @@ impl ModelConversion<Income> for IndRegister {
         Ok(())
     }
 }
+
+// IndRegistry for Individual is already implemented in models/individual.rs
+// We don't need to implement it here again
 
 /// `IndRegister` with year configuration
 pub struct YearConfiguredIndRegister {
@@ -143,14 +147,14 @@ impl ModelConversion<Income> for YearConfiguredIndRegister {
         // Use trait-based implementation and apply year adjustment if needed
         use crate::common::traits::IndRegistry;
         let mut incomes = Income::from_ind_batch(batch)?;
-        
+
         // If the year is different from the default, adjust it
         if self.year != 2020 {
             for income in &mut incomes {
                 income.year = self.year;
             }
         }
-        
+
         Ok(incomes)
     }
 

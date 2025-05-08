@@ -5,18 +5,16 @@
 mod register;
 pub use register::BefCombinedRegister;
 
-pub mod schema;
 pub mod conversion;
+pub mod schema;
 
 use super::RegisterLoader;
-use schema::bef_schema;
 use crate::RecordBatch;
 use crate::Result;
-use crate::common::traits::{
-    AsyncDirectoryLoader, AsyncPnrFilterableLoader
-};
 use crate::async_io::loader::PnrFilterableLoader;
+use crate::common::traits::{AsyncDirectoryLoader, AsyncPnrFilterableLoader};
 use arrow::datatypes::SchemaRef;
+use schema::bef_schema;
 use std::collections::HashSet;
 use std::future::Future;
 use std::path::Path;
@@ -36,9 +34,8 @@ impl BefRegister {
     #[must_use]
     pub fn new() -> Self {
         let schema = bef_schema();
-        let loader = PnrFilterableLoader::with_schema_ref(schema.clone())
-            .with_pnr_column("PNR");
-        
+        let loader = PnrFilterableLoader::with_schema_ref(schema.clone()).with_pnr_column("PNR");
+
         Self {
             schema,
             loader: Arc::new(loader),
@@ -78,12 +75,14 @@ impl RegisterLoader for BefRegister {
     ) -> Result<Vec<RecordBatch>> {
         // Create a blocking runtime to run the async code
         let rt = tokio::runtime::Runtime::new()?;
-        
+
         // Use the trait implementation to load data
         rt.block_on(async {
             if let Some(filter) = pnr_filter {
                 // Use the PNR filter loader if a filter is provided
-                self.loader.load_with_pnr_filter_async(base_path, Some(filter)).await
+                self.loader
+                    .load_with_pnr_filter_async(base_path, Some(filter))
+                    .await
             } else {
                 // Otherwise use the directory loader
                 self.loader.load_directory_async(base_path).await
@@ -107,7 +106,8 @@ impl RegisterLoader for BefRegister {
         // Use the trait-based loader directly for async operations
         if let Some(filter) = pnr_filter {
             // Use the PNR filter loader if a filter is provided
-            self.loader.load_with_pnr_filter_async(base_path, Some(filter))
+            self.loader
+                .load_with_pnr_filter_async(base_path, Some(filter))
         } else {
             // Otherwise use the directory loader
             self.loader.load_directory_async(base_path)
@@ -122,50 +122,5 @@ impl RegisterLoader for BefRegister {
     /// Returns the column name containing the PNR
     fn get_pnr_column_name(&self) -> Option<&'static str> {
         Some("PNR")
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::filter::{Expr, FilterBuilder};
-    use std::path::PathBuf;
-
-    #[tokio::test]
-    async fn test_bef_basic_loading() -> Result<()> {
-        let register = BefRegister::new();
-        let test_path = PathBuf::from("test_data/bef");
-        
-        let result = register.load_async(&test_path, None).await?;
-        
-        println!("Loaded {} batches from BEF register", result.len());
-        println!("Total rows: {}", result.iter().map(|b| b.num_rows()).sum::<usize>());
-        
-        Ok(())
-    }
-    
-    #[tokio::test]
-    async fn test_bef_filtering() -> Result<()> {
-        let register = BefRegister::new();
-        let test_path = PathBuf::from("test_data/bef");
-        
-        // Create an expression filter
-        let age_filter = Expr::Gt("AGE".to_string(), 18.into());
-        let gender_filter = Expr::Eq("GENDER".to_string(), "F".into());
-        
-        // Combine filters
-        let combined_expr = FilterBuilder::from_expr(age_filter)
-            .and_expr(gender_filter)
-            .build();
-        
-        // Use the filter with the loader
-        let filtered_data = register
-            .loader
-            .load_with_expr_async(&test_path, &combined_expr)
-            .await?;
-            
-        println!("Filtered data has {} rows", filtered_data.iter().map(|b| b.num_rows()).sum::<usize>());
-        
-        Ok(())
     }
 }

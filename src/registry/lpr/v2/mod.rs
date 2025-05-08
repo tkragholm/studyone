@@ -325,56 +325,5 @@ impl RegisterLoader for LprBesRegister {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::path::PathBuf;
-
-    #[tokio::test]
-    async fn test_lpr_adm_loading() -> Result<()> {
-        let register = LprAdmRegister::new();
-        let test_path = PathBuf::from("test_data/lpr_adm");
-
-        let result = register.load_async(&test_path, None).await?;
-
-        println!("Loaded {} batches from LPR_ADM register", result.len());
-        println!(
-            "Total rows: {}",
-            result.iter().map(|b| b.num_rows()).sum::<usize>()
-        );
-
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn test_lpr_diag_loading() -> Result<()> {
-        let register = LprDiagRegister::new();
-        let test_path = PathBuf::from("test_data/lpr_diag");
-
-        let result = register.load_async(&test_path, None).await?;
-
-        println!("Loaded {} batches from LPR_DIAG register", result.len());
-        println!(
-            "Total rows: {}",
-            result.iter().map(|b| b.num_rows()).sum::<usize>()
-        );
-
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn test_lpr_bes_loading() -> Result<()> {
-        let register = LprBesRegister::new();
-        let test_path = PathBuf::from("test_data/lpr_bes");
-
-        let result = register.load_async(&test_path, None).await?;
-
-        println!("Loaded {} batches from LPR_BES register", result.len());
-        println!(
-            "Total rows: {}",
-            result.iter().map(|b| b.num_rows()).sum::<usize>()
-        );
-
-        Ok(())
-    }
-}
+// Tests have been moved to the tests directory
+// See /tests/registry/lpr/v2/ for the test implementations

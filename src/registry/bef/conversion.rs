@@ -12,7 +12,6 @@ use crate::models::Individual;
 use crate::models::traits::HealthStatus;
 use crate::models::types::{FamilyType, Gender};
 use crate::registry::{BefRegister, ModelConversion};
-use arrow::array::Array;
 use std::collections::HashMap;
 
 // BefRegistry trait is implemented in models/individual.rs
@@ -108,52 +107,6 @@ impl ModelConversion<Family> for BefRegister {
 
     /// Apply additional transformations to Family models
     fn transform_models(&self, _models: &mut [Family]) -> Result<()> {
-        Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use arrow::array::StringBuilder;
-    use arrow::datatypes::{Field, Schema};
-
-    #[test]
-    fn test_individual_from_bef_record() -> Result<()> {
-        // Create a test batch with BEF data
-        let schema = Schema::new(vec![
-            Field::new("PNR", DataType::Utf8, false),
-            Field::new("KOEN", DataType::Utf8, true),
-        ]);
-
-        let mut batch_builder = RecordBatchBuilder::new_with_capacity(schema, 1);
-
-        // Add PNR data
-        let mut pnr_builder = StringBuilder::new_with_capacity(1, 12);
-        pnr_builder.append_value("1234567890")?;
-        batch_builder
-            .column_builder::<StringBuilder>(0)
-            .unwrap()
-            .append_builder(&pnr_builder)?;
-
-        // Add gender data
-        let mut gender_builder = StringBuilder::new_with_capacity(1, 1);
-        gender_builder.append_value("M")?;
-        batch_builder
-            .column_builder::<StringBuilder>(1)
-            .unwrap()
-            .append_builder(&gender_builder)?;
-
-        let batch = batch_builder.build()?;
-
-        // Test conversion
-        let individual = Individual::from_bef_record(&batch, 0)?;
-
-        assert!(individual.is_some());
-        let individual = individual.unwrap();
-        assert_eq!(individual.pnr, "1234567890");
-        assert!(matches!(individual.gender, Gender::Male));
-
         Ok(())
     }
 }
