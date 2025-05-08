@@ -21,10 +21,10 @@ This document outlines the step-by-step plan for removing old code and migrating
    - [ ] Remove old implementation
 
 2. **Migrate IND Registry**
-   - [ ] Create trait-based IND register implementation
-   - [ ] Update model conversion in IND registry
-   - [ ] Add tests for the new implementation
-   - [ ] Remove old implementation
+   - [x] Create trait-based IND register implementation
+   - [x] Update model conversion in IND registry
+   - [x] Add tests for the new implementation
+   - [x] Remove old implementation
 
 3. **Migrate LPR Registry**
    - [ ] Create trait-based LPR register implementation

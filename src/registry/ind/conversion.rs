@@ -11,7 +11,7 @@ use std::pin::Pin;
 use std::sync::Arc;
 
 use crate::RecordBatch;
-use crate::common::traits::{IndRegistry, RegistryAware};
+use crate::common::traits::RegistryAware;
 use crate::error::Result;
 use crate::models::income::Income;
 use crate::registry::RegisterLoader;
