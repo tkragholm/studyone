@@ -125,7 +125,7 @@ fn test_individual_serde_arrow_roundtrip() {
     // Verify RecordBatch properties
     assert_eq!(batch.num_rows(), 2, "Record batch should have 2 rows");
     assert!(
-        batch.schema().fields().len() > 0,
+        !batch.schema().fields().is_empty(),
         "Schema should have fields"
     );
 
@@ -149,218 +149,177 @@ fn test_individual_serde_arrow_roundtrip() {
         // Compare core fields
         assert_eq!(
             original.pnr, roundtrip.pnr,
-            "PNR mismatch for individual {}",
-            i
+            "PNR mismatch for individual {i}"
         );
         assert_eq!(
             original.gender, roundtrip.gender,
-            "Gender mismatch for individual {}",
-            i
+            "Gender mismatch for individual {i}"
         );
         assert_eq!(
             original.birth_date, roundtrip.birth_date,
-            "Birth date mismatch for individual {}",
-            i
+            "Birth date mismatch for individual {i}"
         );
         assert_eq!(
             original.death_date, roundtrip.death_date,
-            "Death date mismatch for individual {}",
-            i
+            "Death date mismatch for individual {i}"
         );
         assert_eq!(
             original.origin, roundtrip.origin,
-            "Origin mismatch for individual {}",
-            i
+            "Origin mismatch for individual {i}"
         );
         assert_eq!(
             original.education_level, roundtrip.education_level,
-            "Education level mismatch for individual {}",
-            i
+            "Education level mismatch for individual {i}"
         );
         assert_eq!(
             original.municipality_code, roundtrip.municipality_code,
-            "Municipality code mismatch for individual {}",
-            i
+            "Municipality code mismatch for individual {i}"
         );
         assert_eq!(
             original.is_rural, roundtrip.is_rural,
-            "Is rural mismatch for individual {}",
-            i
+            "Is rural mismatch for individual {i}"
         );
         assert_eq!(
             original.mother_pnr, roundtrip.mother_pnr,
-            "Mother PNR mismatch for individual {}",
-            i
+            "Mother PNR mismatch for individual {i}"
         );
         assert_eq!(
             original.father_pnr, roundtrip.father_pnr,
-            "Father PNR mismatch for individual {}",
-            i
+            "Father PNR mismatch for individual {i}"
         );
         assert_eq!(
             original.family_id, roundtrip.family_id,
-            "Family ID mismatch for individual {}",
-            i
+            "Family ID mismatch for individual {i}"
         );
         assert_eq!(
             original.emigration_date, roundtrip.emigration_date,
-            "Emigration date mismatch for individual {}",
-            i
+            "Emigration date mismatch for individual {i}"
         );
         assert_eq!(
             original.immigration_date, roundtrip.immigration_date,
-            "Immigration date mismatch for individual {}",
-            i
+            "Immigration date mismatch for individual {i}"
         );
 
         // Compare employment and socioeconomic status
         assert_eq!(
             original.socioeconomic_status, roundtrip.socioeconomic_status,
-            "Socioeconomic status mismatch for individual {}",
-            i
+            "Socioeconomic status mismatch for individual {i}"
         );
         assert_eq!(
             original.occupation_code, roundtrip.occupation_code,
-            "Occupation code mismatch for individual {}",
-            i
+            "Occupation code mismatch for individual {i}"
         );
         assert_eq!(
             original.industry_code, roundtrip.industry_code,
-            "Industry code mismatch for individual {}",
-            i
+            "Industry code mismatch for individual {i}"
         );
         assert_eq!(
             original.workplace_id, roundtrip.workplace_id,
-            "Workplace ID mismatch for individual {}",
-            i
+            "Workplace ID mismatch for individual {i}"
         );
         assert_eq!(
             original.employment_start_date, roundtrip.employment_start_date,
-            "Employment start date mismatch for individual {}",
-            i
+            "Employment start date mismatch for individual {i}"
         );
         assert_eq!(
             original.working_hours, roundtrip.working_hours,
-            "Working hours mismatch for individual {}",
-            i
+            "Working hours mismatch for individual {i}"
         );
 
         // Compare education details
         assert_eq!(
             original.education_field, roundtrip.education_field,
-            "Education field mismatch for individual {}",
-            i
+            "Education field mismatch for individual {i}"
         );
         assert_eq!(
             original.education_completion_date, roundtrip.education_completion_date,
-            "Education completion date mismatch for individual {}",
-            i
+            "Education completion date mismatch for individual {i}"
         );
         assert_eq!(
             original.education_institution, roundtrip.education_institution,
-            "Education institution mismatch for individual {}",
-            i
+            "Education institution mismatch for individual {i}"
         );
         assert_eq!(
             original.education_program_code, roundtrip.education_program_code,
-            "Education program code mismatch for individual {}",
-            i
+            "Education program code mismatch for individual {i}"
         );
 
         // Compare income information
         assert_eq!(
             original.annual_income, roundtrip.annual_income,
-            "Annual income mismatch for individual {}",
-            i
+            "Annual income mismatch for individual {i}"
         );
         assert_eq!(
             original.disposable_income, roundtrip.disposable_income,
-            "Disposable income mismatch for individual {}",
-            i
+            "Disposable income mismatch for individual {i}"
         );
         assert_eq!(
             original.employment_income, roundtrip.employment_income,
-            "Employment income mismatch for individual {}",
-            i
+            "Employment income mismatch for individual {i}"
         );
         assert_eq!(
             original.self_employment_income, roundtrip.self_employment_income,
-            "Self employment income mismatch for individual {}",
-            i
+            "Self employment income mismatch for individual {i}"
         );
         assert_eq!(
             original.capital_income, roundtrip.capital_income,
-            "Capital income mismatch for individual {}",
-            i
+            "Capital income mismatch for individual {i}"
         );
         assert_eq!(
             original.transfer_income, roundtrip.transfer_income,
-            "Transfer income mismatch for individual {}",
-            i
+            "Transfer income mismatch for individual {i}"
         );
         assert_eq!(
             original.income_year, roundtrip.income_year,
-            "Income year mismatch for individual {}",
-            i
+            "Income year mismatch for individual {i}"
         );
 
         // Compare healthcare usage
         assert_eq!(
             original.hospital_admissions_count, roundtrip.hospital_admissions_count,
-            "Hospital admissions count mismatch for individual {}",
-            i
+            "Hospital admissions count mismatch for individual {i}"
         );
         assert_eq!(
             original.emergency_visits_count, roundtrip.emergency_visits_count,
-            "Emergency visits count mismatch for individual {}",
-            i
+            "Emergency visits count mismatch for individual {i}"
         );
         assert_eq!(
             original.outpatient_visits_count, roundtrip.outpatient_visits_count,
-            "Outpatient visits count mismatch for individual {}",
-            i
+            "Outpatient visits count mismatch for individual {i}"
         );
         assert_eq!(
             original.gp_visits_count, roundtrip.gp_visits_count,
-            "GP visits count mismatch for individual {}",
-            i
+            "GP visits count mismatch for individual {i}"
         );
         assert_eq!(
             original.last_hospital_admission_date, roundtrip.last_hospital_admission_date,
-            "Last hospital admission date mismatch for individual {}",
-            i
+            "Last hospital admission date mismatch for individual {i}"
         );
         assert_eq!(
             original.hospitalization_days, roundtrip.hospitalization_days,
-            "Hospitalization days mismatch for individual {}",
-            i
+            "Hospitalization days mismatch for individual {i}"
         );
 
         // Compare additional demographic information
         assert_eq!(
             original.marital_status, roundtrip.marital_status,
-            "Marital status mismatch for individual {}",
-            i
+            "Marital status mismatch for individual {i}"
         );
         assert_eq!(
             original.citizenship_status, roundtrip.citizenship_status,
-            "Citizenship status mismatch for individual {}",
-            i
+            "Citizenship status mismatch for individual {i}"
         );
         assert_eq!(
             original.housing_type, roundtrip.housing_type,
-            "Housing type mismatch for individual {}",
-            i
+            "Housing type mismatch for individual {i}"
         );
         assert_eq!(
             original.household_size, roundtrip.household_size,
-            "Household size mismatch for individual {}",
-            i
+            "Household size mismatch for individual {i}"
         );
         assert_eq!(
             original.household_type, roundtrip.household_type,
-            "Household type mismatch for individual {}",
-            i
+            "Household type mismatch for individual {i}"
         );
     }
 }

@@ -1,16 +1,13 @@
-//! Tests for the direct registry-model integration
+//! Tests for registry-aware model implementations
 //!
-//! This module contains tests that verify the correct functioning of the
-//! direct integration between registry types and domain models.
-//! It also includes tests for the registry-aware model implementations.
+//! This module contains tests to verify the registry-aware model implementations
+//! which centralize registry-specific behavior in registry files instead of models.
 
-use arrow::array::{Date32Array, Int8Array, StringArray};
+use arrow::array::{BooleanArray, Date32Array, Int8Array, StringArray};
 use arrow::datatypes::{DataType, Field, Schema};
 use arrow::record_batch::RecordBatch;
-use par_reader::common::traits::{BefRegistry, RegistryAware};
-use par_reader::models::types::{FamilyType, Gender};
-use par_reader::models::{Family, Individual};
-use par_reader::{BefRegister, ModelConversion};
+use par_reader::common::traits::{BefRegistry, MfrRegistry, RegistryAware};
+use par_reader::models::{Child, Individual};
 use std::sync::Arc;
 
 /// Create a test BEF record batch for testing
@@ -66,84 +63,6 @@ fn create_test_bef_batch() -> RecordBatch {
 }
 
 #[test]
-fn test_direct_conversion_to_individuals() {
-    // Create test data
-    let batch = create_test_bef_batch();
-
-    // Create registry
-    let bef_registry = BefRegister::new();
-
-    // Convert directly to individuals using ModelConversion trait
-    let individuals = bef_registry.to_models(&batch).unwrap();
-
-    // Verify results
-    assert_eq!(individuals.len(), 3, "Should convert 3 individuals");
-
-    // Verify first individual
-    let ind1: &Individual = &individuals[0];
-    assert_eq!(ind1.pnr, "1234567890");
-    assert_eq!(ind1.gender, Gender::Female);
-    assert!(ind1.birth_date.is_some());
-    assert_eq!(ind1.father_pnr, Some("2345678901".to_string()));
-    assert_eq!(ind1.mother_pnr, None);
-    assert_eq!(ind1.family_id, Some("FAM001".to_string()));
-
-    // Verify second individual
-    let ind2: &Individual = &individuals[1];
-    assert_eq!(ind2.pnr, "2345678901");
-    assert_eq!(ind2.gender, Gender::Male);
-    assert!(ind2.birth_date.is_some());
-    assert_eq!(ind2.father_pnr, None);
-    assert_eq!(ind2.mother_pnr, Some("1234567890".to_string()));
-    assert_eq!(ind2.family_id, Some("FAM001".to_string()));
-}
-
-#[test]
-fn test_direct_conversion_to_families() {
-    // Create test data
-    let batch = create_test_bef_batch();
-
-    // Create registry
-    let bef_registry = BefRegister::new();
-
-    // Convert directly to families using ModelConversion trait
-    let families = bef_registry.to_models(&batch).unwrap();
-
-    // Verify results
-    assert_eq!(families.len(), 1, "Should create 1 family");
-
-    // Verify family details
-    let family: &Family = &families[0];
-    assert_eq!(family.family_id, "FAM001");
-    assert_eq!(family.family_type, FamilyType::TwoParent);
-}
-
-#[test]
-fn test_batch_conversion_consistency() {
-    // Create test data
-    let batch = create_test_bef_batch();
-
-    // Create registry
-    let bef_registry = BefRegister::new();
-
-    // Get both individuals and families in a consistent way
-    let individuals = bef_registry.to_models(&batch).unwrap();
-
-    // Get the families
-    let families: Vec<Family> = bef_registry.to_models(&batch).unwrap();
-
-    // Verify family individuals match
-    assert_eq!(families.len(), 1, "Should be one family");
-    assert_eq!(individuals.len(), 3, "Should be three individuals");
-
-    // Check that all individuals have the same family_id
-    for individual in &individuals {
-        let indiv: &Individual = individual;
-        assert_eq!(indiv.family_id, Some("FAM001".to_string()));
-    }
-}
-
-#[test]
 fn test_registry_aware_model_implementation() {
     // Create test data
     let batch = create_test_bef_batch();
@@ -182,7 +101,7 @@ fn test_registry_aware_model_implementation() {
     // Verify first individual from BEF
     let ind1 = &individuals_from_bef[0];
     assert_eq!(ind1.pnr, "1234567890");
-    assert_eq!(ind1.gender, Gender::Female);
+    assert_eq!(ind1.gender, par_reader::models::types::Gender::Female);
 
     // Test registry name
     assert_eq!(
@@ -190,4 +109,73 @@ fn test_registry_aware_model_implementation() {
         "BEF",
         "Registry name should be BEF"
     );
+}
+
+/// Create a test MFR record batch for testing
+fn create_test_mfr_batch() -> RecordBatch {
+    // Define schema matching MFR registry
+    let schema = Schema::new(vec![
+        Field::new("PNR", DataType::Utf8, false),
+        Field::new("BIRTH_WEIGHT", DataType::Int32, true),
+        Field::new("GESTATIONAL_AGE", DataType::Int32, true),
+        Field::new("HAS_SCD", DataType::Boolean, false),
+    ]);
+
+    // Create arrays for each column
+    let pnr_array = StringArray::from(vec!["1234567890", "2345678901", "3456789012"]);
+
+    // Birth weight in grams
+    let birth_weight_array =
+        arrow::array::Int32Array::from(vec![Some(3500), Some(2800), Some(4100)]);
+
+    // Gestational age in weeks
+    let gestational_age_array = arrow::array::Int32Array::from(vec![Some(40), Some(37), Some(38)]);
+
+    // Has severe chronic disease flag
+    let has_scd_array = BooleanArray::from(vec![false, true, false]);
+
+    // Combine into record batch
+    RecordBatch::try_new(
+        Arc::new(schema),
+        vec![
+            Arc::new(pnr_array),
+            Arc::new(birth_weight_array),
+            Arc::new(gestational_age_array),
+            Arc::new(has_scd_array),
+        ],
+    )
+    .unwrap()
+}
+
+#[test]
+fn test_child_registry_aware_implementation() {
+    // Create test data
+    let batch = create_test_mfr_batch();
+
+    // Test registry-aware from_registry_record implementation
+    let child = Child::from_registry_record(&batch, 0).unwrap();
+
+    // Verify results
+    assert!(child.is_some(), "Should convert child");
+    let child = child.unwrap();
+    assert_eq!(child.individual().pnr, "1234567890", "PNR should match");
+
+    // Test registry-aware from_registry_batch implementation
+    let children = Child::from_registry_batch(&batch).unwrap();
+    assert_eq!(children.len(), 3, "Should convert 3 children");
+
+    // Test MfrRegistry implementation
+    let children_from_mfr = Child::from_mfr_batch(&batch).unwrap();
+    assert_eq!(
+        children_from_mfr.len(),
+        3,
+        "Should convert 3 children from MFR"
+    );
+
+    // Verify first child from MFR
+    let child1 = &children_from_mfr[0];
+    assert_eq!(child1.individual().pnr, "1234567890");
+
+    // Test registry name
+    assert_eq!(Child::registry_name(), "MFR", "Registry name should be MFR");
 }

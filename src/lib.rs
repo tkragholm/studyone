@@ -102,7 +102,7 @@ pub use registry::{
     BefRegister,
     DodRegister,
     DodsaarsagRegister,
-    IdanRegister,
+    // Removed IdanRegister,
     IndRegister,
     Lpr3DiagnoserRegister,
     Lpr3KontakterRegister,

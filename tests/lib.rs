@@ -14,7 +14,7 @@ pub mod registry;
 pub mod filter;
 
 // Integration tests
-//pub mod integration;
+pub mod integration;
 
 // Test utils
 pub mod utils;

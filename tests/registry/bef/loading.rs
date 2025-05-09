@@ -21,7 +21,7 @@ mod tests {
         println!("Loaded {} batches from BEF register", result.len());
         println!(
             "Total rows: {}",
-            result.iter().map(|b| b.num_rows()).sum::<usize>()
+            result.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
         );
 
         Ok(())

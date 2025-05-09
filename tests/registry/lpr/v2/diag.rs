@@ -22,7 +22,7 @@ async fn test_lpr_diag_loading() -> Result<(), Box<dyn Error>> {
     println!("Loaded {} batches from LPR_DIAG register", result.len());
     println!(
         "Total rows: {}",
-        result.iter().map(|b| b.num_rows()).sum::<usize>()
+        result.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
     );
 
     Ok(())

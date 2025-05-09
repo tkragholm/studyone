@@ -146,7 +146,7 @@ pub fn extract_int8_as_padded_string(
         
         if row < int_array.len() && !int_array.is_null(row) {
             let value = int_array.value(row);
-            return Ok(Some(format!("{:0width$}", value, width = padding)));
+            return Ok(Some(format!("{value:0padding$}")));
         }
     }
     
@@ -190,7 +190,7 @@ pub fn extract_int32(
         let int_array = downcast_array::<Int8Array>(&array, column_name, "Int8")?;
         
         if row < int_array.len() && !int_array.is_null(row) {
-            return Ok(Some(int_array.value(row) as i32));
+            return Ok(Some(i32::from(int_array.value(row))));
         }
     }
     

@@ -32,7 +32,7 @@ pub trait ModelConversion<T> {
 
 /// Combined trait for registry loaders that support model conversion
 ///
-/// This trait combines RegisterLoader and ModelConversion capabilities
+/// This trait combines `RegisterLoader` and `ModelConversion` capabilities
 /// into a single trait with additional convenience methods.
 pub trait ModelConvertingRegisterLoader<T>: RegisterLoader {
     /// Convert a `RecordBatch` from this registry to a vector of domain models

@@ -21,7 +21,7 @@ async fn test_bef_filtering() -> Result<(), Box<dyn Error>> {
 
     println!(
         "Filtered data has {} rows",
-        result.iter().map(|b| b.num_rows()).sum::<usize>()
+        result.iter().map(par_reader::RecordBatch::num_rows).sum::<usize>()
     );
 
     Ok(())

@@ -20,7 +20,7 @@ pub fn registry_from_name(name: &str) -> Result<Arc<dyn RegisterLoader>> {
         "bef" => Ok(Arc::new(super::bef::BefRegister::new())),
         "dod" => Ok(Arc::new(DodRegister::new())),
         "dodsaarsag" => Ok(Arc::new(DodsaarsagRegister::new())),
-        "idan" => Ok(Arc::new(super::idan::IdanRegister::new())),
+        // Removed IDAN registry
         "ind" => Ok(Arc::new(super::ind::IndRegister::new())),
         "mfr" => Ok(Arc::new(super::mfr::MfrRegister::new())),
         "uddf" => Ok(Arc::new(super::uddf::UddfRegister::new())),
@@ -49,8 +49,7 @@ pub fn registry_from_path(path: &Path) -> Result<Arc<dyn RegisterLoader>> {
             return Ok(Arc::new(DodRegister::new()));
         } else if lower_name.contains("dodsaarsag") {
             return Ok(Arc::new(DodsaarsagRegister::new()));
-        } else if lower_name.contains("idan") {
-            return Ok(Arc::new(super::idan::IdanRegister::new()));
+        // Removed IDAN registry
         } else if lower_name.contains("ind") {
             return Ok(Arc::new(super::ind::IndRegister::new()));
         } else if lower_name.contains("mfr") || lower_name.contains("foedselsregister") {

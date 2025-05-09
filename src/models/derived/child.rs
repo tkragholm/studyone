@@ -4,11 +4,12 @@
 //! Children have specific attributes related to health conditions, birth details,
 //! and can be associated with severe chronic diseases (SCD).
 
-use super::diagnosis::Diagnosis;
-use super::individual::Individual;
 use crate::error::Result;
-use crate::models::traits::{ArrowSchema, EntityModel, HealthStatus, ModelCollection};
-use crate::models::types::{DiseaseOrigin, DiseaseSeverity, ScdCategory};
+use crate::models::collections::ModelCollection;
+use crate::models::core::Individual;
+use crate::models::core::traits::{ArrowSchema, EntityModel, HealthStatus};
+use crate::models::core::types::{DiseaseOrigin, DiseaseSeverity, ScdCategory};
+use crate::models::health::Diagnosis;
 use arrow::datatypes::Schema;
 use arrow::record_batch::RecordBatch;
 use chrono::NaiveDate;
@@ -23,7 +24,7 @@ use std::sync::Arc;
 fn default_individual() -> Arc<Individual> {
     Arc::new(Individual::new(
         "placeholder".to_string(),
-        crate::models::types::Gender::Unknown,
+        crate::models::core::types::Gender::Unknown,
         None,
     ))
 }
@@ -32,7 +33,8 @@ fn default_individual() -> Arc<Individual> {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Child {
     /// The underlying Individual entity
-    #[serde(skip, default = "default_individual")] // Skip serializing/deserializing with default
+    #[serde(skip, default = "default_individual")]
+    // Skip serializing/deserializing with default
     individual: Arc<Individual>,
     /// Birth weight in grams
     pub birth_weight: Option<i32>,
@@ -238,7 +240,7 @@ impl ArrowSchema for Child {
     fn schema() -> Schema {
         let sample = Self::from_individual(Arc::new(Individual::new(
             "1234567890".to_string(),
-            crate::models::types::Gender::Unknown,
+            crate::models::core::types::Gender::Unknown,
             None,
         )));
 

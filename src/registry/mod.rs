@@ -4,12 +4,15 @@
 //! It provides a unified interface for loading and processing parquet files from different
 //! registry sources, with optimized loading strategies for each.
 //!
+//! This module also contains the implementations for converting registry data to domain models,
+//! supporting direct model conversion capabilities.
+//!
 //! Available registries:
 //! - AKM (Arbejdsklassifikationsmodulet): Employment information
 //! - BEF (Befolkning): Population demographic information
 //! - DOD (Deaths): Death records
 //! - DODSAARSAG (Causes of death): Death cause information
-//! - IDAN (Integrated Database for Labor Market Research): Employment information
+//! - (Removed IDAN registry)
 //! - IND (Indkomst): Income and tax information
 //! - LPR (Landspatientregistret): National Patient Registry (versions 2 and 3)
 //! - MFR (Medical Birth Registry): Birth information
@@ -71,7 +74,7 @@ pub mod death {
     pub mod dod;
     pub mod dodsaarsag;
 }
-pub mod idan;
+// Removed IDAN registry
 pub mod ind;
 pub mod lpr;
 pub mod mfr;
@@ -84,7 +87,7 @@ pub use bef::BefRegister;
 pub use bef::BefCombinedRegister;
 pub use death::dod::DodRegister;
 pub use death::dodsaarsag::DodsaarsagRegister;
-pub use idan::IdanRegister;
+// Removed IdanRegister
 pub use ind::IndRegister;
 pub use ind::conversion::YearConfiguredIndRegister;
 pub use lpr::{
@@ -111,3 +114,4 @@ pub mod model_conversion;
 pub use model_conversion::{ModelConversion, ModelConvertingRegisterLoader};
 
 // Registry-specific model conversion implementations
+pub mod registry_aware_models;

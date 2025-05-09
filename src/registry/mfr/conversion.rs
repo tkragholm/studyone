@@ -20,8 +20,7 @@ use arrow::record_batch::RecordBatch;
 impl ModelConversion<Child> for MfrRegister {
     /// Convert MFR registry data to Child domain models
     fn to_models(&self, batch: &RecordBatch) -> Result<Vec<Child>> {
-        // Use the trait implementation from Child (in models/child.rs)
-        use crate::common::traits::MfrRegistry;
+        // Use the trait implementation from registry_aware_models.rs
         Child::from_mfr_batch(batch)
     }
 

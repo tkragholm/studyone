@@ -72,8 +72,8 @@ pub fn enhance_with_education_data(
         // This is a simplified mapping - real implementation would be more detailed
         individual.education_level = match education_code.chars().next() {
             Some('1') => EducationLevel::Low,
-            Some('2') | Some('3') => EducationLevel::Medium,
-            Some('4') | Some('5') | Some('6') | Some('7') | Some('8') => EducationLevel::High,
+            Some('2' | '3') => EducationLevel::Medium,
+            Some('4' | '5' | '6' | '7' | '8') => EducationLevel::High,
             _ => EducationLevel::Unknown,
         };
 

@@ -4,21 +4,35 @@
 //! An Individual represents any person in the study, and can be associated with various roles
 //! such as parent or child.
 
-// Registry-related traits moved to registry_aware_models.rs
 use crate::error::Result;
-use crate::models::traits::{ArrowSchema, EntityModel, HealthStatus, TemporalValidity};
-use crate::models::types::{
+use crate::models::core::traits::{ArrowSchema, EntityModel, HealthStatus, TemporalValidity};
+use crate::models::core::types::{
     CitizenshipStatus, EducationField, EducationLevel, Gender, HousingType, MaritalStatus, Origin,
     SocioeconomicStatus,
 };
-// Removed array utilities - they are now used in registry_aware_models.rs
+use crate::models::derived::{Child, Family, Parent};
+use crate::models::core::types::FamilyType;
 use arrow::datatypes::{DataType, Field, Schema};
 use arrow::record_batch::RecordBatch;
 use chrono::{Datelike, NaiveDate};
 use serde::{Deserialize, Serialize};
 use serde_arrow::schema::SchemaLike;
 use serde_arrow::schema::TracingOptions;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
+
+/// Role of an individual in the study context
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Role {
+    /// Child role (subject of study)
+    Child,
+    /// Parent role (mother or father)
+    Parent,
+    /// Both child and parent roles
+    ChildAndParent,
+    /// Other role (relative, etc.)
+    Other,
+}
 
 /// Core Individual entity representing a person in the study
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -185,6 +199,125 @@ impl Individual {
         }
         lookup
     }
+    
+    /// Determine if this individual is a child based on age at reference date
+    pub fn is_child(&self, reference_date: &NaiveDate) -> bool {
+        if let Some(age) = self.age_at(reference_date) {
+            age < 18
+        } else {
+            false
+        }
+    }
+    
+    /// Determine if this individual is a parent based on relations
+    pub fn is_parent_in_dataset(&self, all_individuals: &[Individual]) -> bool {
+        all_individuals.iter().any(|ind| {
+            ind.mother_pnr.as_ref().map_or(false, |pnr| pnr == &self.pnr) ||
+            ind.father_pnr.as_ref().map_or(false, |pnr| pnr == &self.pnr)
+        })
+    }
+    
+    /// Get the role of this individual at a reference date
+    pub fn role_at(&self, reference_date: &NaiveDate, all_individuals: &[Individual]) -> Role {
+        let is_child = self.is_child(reference_date);
+        let is_parent = self.is_parent_in_dataset(all_individuals);
+        
+        match (is_child, is_parent) {
+            (true, true) => Role::ChildAndParent,
+            (true, false) => Role::Child,
+            (false, true) => Role::Parent,
+            (false, false) => Role::Other,
+        }
+    }
+    
+    /// Create a Child model from this Individual
+    pub fn to_child(&self) -> Child {
+        Child::from_individual(Arc::new(self.clone()))
+    }
+    
+    /// Create a Parent model from this Individual  
+    pub fn to_parent(&self) -> Parent {
+        Parent::from_individual(Arc::new(self.clone()))
+    }
+    
+    /// Group individuals by family ID
+    pub fn group_by_family(individuals: &[Self]) -> HashMap<String, Vec<&Self>> {
+        let mut family_map: HashMap<String, Vec<&Self>> = HashMap::new();
+        
+        for individual in individuals {
+            if let Some(family_id) = &individual.family_id {
+                family_map
+                    .entry(family_id.clone())
+                    .or_default()
+                    .push(individual);
+            }
+        }
+        
+        family_map
+    }
+    
+    /// Create families from a collection of individuals
+    pub fn create_families(individuals: &[Self], reference_date: &NaiveDate) -> Vec<Family> {
+        let family_groups = Self::group_by_family(individuals);
+        let mut families = Vec::new();
+        
+        for (family_id, members) in family_groups {
+            // Identify family members by role
+            let mut mothers = Vec::new();
+            let mut fathers = Vec::new();
+            let mut children = Vec::new();
+            
+            for member in &members {
+                if member.is_child(reference_date) {
+                    children.push(member);
+                } else if member.gender == Gender::Female {
+                    mothers.push(member);
+                } else if member.gender == Gender::Male {
+                    fathers.push(member);
+                }
+            }
+            
+            // Determine family type
+            let family_type = match (mothers.len(), fathers.len()) {
+                (1.., 1..) => FamilyType::TwoParent,
+                (1.., 0) => FamilyType::SingleMother,
+                (0, 1..) => FamilyType::SingleFather,
+                (0, 0) => FamilyType::NoParent,
+            };
+            
+            // Create family object
+            let family = Family::new(family_id, family_type, *reference_date);
+            // Additional setup for the family would be needed here
+            
+            families.push(family);
+        }
+        
+        families
+    }
+    
+    /// Create Child models for all children in the dataset
+    pub fn create_children(individuals: &[Self], reference_date: &NaiveDate) -> Vec<Child> {
+        individuals
+            .iter()
+            .filter(|ind| ind.is_child(reference_date))
+            .map(|ind| ind.to_child())
+            .collect()
+    }
+    
+    /// Create Parent models for all parents in the dataset
+    pub fn create_parents(individuals: &[Self]) -> Vec<Parent> {
+        let parent_pnrs: HashSet<&String> = individuals
+            .iter()
+            .filter_map(|ind| ind.mother_pnr.as_ref())
+            .chain(individuals.iter().filter_map(|ind| ind.father_pnr.as_ref()))
+            .collect();
+            
+        individuals
+            .iter()
+            .filter(|ind| parent_pnrs.contains(&ind.pnr))
+            .map(|ind| ind.to_parent())
+            .collect()
+    }
 }
 
 // Implement EntityModel trait
@@ -231,20 +364,21 @@ impl HealthStatus for Individual {
         match self.birth_date {
             Some(birth_date) => {
                 // Check if the individual was alive at the reference date
-                if self.death_date.is_none_or(|d| d >= *reference_date) {
-                    let years = reference_date.year() - birth_date.year();
-                    // Adjust for birthday not yet reached in the reference year
-                    if reference_date.month() < birth_date.month()
-                        || (reference_date.month() == birth_date.month()
-                            && reference_date.day() < birth_date.day())
-                    {
-                        Some(years - 1)
-                    } else {
-                        Some(years)
+                if let Some(death_date) = self.death_date {
+                    if death_date < *reference_date {
+                        return None;
                     }
+                }
+
+                let years = reference_date.year() - birth_date.year();
+                // Adjust for birthday not yet reached in the reference year
+                if reference_date.month() < birth_date.month()
+                    || (reference_date.month() == birth_date.month()
+                        && reference_date.day() < birth_date.day())
+                {
+                    Some(years - 1)
                 } else {
-                    // Individual was not alive at the reference date
-                    None
+                    Some(years)
                 }
             }
             None => None,
@@ -295,8 +429,6 @@ impl HealthStatus for Individual {
         true
     }
 }
-
-// Registry-specific implementations have been moved to registry_aware_models.rs
 
 // Implement ArrowSchema trait
 impl ArrowSchema for Individual {
