@@ -115,7 +115,7 @@ async fn main() -> Result<()> {
     // Step 5: Check covariate balance
     info!("Step 5: Calculating covariate balance");
     let balance_calculator = BalanceCalculator::new()
-        .with_exclude_columns(vec!["pnr".to_string(), "birthdate".to_string()]);
+        .with_exclude_columns(vec!["pnr".to_owned(), "birthdate".to_owned()]);
 
     let balance_report = balance_calculator.calculate_balance(
         &matching_result.matched_cases,
