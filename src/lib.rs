@@ -21,6 +21,9 @@ pub mod registry_manager;
 pub mod schema;
 pub mod utils;
 
+// Examples
+pub mod examples;
+
 // Re-export the most common types for easier use
 // Core types
 pub use config::ParquetReaderConfig;

@@ -1,2 +1,2 @@
-[2025-05-09T14:37:18Z INFO  par_reader::algorithm::population::builder] Processing pre-loaded BEF data batches
-Error: Failed to deserialize: Error: serde::de::Error: invalid type: string "5151", expected i32 (data_type: "Struct(..)", field: "$")
+[2025-05-09T20:31:06Z ERROR par_reader::registry::bef::deserializer] Deserialization error: Failed to deserialize: Error: serde::de::Error: missing field `origin` (data_type: "Struct(..)", field: "$")
+Error: Failed to deserialize: Failed to deserialize: Error: serde::de::Error: missing field `origin` (data_type: "Struct(..)", field: "$")

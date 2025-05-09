@@ -16,6 +16,13 @@ pub enum Gender {
     Unknown,
 }
 
+impl Gender {
+    /// Default value for Gender when not specified
+    pub fn default() -> Self {
+        Self::Unknown
+    }
+}
+
 impl From<&str> for Gender {
     fn from(s: &str) -> Self {
         match s.trim().to_lowercase().as_str() {
@@ -47,6 +54,13 @@ pub enum Origin {
     NonWestern,
     /// Unknown origin
     Unknown,
+}
+
+impl Origin {
+    /// Default value for Origin when not specified
+    pub fn default() -> Self {
+        Self::Unknown
+    }
 }
 
 impl From<&str> for Origin {
@@ -82,6 +96,13 @@ pub enum EducationLevel {
     High,
     /// Unknown education level
     Unknown,
+}
+
+impl EducationLevel {
+    /// Default value for EducationLevel when not specified
+    pub fn default() -> Self {
+        Self::Unknown
+    }
 }
 
 impl From<&str> for EducationLevel {
@@ -311,6 +332,13 @@ pub enum MaritalStatus {
     Unknown,
 }
 
+impl MaritalStatus {
+    /// Default value for MaritalStatus when not specified
+    pub fn default() -> Self {
+        Self::Unknown
+    }
+}
+
 impl From<&str> for MaritalStatus {
     fn from(s: &str) -> Self {
         match s.trim().to_uppercase().as_str() {
@@ -358,6 +386,13 @@ pub enum CitizenshipStatus {
     Unknown,
 }
 
+impl CitizenshipStatus {
+    /// Default value for CitizenshipStatus when not specified
+    pub fn default() -> Self {
+        Self::Unknown
+    }
+}
+
 impl From<i32> for CitizenshipStatus {
     fn from(value: i32) -> Self {
         match value {
@@ -388,6 +423,13 @@ pub enum HousingType {
     Other,
     /// Unknown
     Unknown,
+}
+
+impl HousingType {
+    /// Default value for HousingType when not specified
+    pub fn default() -> Self {
+        Self::Unknown
+    }
 }
 
 impl From<i32> for HousingType {
@@ -431,6 +473,13 @@ pub enum SocioeconomicStatus {
     Unknown,
 }
 
+impl SocioeconomicStatus {
+    /// Default value for SocioeconomicStatus when not specified
+    pub fn default() -> Self {
+        Self::Unknown
+    }
+}
+
 impl From<i32> for SocioeconomicStatus {
     fn from(value: i32) -> Self {
         match value {
@@ -472,6 +521,13 @@ pub enum EducationField {
     Services,
     /// Unknown or not specified
     Unknown,
+}
+
+impl EducationField {
+    /// Default value for EducationField when not specified
+    pub fn default() -> Self {
+        Self::Unknown
+    }
 }
 
 impl From<i32> for EducationField {

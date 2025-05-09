@@ -197,7 +197,7 @@ struct IndividualDef {
     pnr: String,
 
     /// Gender of the individual
-    #[serde(alias = "KOEN", deserialize_with = "deserialize_gender")]
+    #[serde(alias = "KOEN", deserialize_with = "deserialize_gender", default = "Gender::default")]
     gender: Gender,
 
     /// Birth date
@@ -209,10 +209,11 @@ struct IndividualDef {
     death_date: Option<NaiveDate>,
 
     /// Geographic origin category
-    #[serde(alias = "OPR_LAND", deserialize_with = "deserialize_origin")]
+    #[serde(alias = "OPR_LAND", deserialize_with = "deserialize_origin", default = "Origin::default")]
     origin: Origin,
 
     /// Education level
+    #[serde(default = "EducationLevel::default")]
     education_level: EducationLevel,
 
     /// Municipality code at index date
@@ -220,7 +221,7 @@ struct IndividualDef {
     municipality_code: Option<String>,
 
     /// Whether the individual lives in a rural area
-    #[serde(skip_deserializing)]
+    #[serde(skip_deserializing, default)]
     is_rural: bool,
 
     /// Mother's PNR, if known
@@ -245,7 +246,7 @@ struct IndividualDef {
 
     // Employment and socioeconomic status
     /// Socioeconomic status classification
-    #[serde(alias = "SOCIO", deserialize_with = "deserialize_socioeconomic_status")]
+    #[serde(alias = "SOCIO", deserialize_with = "deserialize_socioeconomic_status", default = "SocioeconomicStatus::default")]
     socioeconomic_status: SocioeconomicStatus,
 
     /// Primary occupation code (DISCO-08)
@@ -269,6 +270,7 @@ struct IndividualDef {
 
     // Education details
     /// Primary field of education
+    #[serde(default = "EducationField::default")]
     education_field: EducationField,
 
     /// Most recent education completion date
@@ -335,15 +337,15 @@ struct IndividualDef {
 
     // Additional demographic information
     /// Marital status
-    #[serde(alias = "CIVST", deserialize_with = "deserialize_marital_status")]
+    #[serde(alias = "CIVST", deserialize_with = "deserialize_marital_status", default = "MaritalStatus::default")]
     marital_status: MaritalStatus,
 
     /// Citizenship status
-    #[serde(alias = "STATSB", deserialize_with = "deserialize_citizenship_status")]
+    #[serde(alias = "STATSB", deserialize_with = "deserialize_citizenship_status", default = "CitizenshipStatus::default")]
     citizenship_status: CitizenshipStatus,
 
     /// Housing type
-    #[serde(alias = "HUSTYPE", deserialize_with = "deserialize_housing_type")]
+    #[serde(alias = "HUSTYPE", deserialize_with = "deserialize_housing_type", default = "HousingType::default")]
     housing_type: HousingType,
 
     /// Number of persons in household
