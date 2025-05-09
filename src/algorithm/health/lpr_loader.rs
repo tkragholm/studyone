@@ -198,11 +198,11 @@ async fn load_lpr2_data_async(
 
         // Register files with manager for async loading
         if !manager.has_registry("lpr_diag") {
-            manager.register("lpr_diag", &diag_file.parent().unwrap_or_else(|| diag_file.as_path()))?;
+            manager.register("lpr_diag", diag_file.parent().unwrap_or(diag_file.as_path()))?;
         }
 
         if !manager.has_registry("lpr_adm") {
-            manager.register("lpr_adm", &adm_file.parent().unwrap_or_else(|| adm_file.as_path()))?;
+            manager.register("lpr_adm", adm_file.parent().unwrap_or(adm_file.as_path()))?;
         }
 
         // Use async loading
@@ -353,11 +353,11 @@ async fn load_lpr3_data_async(
 
         // Register files with manager for async loading
         if !manager.has_registry("lpr3_kontakter") {
-            manager.register("lpr3_kontakter", &kontakter_file.parent().unwrap_or_else(|| kontakter_file.as_path()))?;
+            manager.register("lpr3_kontakter", kontakter_file.parent().unwrap_or(kontakter_file.as_path()))?;
         }
 
         if !manager.has_registry("lpr3_diagnoser") {
-            manager.register("lpr3_diagnoser", &diagnoser_file.parent().unwrap_or_else(|| diagnoser_file.as_path()))?;
+            manager.register("lpr3_diagnoser", diagnoser_file.parent().unwrap_or(diagnoser_file.as_path()))?;
         }
 
         // Use async loading

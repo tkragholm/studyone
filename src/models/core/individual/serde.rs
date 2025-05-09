@@ -64,7 +64,7 @@ where
     // Use serde's untagged enum visitor pattern
     struct FlexibleCitizenshipVisitor;
 
-    impl<'de> serde::de::Visitor<'de> for FlexibleCitizenshipVisitor {
+    impl serde::de::Visitor<'_> for FlexibleCitizenshipVisitor {
         type Value = CitizenshipStatus;
 
         fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
