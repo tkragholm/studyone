@@ -1,6 +1,6 @@
 //! VNDS registry trait implementations for Individual
 //!
-//! This module contains the implementation of VndsRegistry for the Individual model.
+//! This module contains the implementation of `VndsRegistry` for the Individual model.
 
 use crate::RecordBatch;
 use crate::common::traits::VndsRegistry;

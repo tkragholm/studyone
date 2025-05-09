@@ -40,10 +40,10 @@ use std::sync::Arc;
     ]))
 }
 
-/// Field mapping from BEF registry to SerdeIndividual
+/// Field mapping from BEF registry to `SerdeIndividual`
 ///
 /// This function provides a mapping between BEF registry field names and
-/// the corresponding field names in the SerdeIndividual struct.
+/// the corresponding field names in the `SerdeIndividual` struct.
 #[must_use] pub fn field_mapping() -> HashMap<String, String> {
     let mut mapping = HashMap::new();
     // No need for mapping most fields since SerdeIndividual uses aliases

@@ -16,7 +16,7 @@ impl Individual {
     ///
     /// # Arguments
     ///
-    /// * `batch` - The RecordBatch containing registry data
+    /// * `batch` - The `RecordBatch` containing registry data
     /// * `row` - The row index to use for enhancement
     ///
     /// # Returns
@@ -44,7 +44,7 @@ impl Individual {
     ///
     /// # Arguments
     ///
-    /// * `batch` - The RecordBatch containing registry data
+    /// * `batch` - The `RecordBatch` containing registry data
     /// * `row` - The row index to check
     ///
     /// # Returns

@@ -20,10 +20,10 @@ use std::sync::Arc;
     ]))
 }
 
-/// Field mapping from IND registry to SerdeIndividual
+/// Field mapping from IND registry to `SerdeIndividual`
 ///
 /// This function provides a mapping between IND registry field names and
-/// the corresponding field names in the SerdeIndividual struct.
+/// the corresponding field names in the `SerdeIndividual` struct.
 #[must_use] pub fn field_mapping() -> HashMap<String, String> {
     let mut mapping = HashMap::new();
     mapping.insert("PNR".to_string(), "pnr".to_string());

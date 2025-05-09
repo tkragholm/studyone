@@ -1,7 +1,7 @@
 //! Individual model collection
 //!
 //! This module provides a specialized collection implementation for Individual models.
-//! This is the canonical implementation of IndividualCollection in the codebase.
+//! This is the canonical implementation of `IndividualCollection` in the codebase.
 
 use crate::collections::GenericCollection;
 use crate::common::traits::{

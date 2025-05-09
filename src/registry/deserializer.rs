@@ -12,14 +12,14 @@ use crate::registry::ind;
 use arrow::array::Array;
 use log::debug;
 
-/// Deserialize a RecordBatch into Individual models
+/// Deserialize a `RecordBatch` into Individual models
 ///
 /// This function detects the registry type and delegates to the appropriate
 /// registry-specific deserializer.
 ///
 /// # Arguments
 ///
-/// * `batch` - The RecordBatch to deserialize
+/// * `batch` - The `RecordBatch` to deserialize
 ///
 /// # Returns
 ///
@@ -37,11 +37,11 @@ pub fn deserialize_batch(batch: &RecordBatch) -> Result<Vec<Individual>> {
     }
 }
 
-/// Deserialize a specific row from a RecordBatch into an Individual model
+/// Deserialize a specific row from a `RecordBatch` into an Individual model
 ///
 /// # Arguments
 ///
-/// * `batch` - The RecordBatch containing the row
+/// * `batch` - The `RecordBatch` containing the row
 /// * `row` - The row index to deserialize
 ///
 /// # Returns
@@ -64,7 +64,7 @@ pub fn deserialize_row(batch: &RecordBatch, row: usize) -> Result<Option<Individ
     }
 }
 
-/// Minimally deserialize a RecordBatch to extract just PNR
+/// Minimally deserialize a `RecordBatch` to extract just PNR
 ///
 /// This is a fallback for registry types that don't have a specific deserializer yet.
 pub fn deserialize_minimal(batch: &RecordBatch) -> Result<Vec<Individual>> {

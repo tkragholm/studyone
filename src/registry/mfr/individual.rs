@@ -1,6 +1,6 @@
 //! MFR registry trait implementations for Individual and Child
 //!
-//! This module contains the implementation of MfrRegistry for the Individual and Child models.
+//! This module contains the implementation of `MfrRegistry` for the Individual and Child models.
 
 use crate::RecordBatch;
 use crate::common::traits::MfrRegistry;

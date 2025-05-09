@@ -22,7 +22,7 @@ where
     Ok(Gender::from(gender_code.as_str()))
 }
 
-/// Custom deserializer for Origin from OPR_LAND field
+/// Custom deserializer for Origin from `OPR_LAND` field
 fn deserialize_origin<'de, D>(deserializer: D) -> std::result::Result<Origin, D::Error>
 where
     D: Deserializer<'de>,
@@ -42,7 +42,7 @@ where
     })
 }
 
-/// Custom deserializer for MaritalStatus from CIVST field
+/// Custom deserializer for `MaritalStatus` from CIVST field
 fn deserialize_marital_status<'de, D>(
     deserializer: D,
 ) -> std::result::Result<MaritalStatus, D::Error>
@@ -53,7 +53,7 @@ where
     Ok(MaritalStatus::from(status_code.as_str()))
 }
 
-/// Custom deserializer for CitizenshipStatus from STATSB field
+/// Custom deserializer for `CitizenshipStatus` from STATSB field
 fn deserialize_citizenship_status<'de, D>(
     deserializer: D,
 ) -> std::result::Result<CitizenshipStatus, D::Error>
@@ -71,7 +71,7 @@ where
     })
 }
 
-/// Custom deserializer for HousingType from HUSTYPE field
+/// Custom deserializer for `HousingType` from HUSTYPE field
 fn deserialize_housing_type<'de, D>(deserializer: D) -> std::result::Result<HousingType, D::Error>
 where
     D: Deserializer<'de>,
@@ -80,7 +80,7 @@ where
     Ok(HousingType::from(code))
 }
 
-/// Custom deserializer for SocioeconomicStatus from SOCIO field
+/// Custom deserializer for `SocioeconomicStatus` from SOCIO field
 fn deserialize_socioeconomic_status<'de, D>(
     deserializer: D,
 ) -> std::result::Result<SocioeconomicStatus, D::Error>
@@ -106,7 +106,7 @@ where
     })
 }
 
-/// Compute is_rural from municipality_code
+/// Compute `is_rural` from `municipality_code`
 #[allow(dead_code)]
 fn compute_is_rural(municipality_code: &Option<String>) -> bool {
     if let Some(code) = municipality_code {
@@ -128,7 +128,7 @@ pub struct SerdeIndividual {
     inner: Individual,
 }
 
-/// Field attribute mappings for SerdeIndividual
+/// Field attribute mappings for `SerdeIndividual`
 ///
 /// This struct defines the serde mapping attributes to allow direct
 /// deserialization from registry field names to Individual fields
@@ -298,7 +298,7 @@ struct IndividualDef {
 }
 
 impl SerdeIndividual {
-    /// Create a new SerdeIndividual with minimal required information
+    /// Create a new `SerdeIndividual` with minimal required information
     #[must_use]
     pub fn new(pnr: String, gender: Gender, birth_date: Option<NaiveDate>) -> Self {
         let mut individual = Individual::new(pnr, gender, birth_date);
@@ -308,7 +308,7 @@ impl SerdeIndividual {
     }
 
     /// Get reference to the underlying Individual
-    pub fn inner(&self) -> &Individual {
+    #[must_use] pub fn inner(&self) -> &Individual {
         &self.inner
     }
 
@@ -318,11 +318,11 @@ impl SerdeIndividual {
     }
 
     /// Convert into the inner Individual
-    pub fn into_inner(self) -> Individual {
+    #[must_use] pub fn into_inner(self) -> Individual {
         self.inner
     }
 
-    /// Convert directly from a RecordBatch using serde_arrow
+    /// Convert directly from a `RecordBatch` using `serde_arrow`
     pub fn from_batch(batch: &RecordBatch) -> Result<Vec<Self>> {
         match serde_arrow::from_record_batch::<Vec<Self>>(batch) {
             Ok(mut individuals) => {
@@ -337,7 +337,7 @@ impl SerdeIndividual {
     }
 
     /// Convert from the standard Individual model
-    pub fn from_standard(standard: &Individual) -> Self {
+    #[must_use] pub fn from_standard(standard: &Individual) -> Self {
         Self {
             inner: standard.clone(),
         }

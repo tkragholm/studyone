@@ -85,7 +85,7 @@ pub trait RegistryDetector {
     ) -> Result<bool>;
 }
 
-/// Implementation of the RegistryModel trait for a model that supports multiple registries
+/// Implementation of the `RegistryModel` trait for a model that supports multiple registries
 pub trait MultiRegistryModel: RegistryModel {
     /// Enhance this model with data from any supported registry type
     ///

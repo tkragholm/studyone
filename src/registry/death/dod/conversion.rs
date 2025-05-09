@@ -2,7 +2,7 @@
 //!
 //! This module contains the implementation for converting DOD data to domain models.
 //!
-//! The implementation uses the serde_arrow approach for deserialization.
+//! The implementation uses the `serde_arrow` approach for deserialization.
 
 use crate::error::Result;
 use crate::models::core::Individual;

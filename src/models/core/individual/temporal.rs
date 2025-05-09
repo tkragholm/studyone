@@ -107,7 +107,7 @@ impl HealthStatus for Individual {
 // Additional temporal methods for Individual
 impl Individual {
     /// Determine if this individual is a child based on age at reference date
-    pub fn is_child(&self, reference_date: &NaiveDate) -> bool {
+    #[must_use] pub fn is_child(&self, reference_date: &NaiveDate) -> bool {
         if let Some(age) = self.age_at(reference_date) {
             age < 18
         } else {
@@ -116,7 +116,7 @@ impl Individual {
     }
     
     /// Get the role of this individual at a reference date
-    pub fn role_at(&self, reference_date: &NaiveDate, all_individuals: &[Individual]) -> super::Role {
+    #[must_use] pub fn role_at(&self, reference_date: &NaiveDate, all_individuals: &[Individual]) -> super::Role {
         let is_child = self.is_child(reference_date);
         let is_parent = self.is_parent_in_dataset(all_individuals);
 

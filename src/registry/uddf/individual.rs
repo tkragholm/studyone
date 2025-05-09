@@ -1,6 +1,6 @@
 //! UDDF registry trait implementations for Individual
 //!
-//! This module contains the implementation of UddfRegistry for the Individual model.
+//! This module contains the implementation of `UddfRegistry` for the Individual model.
 
 use crate::RecordBatch;
 use crate::common::traits::UddfRegistry;

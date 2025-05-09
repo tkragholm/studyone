@@ -1,6 +1,6 @@
 //! BEF registry trait implementations for Individual
 //!
-//! This module contains the implementation of BefRegistry for the Individual model
+//! This module contains the implementation of `BefRegistry` for the Individual model
 //! using the serde_arrow-based deserialization approach.
 
 use crate::RecordBatch;
@@ -29,7 +29,7 @@ impl BefRegistry for Individual {
         // Convert SerdeIndividual instances to regular Individual instances
         let individuals = serde_individuals
             .into_iter()
-            .map(|si| si.into_inner())
+            .map(crate::models::core::individual::serde::SerdeIndividual::into_inner)
             .collect();
 
         Ok(individuals)

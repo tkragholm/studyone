@@ -2,7 +2,7 @@
 //!
 //! This module contains the implementation for converting AKM data to domain models.
 //!
-//! The implementation uses the serde_arrow approach for deserialization.
+//! The implementation uses the `serde_arrow` approach for deserialization.
 
 use crate::common::traits::registry::AkmRegistry;
 use crate::error::Result;

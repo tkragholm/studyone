@@ -1,7 +1,7 @@
 //! MFR registry deserialization
 //!
 //! This module provides functionality for deserializing MFR (Medical Birth Registry) data
-//! into domain models using serde_arrow.
+//! into domain models using `serde_arrow`.
 //!
 //! This includes conversion to both Individual and Child models.
 
@@ -15,8 +15,8 @@ use log::debug;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-/// Get field mapping from MFR registry to SerdeIndividual
-pub fn field_mapping() -> HashMap<String, String> {
+/// Get field mapping from MFR registry to `SerdeIndividual`
+#[must_use] pub fn field_mapping() -> HashMap<String, String> {
     let mut mapping = HashMap::new();
     // MFR-specific field mappings
     mapping.insert("BARNETS_CPR".to_string(), "pnr".to_string());
@@ -25,7 +25,7 @@ pub fn field_mapping() -> HashMap<String, String> {
     mapping
 }
 
-/// Deserialize RecordBatch to Vec<Individual> using serde_arrow
+/// Deserialize `RecordBatch` to Vec<Individual> using `serde_arrow`
 ///
 /// # Arguments
 ///
@@ -46,14 +46,14 @@ pub fn deserialize_batch(batch: &RecordBatch) -> Result<Vec<Individual>> {
             Ok(serde_individuals) => {
                 let individuals = serde_individuals
                     .into_iter()
-                    .map(|si| si.into_inner())
+                    .map(crate::models::core::individual::serde::SerdeIndividual::into_inner)
                     .collect();
 
                 debug!("Successfully deserialized MFR batch with SerdeIndividual");
                 return Ok(individuals);
             }
             Err(e) => {
-                debug!("Falling back to minimal extraction: {}", e);
+                debug!("Falling back to minimal extraction: {e}");
                 // Continue to minimal extraction below
             }
         }
@@ -64,7 +64,7 @@ pub fn deserialize_batch(batch: &RecordBatch) -> Result<Vec<Individual>> {
     deserialize_minimal(batch)
 }
 
-/// Deserialize a single row from a RecordBatch to an Individual
+/// Deserialize a single row from a `RecordBatch` to an Individual
 ///
 /// # Arguments
 ///
@@ -92,7 +92,7 @@ pub fn deserialize_row(batch: &RecordBatch, row: usize) -> Result<Option<Individ
     Ok(individuals.into_iter().next())
 }
 
-/// Deserialize a RecordBatch to Vec<Child> using serde_arrow
+/// Deserialize a `RecordBatch` to Vec<Child> using `serde_arrow`
 ///
 /// This function first converts the data to Individuals, then creates Child
 /// models from those Individuals, enhancing them with MFR-specific birth data.
@@ -161,7 +161,7 @@ pub fn deserialize_child_batch(
 
 /// Create a record batch with mapped field names
 ///
-/// This function creates a new RecordBatch with field names mapped
+/// This function creates a new `RecordBatch` with field names mapped
 /// according to the provided mapping table, to facilitate deserialization.
 ///
 /// # Arguments
@@ -171,7 +171,7 @@ pub fn deserialize_child_batch(
 ///
 /// # Returns
 ///
-/// A new RecordBatch with mapped field names
+/// A new `RecordBatch` with mapped field names
 pub fn create_mapped_batch(
     batch: &RecordBatch,
     field_mapping: HashMap<String, String>,

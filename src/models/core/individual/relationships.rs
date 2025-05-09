@@ -23,7 +23,7 @@ impl Individual {
     }
 
     /// Determine if this individual is a parent based on relations
-    pub fn is_parent_in_dataset(&self, all_individuals: &[Individual]) -> bool {
+    #[must_use] pub fn is_parent_in_dataset(&self, all_individuals: &[Individual]) -> bool {
         all_individuals.iter().any(|ind| {
             (ind.mother_pnr
                 .as_ref() == Some(&self.pnr))
@@ -34,17 +34,17 @@ impl Individual {
     }
 
     /// Create a Child model from this Individual
-    pub fn to_child(&self) -> Child {
+    #[must_use] pub fn to_child(&self) -> Child {
         Child::from_individual(Arc::new(self.clone()))
     }
 
     /// Create a Parent model from this Individual
-    pub fn to_parent(&self) -> Parent {
+    #[must_use] pub fn to_parent(&self) -> Parent {
         Parent::from_individual(Arc::new(self.clone()))
     }
 
     /// Group individuals by family ID
-    pub fn group_by_family(individuals: &[Self]) -> HashMap<String, Vec<&Self>> {
+    #[must_use] pub fn group_by_family(individuals: &[Self]) -> HashMap<String, Vec<&Self>> {
         let mut family_map: HashMap<String, Vec<&Self>> = HashMap::new();
 
         for individual in individuals {
@@ -60,7 +60,7 @@ impl Individual {
     }
 
     /// Create families from a collection of individuals
-    pub fn create_families(individuals: &[Self], reference_date: &NaiveDate) -> Vec<Family> {
+    #[must_use] pub fn create_families(individuals: &[Self], reference_date: &NaiveDate) -> Vec<Family> {
         let family_groups = Self::group_by_family(individuals);
         let mut families = Vec::new();
 
@@ -99,16 +99,16 @@ impl Individual {
     }
 
     /// Create Child models for all children in the dataset
-    pub fn create_children(individuals: &[Self], reference_date: &NaiveDate) -> Vec<Child> {
+    #[must_use] pub fn create_children(individuals: &[Self], reference_date: &NaiveDate) -> Vec<Child> {
         individuals
             .iter()
             .filter(|ind| ind.is_child(reference_date))
-            .map(|ind| ind.to_child())
+            .map(super::base::Individual::to_child)
             .collect()
     }
 
     /// Create Parent models for all parents in the dataset
-    pub fn create_parents(individuals: &[Self]) -> Vec<Parent> {
+    #[must_use] pub fn create_parents(individuals: &[Self]) -> Vec<Parent> {
         let parent_pnrs: HashSet<&String> = individuals
             .iter()
             .filter_map(|ind| ind.mother_pnr.as_ref())
@@ -118,7 +118,7 @@ impl Individual {
         individuals
             .iter()
             .filter(|ind| parent_pnrs.contains(&ind.pnr))
-            .map(|ind| ind.to_parent())
+            .map(super::base::Individual::to_parent)
             .collect()
     }
 }

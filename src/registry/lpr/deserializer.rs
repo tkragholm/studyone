@@ -1,7 +1,7 @@
 //! LPR registry deserialization
 //!
 //! This module provides functionality for deserializing LPR registry data
-//! into domain models using serde_arrow.
+//! into domain models using `serde_arrow`.
 
 use crate::RecordBatch;
 use crate::error::Result;
@@ -14,8 +14,8 @@ use log::debug;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-/// Get field mapping from LPR registry to SerdeIndividual
-pub fn field_mapping() -> HashMap<String, String> {
+/// Get field mapping from LPR registry to `SerdeIndividual`
+#[must_use] pub fn field_mapping() -> HashMap<String, String> {
     let mut mapping = HashMap::new();
     // LPR-specific field mappings would go here
     // For example:
@@ -23,9 +23,9 @@ pub fn field_mapping() -> HashMap<String, String> {
     mapping
 }
 
-/// Deserialize RecordBatch to Vec<Individual> using serde_arrow
+/// Deserialize `RecordBatch` to Vec<Individual> using `serde_arrow`
 ///
-/// This function uses the SerdeIndividual deserialization mechanism for
+/// This function uses the `SerdeIndividual` deserialization mechanism for
 /// efficient conversion.
 ///
 /// # Arguments
@@ -47,14 +47,14 @@ pub fn deserialize_batch(batch: &RecordBatch) -> Result<Vec<Individual>> {
             Ok(serde_individuals) => {
                 let individuals = serde_individuals
                     .into_iter()
-                    .map(|si| si.into_inner())
+                    .map(crate::models::core::individual::serde::SerdeIndividual::into_inner)
                     .collect();
                 
                 debug!("Successfully deserialized LPR batch with SerdeIndividual");
                 return Ok(individuals);
             }
             Err(e) => {
-                debug!("Falling back to basic extraction: {}", e);
+                debug!("Falling back to basic extraction: {e}");
                 // Continue to basic extraction below
             }
         }
@@ -70,7 +70,7 @@ pub fn deserialize_batch(batch: &RecordBatch) -> Result<Vec<Individual>> {
     Ok(individuals)
 }
 
-/// Deserialize a single row from a RecordBatch to an Individual
+/// Deserialize a single row from a `RecordBatch` to an Individual
 ///
 /// # Arguments
 ///
@@ -107,7 +107,7 @@ pub fn deserialize_row(batch: &RecordBatch, row: usize) -> Result<Option<Individ
 
 /// Create a record batch with mapped field names
 ///
-/// This function creates a new RecordBatch with field names mapped
+/// This function creates a new `RecordBatch` with field names mapped
 /// according to the provided mapping table, to facilitate deserialization.
 ///
 /// # Arguments
@@ -117,7 +117,7 @@ pub fn deserialize_row(batch: &RecordBatch, row: usize) -> Result<Option<Individ
 ///
 /// # Returns
 ///
-/// A new RecordBatch with mapped field names
+/// A new `RecordBatch` with mapped field names
 pub fn create_mapped_batch(
     batch: &RecordBatch,
     field_mapping: HashMap<String, String>,

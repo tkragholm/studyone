@@ -64,11 +64,11 @@ impl RegistryAware for Child {
     }
 }
 
-/// Extension methods for Individual for direct serde_arrow conversion from registry data
+/// Extension methods for Individual for direct `serde_arrow` conversion from registry data
 impl Individual {
-    /// Convert a registry batch to Individual models using serde_arrow
+    /// Convert a registry batch to Individual models using `serde_arrow`
     ///
-    /// This method uses serde_arrow for efficient direct deserialization from Arrow to Rust structs.
+    /// This method uses `serde_arrow` for efficient direct deserialization from Arrow to Rust structs.
     /// It handles field name mapping and type conversions automatically.
     pub fn from_registry_batch_with_serde_arrow(batch: &RecordBatch) -> Result<Vec<Self>> {
         // Use the central deserializer which will route to the appropriate registry-specific deserializer

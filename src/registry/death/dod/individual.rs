@@ -1,6 +1,6 @@
 //! DOD registry trait implementations for Individual
 //! 
-//! This module contains the implementation of DodRegistry for the Individual model.
+//! This module contains the implementation of `DodRegistry` for the Individual model.
 
 use crate::RecordBatch;
 use crate::common::traits::registry::DodRegistry;

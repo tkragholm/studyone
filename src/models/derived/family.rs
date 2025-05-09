@@ -362,12 +362,12 @@ impl FamilyCollection {
     }
 
     /// Get the count of individuals in the collection
-    pub fn individual_count(&self) -> usize {
+    #[must_use] pub fn individual_count(&self) -> usize {
         self.individuals.len()
     }
 
     /// Get the count of families in the collection
-    pub fn family_count(&self) -> usize {
+    #[must_use] pub fn family_count(&self) -> usize {
         self.families.len()
     }
 

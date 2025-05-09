@@ -156,7 +156,7 @@ impl Child {
         Ok(enhanced)
     }
 
-    /// Create Child models from a batch of registry records using serde_arrow
+    /// Create Child models from a batch of registry records using `serde_arrow`
     pub fn from_registry_batch_with_serde_arrow(batch: &RecordBatch) -> Result<Vec<Self>> {
         // First create Individuals from the registry batch
         let individuals = Individual::from_registry_batch_with_serde_arrow(batch)?;
@@ -323,7 +323,7 @@ impl HealthStatus for Child {
 
 // Implement ArrowSchema trait
 impl ArrowSchema for Child {
-    /// Get the Arrow schema for Child records using serde_arrow
+    /// Get the Arrow schema for Child records using `serde_arrow`
     fn schema() -> Schema {
         let sample = Self::from_individual(Arc::new(Individual::new(
             "1234567890".to_string(),

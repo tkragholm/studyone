@@ -1,6 +1,6 @@
 //! AKM registry trait implementations for Individual
 //!
-//! This module contains the implementation of AkmRegistry for the Individual model.
+//! This module contains the implementation of `AkmRegistry` for the Individual model.
 
 use crate::RecordBatch;
 use crate::common::traits::AkmRegistry;

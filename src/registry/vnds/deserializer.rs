@@ -13,7 +13,7 @@ use std::sync::Arc;
 
 /// Field mapping for VNDS registry
 ///
-/// Maps VNDS registry field names to SerdeIndividual field names
+/// Maps VNDS registry field names to `SerdeIndividual` field names
 #[must_use]
 pub fn field_mapping() -> HashMap<String, String> {
     let mut mapping = HashMap::new();
@@ -30,9 +30,9 @@ pub fn field_mapping() -> HashMap<String, String> {
 
 /// Create a mapped batch with standardized field names for deserialization
 ///
-/// This function takes a RecordBatch with registry-specific field names
-/// and creates a new RecordBatch with mapped field names that match
-/// the SerdeIndividual structure's field names.
+/// This function takes a `RecordBatch` with registry-specific field names
+/// and creates a new `RecordBatch` with mapped field names that match
+/// the `SerdeIndividual` structure's field names.
 pub fn create_mapped_batch(
     batch: &RecordBatch,
     field_mapping: HashMap<String, String>,
@@ -74,9 +74,9 @@ pub fn create_mapped_batch(
 
 /// Deserialize a batch of VNDS records into Individual models
 ///
-/// This function takes a RecordBatch containing VNDS registry data
+/// This function takes a `RecordBatch` containing VNDS registry data
 /// and deserializes it into a Vec of Individual models using
-/// the SerdeIndividual approach.
+/// the `SerdeIndividual` approach.
 pub fn deserialize_batch(batch: &RecordBatch) -> Result<Vec<Individual>> {
     debug!("Deserializing VNDS batch with SerdeIndividual");
 
@@ -89,7 +89,7 @@ pub fn deserialize_batch(batch: &RecordBatch) -> Result<Vec<Individual>> {
     // Convert SerdeIndividual instances to regular Individual instances
     let individuals = serde_individuals
         .into_iter()
-        .map(|si| si.into_inner())
+        .map(crate::models::core::individual::serde::SerdeIndividual::into_inner)
         .collect();
     
     debug!("Successfully deserialized VNDS batch with SerdeIndividual");
@@ -98,7 +98,7 @@ pub fn deserialize_batch(batch: &RecordBatch) -> Result<Vec<Individual>> {
 
 /// Deserialize a single row from a VNDS batch
 ///
-/// This function takes a RecordBatch and row index, and deserializes
+/// This function takes a `RecordBatch` and row index, and deserializes
 /// just that single row into an Individual model.
 pub fn deserialize_row(batch: &RecordBatch, row: usize) -> Result<Option<Individual>> {
     if row >= batch.num_rows() {

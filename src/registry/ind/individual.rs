@@ -1,6 +1,6 @@
 //! IND registry trait implementations for Individual
 //! 
-//! This module contains the implementation of IndRegistry for the Individual model.
+//! This module contains the implementation of `IndRegistry` for the Individual model.
 
 use crate::RecordBatch;
 use crate::common::traits::IndRegistry;

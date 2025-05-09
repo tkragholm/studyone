@@ -1,7 +1,7 @@
 //! BEF registry deserialization
 //!
 //! This module provides functionality for deserializing BEF registry data
-//! into domain models using the SerdeIndividual wrapper.
+//! into domain models using the `SerdeIndividual` wrapper.
 
 use crate::RecordBatch;
 use crate::error::Result;
@@ -13,17 +13,17 @@ use log::debug;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-/// Get field mapping from BEF registry to SerdeIndividual
+/// Get field mapping from BEF registry to `SerdeIndividual`
 ///
 /// Uses the mapping defined in the schema module.
-pub fn field_mapping() -> HashMap<String, String> {
+#[must_use] pub fn field_mapping() -> HashMap<String, String> {
     schema::field_mapping()
 }
 
-/// Deserialize RecordBatch to Vec<Individual> directly using SerdeIndividual
+/// Deserialize `RecordBatch` to Vec<Individual> directly using `SerdeIndividual`
 ///
-/// This function uses the SerdeIndividual deserialization mechanism for
-/// efficient conversion based on serde_arrow.
+/// This function uses the `SerdeIndividual` deserialization mechanism for
+/// efficient conversion based on `serde_arrow`.
 ///
 /// # Arguments
 ///
@@ -44,14 +44,14 @@ pub fn deserialize_batch(batch: &RecordBatch) -> Result<Vec<Individual>> {
     // Convert SerdeIndividual instances to regular Individual instances
     let individuals = serde_individuals
         .into_iter()
-        .map(|si| si.into_inner())
+        .map(crate::models::core::individual::serde::SerdeIndividual::into_inner)
         .collect();
 
     debug!("Successfully deserialized BEF batch with SerdeIndividual");
     Ok(individuals)
 }
 
-/// Deserialize a single row from a RecordBatch to an Individual
+/// Deserialize a single row from a `RecordBatch` to an Individual
 ///
 /// # Arguments
 ///
@@ -80,7 +80,7 @@ pub fn deserialize_row(batch: &RecordBatch, row: usize) -> Result<Option<Individ
 
 /// Create a record batch with mapped field names
 ///
-/// This function creates a new RecordBatch with field names mapped
+/// This function creates a new `RecordBatch` with field names mapped
 /// according to the provided mapping table, to facilitate deserialization.
 ///
 /// # Arguments
@@ -90,7 +90,7 @@ pub fn deserialize_row(batch: &RecordBatch, row: usize) -> Result<Option<Individ
 ///
 /// # Returns
 ///
-/// A new RecordBatch with mapped field names
+/// A new `RecordBatch` with mapped field names
 pub fn create_mapped_batch(
     batch: &RecordBatch,
     field_mapping: HashMap<String, String>,

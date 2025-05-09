@@ -29,8 +29,8 @@ pub enum RegistryType {
 }
 
 impl RegistryType {
-    /// Convert RegistryType to static string
-    pub fn as_str(&self) -> &'static str {
+    /// Convert `RegistryType` to static string
+    #[must_use] pub fn as_str(&self) -> &'static str {
         match self {
             RegistryType::BEF => "BEF",
             RegistryType::IND => "IND",
@@ -63,17 +63,17 @@ impl From<&str> for RegistryType {
 
 /// Detect registry type from batch schema
 ///
-/// This function examines the schema of a RecordBatch and detects which
+/// This function examines the schema of a `RecordBatch` and detects which
 /// registry it belongs to based on characteristic field names.
 ///
 /// # Arguments
 ///
-/// * `batch` - The RecordBatch to examine
+/// * `batch` - The `RecordBatch` to examine
 ///
 /// # Returns
 ///
-/// The detected registry type as a RegistryType enum
-pub fn detect_registry_type(batch: &RecordBatch) -> RegistryType {
+/// The detected registry type as a `RegistryType` enum
+#[must_use] pub fn detect_registry_type(batch: &RecordBatch) -> RegistryType {
     let registry_type = if batch.schema().field_with_name("RECNUM").is_ok() {
         RegistryType::LPR
     } else if batch.schema().field_with_name("PERINDKIALT").is_ok() {
@@ -104,11 +104,11 @@ pub fn detect_registry_type(batch: &RecordBatch) -> RegistryType {
 ///
 /// # Arguments
 ///
-/// * `batch` - The RecordBatch to examine
+/// * `batch` - The `RecordBatch` to examine
 ///
 /// # Returns
 ///
 /// The detected registry type as a static string
-pub fn detect_registry_type_as_str(batch: &RecordBatch) -> &'static str {
+#[must_use] pub fn detect_registry_type_as_str(batch: &RecordBatch) -> &'static str {
     detect_registry_type(batch).as_str()
 }
