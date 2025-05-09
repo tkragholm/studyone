@@ -1,7 +1,7 @@
-//! Tests for Child serialization using serde_arrow
+//! Tests for Child serialization using `serde_arrow`
 //!
 //! This module tests the serialization and deserialization of Child models
-//! using serde_arrow for conversion to and from Arrow record batches.
+//! using `serde_arrow` for conversion to and from Arrow record batches.
 
 use arrow::array::AsArray;
 use par_reader::models::child::Child;
