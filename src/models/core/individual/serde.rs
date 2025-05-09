@@ -60,7 +60,20 @@ fn deserialize_citizenship_status<'de, D>(
 where
     D: Deserializer<'de>,
 {
-    let code: i32 = Deserialize::deserialize(deserializer)?;
+    // Try to deserialize as i32 first
+    let code_result = i32::deserialize(deserializer);
+
+    // If that fails, try to deserialize as string and convert
+    let code = match code_result {
+        Ok(code) => code,
+        Err(_) => {
+            // Try to parse from string
+            let code_str = String::deserialize(deserializer)?;
+            code_str.parse::<i32>().map_err(|_| {
+                serde::de::Error::custom(format!("Invalid citizenship code: {}", code_str))
+            })?
+        }
+    };
 
     Ok(if code == 5100 {
         CitizenshipStatus::Danish
@@ -78,6 +91,18 @@ where
 {
     let code: i32 = Deserialize::deserialize(deserializer)?;
     Ok(HousingType::from(code))
+}
+
+/// Custom deserializer for municipality_code from KOM field
+/// This converts from integer to string
+fn deserialize_municipality_code<'de, D>(
+    deserializer: D,
+) -> std::result::Result<Option<String>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let code = i32::deserialize(deserializer).map_err(serde::de::Error::custom)?;
+    Ok(Some(code.to_string()))
 }
 
 /// Custom deserializer for `SocioeconomicStatus` from SOCIO field
@@ -121,10 +146,10 @@ fn compute_is_rural(municipality_code: &Option<String>) -> bool {
 ///
 /// This wrapper adds serde attributes to the base Individual model
 /// to enable direct conversion from registry data.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SerdeIndividual {
     /// The inner Individual that holds the actual data
-    #[serde(with = "IndividualDef")]
+    #[serde(flatten, with = "IndividualDef")]
     inner: Individual,
 }
 
@@ -159,7 +184,7 @@ struct IndividualDef {
     education_level: EducationLevel,
 
     /// Municipality code at index date
-    #[serde(alias = "KOM")]
+    #[serde(alias = "KOM", deserialize_with = "deserialize_municipality_code")]
     municipality_code: Option<String>,
 
     /// Whether the individual lives in a rural area
@@ -308,7 +333,8 @@ impl SerdeIndividual {
     }
 
     /// Get reference to the underlying Individual
-    #[must_use] pub const fn inner(&self) -> &Individual {
+    #[must_use]
+    pub const fn inner(&self) -> &Individual {
         &self.inner
     }
 
@@ -318,7 +344,8 @@ impl SerdeIndividual {
     }
 
     /// Convert into the inner Individual
-    #[must_use] pub fn into_inner(self) -> Individual {
+    #[must_use]
+    pub fn into_inner(self) -> Individual {
         self.inner
     }
 
@@ -328,7 +355,7 @@ impl SerdeIndividual {
             Ok(mut individuals) => {
                 // Compute any derived fields if needed
                 for individual in &mut individuals {
-                    individual.inner.compute_rural_status();
+                    individual.post_deserialize();
                 }
                 Ok(individuals)
             }
@@ -337,7 +364,8 @@ impl SerdeIndividual {
     }
 
     /// Convert from the standard Individual model
-    #[must_use] pub fn from_standard(standard: &Individual) -> Self {
+    #[must_use]
+    pub fn from_standard(standard: &Individual) -> Self {
         Self {
             inner: standard.clone(),
         }
@@ -345,25 +373,11 @@ impl SerdeIndividual {
 }
 
 // Implementation for the serde deserialization of Individual through the SerdeIndividual
-impl<'de> Deserialize<'de> for SerdeIndividual {
-    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        // Create a wrapper struct to handle the deserialization
-        #[derive(Deserialize)]
-        struct SerdeWrapper {
-            #[serde(with = "IndividualDef")]
-            inner: Individual,
-        }
-
-        let mut wrapper = SerdeWrapper::deserialize(deserializer)?;
-
-        // Compute derived fields after deserialization
-        wrapper.inner.compute_rural_status();
-
-        Ok(Self {
-            inner: wrapper.inner,
-        })
+// We now use the derive(Deserialize) instead of manually implementing it
+impl SerdeIndividual {
+    // This custom deserialize hook runs after deserialization
+    // to compute derived fields
+    pub fn post_deserialize(&mut self) {
+        self.inner.compute_rural_status();
     }
 }

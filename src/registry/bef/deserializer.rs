@@ -38,8 +38,19 @@ pub fn deserialize_batch(batch: &RecordBatch) -> Result<Vec<Individual>> {
     // Create a mapped batch with proper field names for deserialization
     let batch_with_mapping = create_mapped_batch(batch, field_mapping())?;
 
+    // Print the schema for debugging
+    log::debug!("Mapped batch schema: {:?}", batch_with_mapping.schema());
+
     // Use SerdeIndividual for deserialization
-    let serde_individuals = SerdeIndividual::from_batch(&batch_with_mapping)?;
+    let serde_result = SerdeIndividual::from_batch(&batch_with_mapping);
+
+    let serde_individuals = match serde_result {
+        Ok(individuals) => individuals,
+        Err(e) => {
+            log::error!("Deserialization error: {}", e);
+            return Err(anyhow::anyhow!("Failed to deserialize: {}", e));
+        }
+    };
 
     // Convert SerdeIndividual instances to regular Individual instances
     let individuals = serde_individuals

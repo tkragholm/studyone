@@ -408,6 +408,14 @@ impl RegistryManager {
         Ok(filtered_data)
     }
 
+    /// Check if a registry is already registered
+    pub fn has_registry(&self, name: &str) -> bool {
+        match self.loaders.read() {
+            Ok(loaders) => loaders.contains_key(name),
+            Err(_) => false // In case of error, assume not registered
+        }
+    }
+
     /// Get the schema for a registry
     pub fn get_schema(&self, name: &str) -> Result<SchemaRef> {
         // Get the loader directly to avoid holding the lock longer than necessary

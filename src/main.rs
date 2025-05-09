@@ -29,12 +29,12 @@ async fn main() -> Result<()> {
 
     // Step 1: Create a population from test data
     info!("Step 1: Creating population from test data");
-    let population = generate_test_population()?;
+    let population = generate_test_population().await?;
     println!("Population created: {}", population.print_summary());
 
     // Step 2: Load diagnoses and identify SCD cases
     info!("Step 2: Loading diagnoses and identifying SCD cases");
-    let diagnosis_collection = lpr_loader::load_diagnoses(&population)?;
+    let diagnosis_collection = lpr_loader::load_diagnoses(&population).await?;
 
     // Count total diagnoses
     let mut total_diagnoses = 0;

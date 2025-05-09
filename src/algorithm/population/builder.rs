@@ -9,6 +9,7 @@ use std::sync::Arc;
 
 use chrono::{Datelike, NaiveDate};
 
+use crate::RecordBatch;
 use crate::error::Result;
 use crate::models::core::traits::HealthStatus;
 use crate::models::core::traits::TemporalValidity;
@@ -281,6 +282,108 @@ impl PopulationBuilder {
     pub fn with_pnr_filter(mut self, pnr_filter: HashSet<String>) -> Self {
         self.pnr_filter = Some(pnr_filter);
         self
+    }
+
+    /// Add BEF data from pre-loaded record batches
+    pub fn add_bef_data_from_batches(mut self, batches: Vec<RecordBatch>) -> Result<Self> {
+        log::info!("Processing pre-loaded BEF data batches");
+
+        // Process each batch
+        for batch in batches {
+            // Use the BEF adapter to extract individuals and families
+            let (mut batch_individuals, batch_families) =
+                BefCombinedRegister::process_batch(&batch)?;
+
+            // Apply filtering based on configuration
+            if self.config.resident_only {
+                batch_individuals.retain(|i| i.was_resident_at(&self.config.index_date));
+            }
+
+            if let Some(min_age) = self.config.min_age {
+                batch_individuals.retain(|i| {
+                    if let Some(age) = i.age_at(&self.config.index_date) {
+                        age >= min_age as i32
+                    } else {
+                        false // Exclude individuals with unknown age
+                    }
+                });
+            }
+
+            if let Some(max_age) = self.config.max_age {
+                batch_individuals.retain(|i| {
+                    if let Some(age) = i.age_at(&self.config.index_date) {
+                        age <= max_age as i32
+                    } else {
+                        true // Keep individuals with unknown age (will be filtered elsewhere)
+                    }
+                });
+            }
+
+            // Add filtered individuals to our collection
+            for individual in batch_individuals {
+                self.individuals.insert(individual.pnr.clone(), individual);
+            }
+
+            // Add families to our collection
+            for family in batch_families {
+                self.families.insert(family.family_id.clone(), family);
+            }
+        }
+
+        log::info!(
+            "Added {} individuals and {} families from BEF data",
+            self.individuals.len(),
+            self.families.len()
+        );
+
+        Ok(self)
+    }
+
+    /// Add MFR data from pre-loaded record batches
+    pub fn add_mfr_data_from_batches(mut self, batches: Vec<RecordBatch>) -> Result<Self> {
+        log::info!("Processing pre-loaded MFR data batches");
+
+        // Create individual lookup for MFR adapter
+        let individual_lookup: HashMap<String, Arc<Individual>> = self
+            .individuals
+            .iter()
+            .map(|(k, v)| (k.clone(), Arc::new(v.clone())))
+            .collect();
+
+        // Create MFR adapter with individual lookup
+        let adapter = MfrChildRegister::new_with_lookup(individual_lookup);
+
+        // Process each batch using the adapter's process_batch method
+        for batch in batches {
+            // Use the adapter instance to extract child data
+            let child_details = adapter.process_batch(&batch)?;
+
+            // For each child detail record, try to find the corresponding individual
+            for detail in child_details {
+                // Get the individual PNR from the child's individual reference
+                let pnr = detail.individual().pnr.clone();
+                if let Some(individual) = self.individuals.get(&pnr) {
+                    // Create a Child object using individual
+                    let individual_arc = Arc::new(individual.clone());
+                    let mut child = Child::from_individual(individual_arc);
+
+                    // Enrich with MFR-specific fields - combine all details in one call
+                    let birth_weight = detail.birth_weight;
+                    let gestational_age = detail.gestational_age;
+                    let apgar_score = detail.apgar_score;
+
+                    // Set all birth details at once to avoid moved value errors
+                    child = child.with_birth_details(birth_weight, gestational_age, apgar_score);
+
+                    // Store the enriched child object
+                    self.children.insert(child.individual().pnr.clone(), child);
+                }
+            }
+        }
+
+        log::info!("Added {} children from MFR data", self.children.len());
+
+        Ok(self)
     }
 
     /// Add BEF (population registry) data to the population
@@ -593,7 +696,7 @@ impl Default for PopulationBuilder {
 ///
 /// This is a utility function to easily create a test population
 /// for development and testing purposes using test data directories.
-pub fn generate_test_population() -> Result<Population> {
+pub async fn generate_test_population() -> Result<Population> {
     use crate::registry::factory;
 
     // Create a population configuration
@@ -608,7 +711,7 @@ pub fn generate_test_population() -> Result<Population> {
     };
 
     // Initialize the population builder
-    let builder = PopulationBuilder::new().with_config(config);
+    let mut builder = PopulationBuilder::new().with_config(config);
 
     // Create registry loaders
     let bef_registry = factory::registry_from_name("bef")?;
@@ -621,11 +724,16 @@ pub fn generate_test_population() -> Result<Population> {
     ensure_path_exists(&bef_path)?;
     ensure_path_exists(&mfr_path)?;
 
-    // Build population step by step
-    let builder = builder
-        .add_bef_data(&*bef_registry, &bef_path)?
-        .add_mfr_data(&*mfr_registry, &mfr_path)?
-        .identify_family_roles();
+    // Load BEF data asynchronously
+    let bef_batches = bef_registry.load_async(&bef_path, None).await?;
+    builder = builder.add_bef_data_from_batches(bef_batches)?;
+
+    // Load MFR data asynchronously
+    let mfr_batches = mfr_registry.load_async(&mfr_path, None).await?;
+    builder = builder.add_mfr_data_from_batches(mfr_batches)?;
+
+    // Continue with the rest of the builder chain
+    builder = builder.identify_family_roles();
 
     // Create the final population
     let mut population = builder.build();

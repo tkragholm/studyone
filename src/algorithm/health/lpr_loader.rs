@@ -61,7 +61,7 @@ pub fn process_lpr_data(
 /// Load diagnoses from real LPR test data for all available years
 ///
 /// This implementation uses `RegistryManager` for efficient loading and automatic type conversion
-pub fn load_diagnoses(population: &Population) -> Result<DiagnosisCollection> {
+pub async fn load_diagnoses(population: &Population) -> Result<DiagnosisCollection> {
     // Check if LPR data directories exist
     let lpr2_available = check_lpr2_availability()?;
     let lpr3_available = check_lpr3_availability()?;
@@ -98,7 +98,7 @@ pub fn load_diagnoses(population: &Population) -> Result<DiagnosisCollection> {
 
     // Process LPR2 data if available
     if lpr2_available {
-        let lpr2_collection = load_lpr2_data(&manager, &pnrs, &all_pnrs, &lpr_config)?;
+        let lpr2_collection = load_lpr2_data_async(&manager, &pnrs, &all_pnrs, &lpr_config).await?;
 
         // Check if we have any diagnoses by looking at each PNR
         let has_diagnoses = all_pnrs
@@ -117,7 +117,7 @@ pub fn load_diagnoses(population: &Population) -> Result<DiagnosisCollection> {
 
     // Process LPR3 data if available
     if lpr3_available {
-        let lpr3_collection = load_lpr3_data(&manager, &pnrs, &all_pnrs, &lpr_config)?;
+        let lpr3_collection = load_lpr3_data_async(&manager, &pnrs, &all_pnrs, &lpr_config).await?;
 
         // Check if we have any diagnoses by looking at each PNR
         let has_diagnoses = all_pnrs
@@ -164,7 +164,75 @@ fn check_lpr3_availability() -> Result<bool> {
     Ok(!lpr3_kontakter_files.is_empty() && !lpr3_diagnoser_files.is_empty())
 }
 
-/// Load LPR2 data from available files
+/// Load LPR2 data from available files asynchronously
+async fn load_lpr2_data_async(
+    manager: &RegistryManager,
+    pnrs: &HashSet<String>,
+    all_pnrs: &[String],
+    lpr_config: &LprConfig,
+) -> Result<DiagnosisCollection> {
+    let lpr_diag_files = get_lpr_diag_files()?;
+    let lpr_adm_files = get_lpr_adm_files()?;
+
+    // Display file count for user information
+    log::info!(
+        "Found {} LPR_DIAG files and {} LPR_ADM files to process",
+        lpr_diag_files.len(),
+        lpr_adm_files.len()
+    );
+
+    let matched_files = match_lpr_files_by_year(&lpr_diag_files, &lpr_adm_files);
+    let mut combined_collection = DiagnosisCollection::new();
+
+    // Use register manager's async loading capabilities
+    for (diag_idx, (diag_file_opt, adm_file_opt)) in matched_files.iter().enumerate() {
+        if diag_file_opt.is_none() || adm_file_opt.is_none() {
+            continue;
+        }
+
+        let diag_file = diag_file_opt.as_ref().unwrap();
+        let adm_file = adm_file_opt.as_ref().unwrap();
+
+        // Extract year from filenames for logging
+        let year = extract_year_from_file_path(diag_file, diag_idx);
+
+        // Register files with manager for async loading
+        if !manager.has_registry("lpr_diag") {
+            manager.register("lpr_diag", &diag_file.parent().unwrap_or_else(|| diag_file.as_path()))?;
+        }
+
+        if !manager.has_registry("lpr_adm") {
+            manager.register("lpr_adm", &adm_file.parent().unwrap_or_else(|| adm_file.as_path()))?;
+        }
+
+        // Use async loading
+        let diag_data = manager.load_async("lpr_diag").await?;
+        let adm_data = manager.load_async("lpr_adm").await?;
+
+        // Process the loaded data
+        for (adm_batch, diag_batch) in adm_data.iter().zip(diag_data.iter()) {
+            let year_collection = process_lpr_data(
+                Some(adm_batch),
+                Some(diag_batch),
+                None, // No BES data for now
+                None, // No LPR3 data
+                None, // No LPR3 data
+                lpr_config,
+            )?;
+
+            // Add each diagnosis to the combined collection
+            for pnr in all_pnrs {
+                for diagnosis in year_collection.get_diagnoses(pnr) {
+                    combined_collection.add(diagnosis.as_ref().clone());
+                }
+            }
+        }
+    }
+
+    Ok(combined_collection)
+}
+
+/// Load LPR2 data from available files using synchronous loading
 fn load_lpr2_data(
     manager: &RegistryManager,
     pnrs: &HashSet<String>,
@@ -246,6 +314,74 @@ fn load_lpr2_data(
         }
 
         log::info!("Added {diagnoses_count} diagnoses from year {year}");
+    }
+
+    Ok(combined_collection)
+}
+
+/// Load LPR3 data from available files asynchronously
+async fn load_lpr3_data_async(
+    manager: &RegistryManager,
+    pnrs: &HashSet<String>,
+    all_pnrs: &[String],
+    lpr_config: &LprConfig,
+) -> Result<DiagnosisCollection> {
+    let lpr3_kontakter_files = get_lpr3_kontakter_files()?;
+    let lpr3_diagnoser_files = get_lpr3_diagnoser_files()?;
+
+    // Display file count for user information
+    log::info!(
+        "Found {} LPR3_KONTAKTER files and {} LPR3_DIAGNOSER files to process",
+        lpr3_kontakter_files.len(),
+        lpr3_diagnoser_files.len()
+    );
+
+    let matched_files = match_lpr3_files_by_year(&lpr3_kontakter_files, &lpr3_diagnoser_files);
+    let mut combined_collection = DiagnosisCollection::new();
+
+    // Use register manager's async loading capabilities
+    for (idx, (kontakter_file_opt, diagnoser_file_opt)) in matched_files.iter().enumerate() {
+        if kontakter_file_opt.is_none() || diagnoser_file_opt.is_none() {
+            continue;
+        }
+
+        let kontakter_file = kontakter_file_opt.as_ref().unwrap();
+        let diagnoser_file = diagnoser_file_opt.as_ref().unwrap();
+
+        // Extract year from filenames for logging
+        let year = extract_year_from_file_path(kontakter_file, idx);
+
+        // Register files with manager for async loading
+        if !manager.has_registry("lpr3_kontakter") {
+            manager.register("lpr3_kontakter", &kontakter_file.parent().unwrap_or_else(|| kontakter_file.as_path()))?;
+        }
+
+        if !manager.has_registry("lpr3_diagnoser") {
+            manager.register("lpr3_diagnoser", &diagnoser_file.parent().unwrap_or_else(|| diagnoser_file.as_path()))?;
+        }
+
+        // Use async loading
+        let kontakter_data = manager.load_async("lpr3_kontakter").await?;
+        let diagnoser_data = manager.load_async("lpr3_diagnoser").await?;
+
+        // Process the loaded data
+        for (kontakter_batch, diagnoser_batch) in kontakter_data.iter().zip(diagnoser_data.iter()) {
+            let year_collection = process_lpr_data(
+                None, // No LPR2 data
+                None, // No LPR2 data
+                None, // No BES data
+                Some(kontakter_batch),
+                Some(diagnoser_batch),
+                lpr_config,
+            )?;
+
+            // Add each diagnosis to the combined collection
+            for pnr in all_pnrs {
+                for diagnosis in year_collection.get_diagnoses(pnr) {
+                    combined_collection.add(diagnosis.as_ref().clone());
+                }
+            }
+        }
     }
 
     Ok(combined_collection)
