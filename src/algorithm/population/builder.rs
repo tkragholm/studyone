@@ -10,6 +10,8 @@ use std::sync::Arc;
 use chrono::{Datelike, NaiveDate};
 
 use crate::error::Result;
+use crate::models::core::traits::HealthStatus;
+use crate::models::core::traits::TemporalValidity;
 use crate::models::family::FamilyCollection;
 use crate::models::{Child, Family, Individual, Parent};
 use crate::registry::BefCombinedRegister;
@@ -17,7 +19,7 @@ use crate::registry::{MfrChildRegister, RegisterLoader};
 use crate::utils::test_utils::{ensure_path_exists, registry_dir};
 
 use super::config::PopulationConfig;
-use super::statistics::{PopulationStats, PopulationStatistics};
+use super::statistics::{PopulationStatistics, PopulationStats};
 
 /// Central population structure for a research study
 #[derive(Debug)]
@@ -181,11 +183,9 @@ impl Population {
     /// Calculate summary statistics for the population
     pub fn calculate_statistics(&mut self) {
         // Use the PopulationStatistics utilities
-        let stats = PopulationStatistics::calculate_basic_stats(
-            &self.collection, 
-            &self.config.index_date
-        );
-        
+        let stats =
+            PopulationStatistics::calculate_basic_stats(&self.collection, &self.config.index_date);
+
         self.individual_count = stats.individual_count;
         self.family_count = stats.family_count;
         self.child_count = stats.child_count;
@@ -212,7 +212,7 @@ impl Population {
     pub fn print_summary(&self) -> String {
         let case_families = self.get_case_families();
         let control_families = self.get_control_families();
-        
+
         let stats = PopulationStats {
             individual_count: self.individual_count,
             family_count: self.family_count,
@@ -220,12 +220,12 @@ impl Population {
             two_parent_family_count: self.two_parent_family_count,
             scd_family_count: self.scd_family_count,
         };
-        
+
         PopulationStatistics::generate_summary(
-            &stats, 
-            &self.config.index_date, 
-            &case_families, 
-            &control_families
+            &stats,
+            &self.config.index_date,
+            &case_families,
+            &control_families,
         )
     }
 }
@@ -284,11 +284,7 @@ impl PopulationBuilder {
     }
 
     /// Add BEF (population registry) data to the population
-    pub fn add_bef_data(
-        mut self,
-        register: &dyn RegisterLoader,
-        path: &Path,
-    ) -> Result<Self> {
+    pub fn add_bef_data(mut self, register: &dyn RegisterLoader, path: &Path) -> Result<Self> {
         log::info!("Loading BEF data from {path:?}");
 
         // Load the BEF data using the register loader
@@ -346,11 +342,7 @@ impl PopulationBuilder {
     }
 
     /// Add MFR (birth registry) data to the population to enrich child information
-    pub fn add_mfr_data(
-        mut self,
-        register: &dyn RegisterLoader,
-        path: &Path,
-    ) -> Result<Self> {
+    pub fn add_mfr_data(mut self, register: &dyn RegisterLoader, path: &Path) -> Result<Self> {
         log::info!("Loading MFR data from {path:?}");
 
         // Load the MFR data using the register loader
@@ -603,7 +595,7 @@ impl Default for PopulationBuilder {
 /// for development and testing purposes using test data directories.
 pub fn generate_test_population() -> Result<Population> {
     use crate::registry::factory;
-    
+
     // Create a population configuration
     let config = PopulationConfig {
         index_date: NaiveDate::from_ymd_opt(2018, 1, 1).unwrap(),

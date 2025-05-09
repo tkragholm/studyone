@@ -6,8 +6,9 @@
 use chrono::NaiveDate;
 use std::collections::HashSet;
 
-use crate::models::family::FamilySnapshot;
-use crate::models::{Family, Individual};
+use crate::models::core::traits::{HealthStatus, TemporalValidity};
+use crate::models::derived::family::FamilySnapshot;
+use crate::models::{Family, FamilyType, Individual};
 
 /// Defines a criterion for filtering individuals or families
 pub trait FilterCriteria<T> {
@@ -29,11 +30,11 @@ pub enum IndividualFilter {
     /// Filter by residency status at a specific date
     ResidentAt(NaiveDate),
     /// Filter by gender
-    Gender(crate::models::individual::Gender),
+    Gender(crate::models::Gender),
     /// Filter by geographic origin
-    Origin(crate::models::individual::Origin),
+    Origin(crate::models::Origin),
     /// Filter by education level
-    EducationLevel(crate::models::individual::EducationLevel),
+    EducationLevel(crate::models::EducationLevel),
     /// Filter by municipality code (exact match)
     Municipality(String),
     /// Filter by rural/urban status
@@ -93,7 +94,7 @@ impl FilterCriteria<Individual> for IndividualFilter {
 /// A filter that can be applied to a family
 pub enum FamilyFilter {
     /// Filter by family type
-    FamilyType(crate::models::family::FamilyType),
+    FamilyType(FamilyType),
     /// Filter by family size (number of children)
     FamilySize {
         /// Minimum number of children (inclusive)
@@ -162,7 +163,7 @@ impl FilterCriteria<Family> for FamilyFilter {
 /// A filter that can be applied to a family snapshot at a specific point in time
 pub enum FamilySnapshotFilter {
     /// Filter by family type
-    FamilyType(crate::models::family::FamilyType),
+    FamilyType(crate::models::FamilyType),
     /// Filter by family size (number of children)
     FamilySize {
         /// Minimum number of children (inclusive)
@@ -264,7 +265,8 @@ impl PopulationFilter {
 
     /// Create a case-control filter pair for selecting case and control groups
     /// with matching demographic characteristics
-    #[must_use] pub fn create_case_control_filters() -> (FamilySnapshotFilter, FamilySnapshotFilter) {
+    #[must_use]
+    pub fn create_case_control_filters() -> (FamilySnapshotFilter, FamilySnapshotFilter) {
         // Case filter: Families with SCD children
         let case_filter = FamilySnapshotFilter::HasChildWithSCD(true);
 

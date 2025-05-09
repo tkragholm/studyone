@@ -4,8 +4,7 @@
 //! This library provides optimized tools for working with Danish registry data in Parquet format,
 //! including schema validation, filtering, and async loading capabilities.
 
-//pub mod algorithm;
-pub mod adapters;
+pub mod algorithm;
 pub mod async_io;
 pub mod collections;
 pub mod common;
@@ -21,9 +20,6 @@ pub mod registry;
 pub mod registry_manager;
 pub mod schema;
 pub mod utils;
-
-// Examples
-pub mod examples;
 
 // Re-export the most common types for easier use
 // Core types
@@ -42,41 +38,44 @@ pub use models::{Child, Diagnosis, Family, Income, Individual, Parent};
 
 // Model collections
 pub use collections::{
+    DiagnosisCollection,
+    FamilyCollection,
     // Generic collections
-    GenericCollection, TemporalCollectionWithCache, RelatedModelCollection,
+    GenericCollection,
     // Specialized collections
-    IndividualCollection, DiagnosisCollection, FamilyCollection
-};
-
-// Registry-model conversion
-pub use registry::model_conversion::{ModelConversion, ModelConvertingRegisterLoader};
-
-// Unified adapters
-pub use adapters::{
-    // Adapter factory and utils
-    AdapterFactoryImpl, create_lookup_with,
-    // BEF adapters
-    BefIndividualAdapter, BefFamilyAdapter, BefCombinedAdapter,
-    // IND adapters
-    IndIncomeAdapter,
-    // LPR adapters
-    LprDiagnosisAdapter,
-    // MFR adapters
-    MfrChildAdapter,
+    IndividualCollection,
+    RelatedModelCollection,
+    TemporalCollectionWithCache,
 };
 
 // Common traits
 pub use common::traits::{
-    // Registry conversion traits
-    RegistryAware, BefRegistry, IndRegistry, LprRegistry, MfrRegistry, DodRegistry,
-    // Adapter traits
-    RegistryAdapter, StatefulAdapter, AdapterFactory, BatchProcessor, ModelLookup,
-    // Collection traits
-    ModelCollection, TemporalCollection, BatchCollection, LookupCollection, 
-    RelatedCollection, CacheableCollection,
+    AdapterFactory,
+    AsyncDirectoryLoader,
+    AsyncFilterableLoader,
     // Async loading traits
-    AsyncLoader, AsyncFilterableLoader, AsyncPnrFilterableLoader, 
-    AsyncDirectoryLoader, AsyncParallelLoader
+    AsyncLoader,
+    AsyncParallelLoader,
+    AsyncPnrFilterableLoader,
+    BatchCollection,
+    BatchProcessor,
+    BefRegistry,
+    CacheableCollection,
+    DodRegistry,
+    IndRegistry,
+    LookupCollection,
+    LprRegistry,
+    MfrRegistry,
+    // Collection traits
+    ModelCollection,
+    ModelLookup,
+    // Adapter traits
+    RegistryAdapter,
+    // Registry conversion traits
+    RegistryAware,
+    RelatedCollection,
+    StatefulAdapter,
+    TemporalCollection,
 };
 
 // Filtering capabilities
@@ -88,10 +87,13 @@ pub use utils::{DEFAULT_BATCH_SIZE, load_parquet_files_parallel, read_parquet};
 
 // Async functionality
 pub use async_io::{
-    load_parquet_files_parallel_async, load_parquet_files_parallel_with_filter_async,
-    read_parquet_async, read_parquet_with_filter_async,
     // Standard async loaders
-    ParquetLoader, PnrFilterableLoader
+    ParquetLoader,
+    PnrFilterableLoader,
+    load_parquet_files_parallel_async,
+    load_parquet_files_parallel_with_filter_async,
+    read_parquet_async,
+    read_parquet_with_filter_async,
 };
 pub use filter::async_filtering::read_parquet_with_pnr_filter_async;
 
@@ -139,7 +141,7 @@ pub use pnr_filter::{
 pub use registry_manager::RegistryManager;
 
 // Algorithm modules
-// pub use algorithm::population::{
-//     FilterCriteria, Population, PopulationBuilder, PopulationConfig, PopulationFilter,
-//     RegistryIntegration,
-// };
+pub use algorithm::population::{
+    FilterCriteria, Population, PopulationBuilder, PopulationConfig, PopulationFilter,
+    RegistryIntegration,
+};

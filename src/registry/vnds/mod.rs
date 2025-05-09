@@ -4,6 +4,7 @@
 
 use super::RegisterLoader;
 pub mod conversion;
+pub mod deserializer;
 pub mod individual;
 pub mod schema;
 use crate::RecordBatch;

@@ -4,6 +4,7 @@
 //! different LPR processing components.
 
 use crate::error::Result;
+use crate::models::collections::ModelCollection;
 use crate::models::diagnosis::DiagnosisCollection;
 use crate::utils::test_utils::{get_available_year_files, registry_dir};
 use std::collections::{HashMap, HashSet};
@@ -36,7 +37,7 @@ pub fn combine_diagnosis_collections(
         if let Some(collection) = collection_opt {
             for pnr in collection.get_all_pnrs() {
                 for diagnosis in collection.get_diagnoses(&pnr) {
-                    combined_collection.add_diagnosis((*diagnosis).clone());
+                    combined_collection.add((*diagnosis).clone());
                 }
             }
         }
@@ -229,7 +230,7 @@ pub fn get_lpr3_diagnoser_files() -> Result<Vec<PathBuf>> {
                 .iter()
                 .any(|code| diag_code.starts_with(code))
             {
-                filtered_collection.add_diagnosis((*diagnosis).clone());
+                filtered_collection.add((*diagnosis).clone());
             }
         }
     }

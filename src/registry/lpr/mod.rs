@@ -6,6 +6,7 @@
 
 // Import submodules
 pub mod conversion;
+pub mod deserializer;
 pub mod discovery;
 pub mod individual;
 pub mod v2;

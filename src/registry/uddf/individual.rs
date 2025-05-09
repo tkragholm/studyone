@@ -1,5 +1,5 @@
 //! UDDF registry trait implementations for Individual
-//! 
+//!
 //! This module contains the implementation of UddfRegistry for the Individual model.
 
 use crate::RecordBatch;
@@ -7,16 +7,17 @@ use crate::common::traits::UddfRegistry;
 use crate::error::Result;
 use crate::models::core::Individual;
 use crate::models::core::types::{EducationField, EducationLevel};
-use crate::registry::deserializer;
 use crate::utils::field_extractors::{extract_date32, extract_int32, extract_string};
 
 impl UddfRegistry for Individual {
     fn from_uddf_record(batch: &RecordBatch, row: usize) -> Result<Option<Self>> {
-        deserializer::deserialize_minimal_row(batch, row)
+        // Use the serde_arrow-based deserializer for the row
+        crate::registry::uddf::deserializer::deserialize_row(batch, row)
     }
 
     fn from_uddf_batch(batch: &RecordBatch) -> Result<Vec<Self>> {
-        deserializer::deserialize_minimal(batch)
+        // Use the serde_arrow-based deserializer for the batch
+        crate::registry::uddf::deserializer::deserialize_batch(batch)
     }
 
     fn enhance_with_education_data(&mut self, batch: &RecordBatch, row: usize) -> Result<bool> {

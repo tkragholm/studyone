@@ -7,18 +7,17 @@ use crate::common::traits::MfrRegistry;
 use crate::error::Result;
 use crate::models::core::Individual;
 use crate::models::derived::Child;
-use crate::registry::deserializer;
 use std::sync::Arc;
 
 impl MfrRegistry for Individual {
     fn from_mfr_record(batch: &RecordBatch, row: usize) -> Result<Option<Self>> {
-        // Using the minimal deserializer from the central deserializer
-        deserializer::deserialize_minimal_row(batch, row)
+        // Use the MFR-specific deserializer
+        crate::registry::mfr::deserializer::deserialize_row(batch, row)
     }
 
     fn from_mfr_batch(batch: &RecordBatch) -> Result<Vec<Self>> {
-        // Using the minimal deserializer from the central deserializer
-        deserializer::deserialize_minimal(batch)
+        // Use the MFR-specific deserializer
+        crate::registry::mfr::deserializer::deserialize_batch(batch)
     }
 }
 

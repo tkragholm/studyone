@@ -41,7 +41,7 @@ pub use derived::child::ChildCollection;
 pub use health::diagnosis::DiagnosisCollection;
 pub use derived::family::FamilyCollection;
 pub use derived::parent::ParentCollection;
-pub use collections::IndividualCollection;
+pub use crate::collections::IndividualCollection;
 
 // Old module paths
 // These will be deprecated and eventually removed,

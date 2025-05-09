@@ -1,21 +1,22 @@
 //! AKM registry trait implementations for Individual
-//! 
+//!
 //! This module contains the implementation of AkmRegistry for the Individual model.
 
 use crate::RecordBatch;
 use crate::common::traits::AkmRegistry;
 use crate::error::Result;
 use crate::models::core::Individual;
-use crate::registry::deserializer;
 use crate::utils::field_extractors::{extract_float64, extract_string};
 
 impl AkmRegistry for Individual {
     fn from_akm_record(batch: &RecordBatch, row: usize) -> Result<Option<Self>> {
-        deserializer::deserialize_minimal_row(batch, row)
+        // Use the serde_arrow-based deserializer for the row
+        crate::registry::akm::deserializer::deserialize_row(batch, row)
     }
 
     fn from_akm_batch(batch: &RecordBatch) -> Result<Vec<Self>> {
-        deserializer::deserialize_minimal(batch)
+        // Use the serde_arrow-based deserializer for the batch
+        crate::registry::akm::deserializer::deserialize_batch(batch)
     }
 
     fn enhance_with_employment_data(&mut self, batch: &RecordBatch, row: usize) -> Result<bool> {

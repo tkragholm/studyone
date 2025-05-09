@@ -338,6 +338,39 @@ impl FamilyCollection {
         }
     }
 
+    /// Add a family to the collection
+    pub fn add_family(&mut self, family: Family) {
+        let family_arc = Arc::new(family);
+        let family_id = family_arc.family_id.clone();
+
+        // Add family to the main index
+        self.families.insert(family_id, family_arc.clone());
+
+        // Add individuals to the PNR index
+        if let Some(ref mother) = family_arc.mother {
+            self.individuals.insert(mother.individual().pnr.clone(), Arc::new(mother.individual().clone()));
+        }
+
+        if let Some(ref father) = family_arc.father {
+            self.individuals.insert(father.individual().pnr.clone(), Arc::new(father.individual().clone()));
+        }
+
+        for child in &family_arc.children {
+            self.individuals
+                .insert(child.individual().pnr.clone(), Arc::new(child.individual().clone()));
+        }
+    }
+
+    /// Get the count of individuals in the collection
+    pub fn individual_count(&self) -> usize {
+        self.individuals.len()
+    }
+
+    /// Get the count of families in the collection
+    pub fn family_count(&self) -> usize {
+        self.families.len()
+    }
+
     /// Add an individual to the collection
     pub fn add_individual(&mut self, individual: Individual) {
         let individual_arc = Arc::new(individual);

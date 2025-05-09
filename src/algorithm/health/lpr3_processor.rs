@@ -5,7 +5,9 @@
 
 use crate::algorithm::health::lpr_config::LprConfig;
 use crate::error::{ParquetReaderError, Result};
-use crate::models::diagnosis::{Diagnosis, DiagnosisCollection, DiagnosisType};
+use crate::models::collections::ModelCollection;
+use crate::models::diagnosis::{Diagnosis, DiagnosisCollection};
+use crate::models::DiagnosisType;
 use crate::utils::arrow_utils::arrow_date_to_naive_date;
 
 use arrow::array::{Array, Date32Array, StringArray};
@@ -167,7 +169,7 @@ pub fn integrate_lpr3_components(
                     diagnosis_date,
                 );
 
-                diagnosis_collection.add_diagnosis(diagnosis);
+                diagnosis_collection.add(diagnosis);
             }
         }
     }

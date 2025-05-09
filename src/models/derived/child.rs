@@ -103,7 +103,7 @@ impl Child {
     /// Enhance this Child with data from a registry record
     pub fn enhance_from_registry(&mut self, batch: &RecordBatch, row: usize) -> Result<bool> {
         use crate::registry::detect::detect_registry_type;
-        use crate::utils::field_extractors::{extract_int32};
+        use crate::utils::field_extractors::extract_int32;
 
         let mut enhanced = false;
 

@@ -109,9 +109,8 @@ pub use transform::{
     map_categorical_values, scale_numeric_values, transform_records,
 };
 
-// Model conversion traits and implementation
-pub mod model_conversion;
-pub use model_conversion::{ModelConversion, ModelConvertingRegisterLoader};
+// Modern serde_arrow-based serialization and deserialization
+// provides direct conversion between registry data and domain models
 
 // Centralized registry deserialization and detection
 pub mod deserializer;

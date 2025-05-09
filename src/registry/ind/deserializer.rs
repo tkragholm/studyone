@@ -8,10 +8,10 @@ use crate::error::Result;
 use crate::models::core::Individual;
 use crate::models::core::individual::serde::SerdeIndividual;
 use crate::models::core::types::SocioeconomicStatus;
-use crate::registry::ind::{conversion, schema};
+use crate::registry::ind::schema;
 use arrow::array::Array;
 use arrow::datatypes::{Field, Schema};
-use log::{debug, warn};
+use log::debug;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -24,8 +24,8 @@ pub fn field_mapping() -> HashMap<String, String> {
 
 /// Deserialize RecordBatch to Vec<Individual> directly using SerdeIndividual
 ///
-/// This function attempts to use the SerdeIndividual deserialization mechanism for
-/// efficient conversion. If that fails, it falls back to the legacy conversion method.
+/// This function uses the SerdeIndividual deserialization mechanism for
+/// efficient conversion with serde_arrow.
 ///
 /// # Arguments
 ///
@@ -37,35 +37,25 @@ pub fn field_mapping() -> HashMap<String, String> {
 pub fn deserialize_batch(batch: &RecordBatch) -> Result<Vec<Individual>> {
     debug!("Deserializing IND batch with SerdeIndividual");
 
-    // Try using SerdeIndividual for direct deserialization
-    match deserialize_with_serde_individual(batch) {
-        Ok(mut individuals) => {
-            debug!("Successfully deserialized IND batch with SerdeIndividual");
+    // Create a mapped batch with proper field names for deserialization
+    let batch_with_mapping = create_mapped_batch(batch, field_mapping())?;
 
-            // Post-process socioeconomic status (since it's an intermediate field)
-            for individual in &mut individuals {
-                // Here we would post-process any fields that aren't handled directly by SerdeIndividual
-                // For example, converting socioeconomic_status_code to socioeconomic_status enum
-                post_process_individual(individual);
-            }
+    // Use SerdeIndividual for deserialization
+    let serde_individuals = SerdeIndividual::from_batch(&batch_with_mapping)?;
 
-            Ok(individuals)
-        }
-        Err(err) => {
-            warn!(
-                "SerdeIndividual deserialization failed, falling back to legacy conversion: {}",
-                err
-            );
-            // Fallback to row-by-row processing
-            let mut individuals = Vec::new();
-            for row in 0..batch.num_rows() {
-                if let Some(individual) = deserialize_row(batch, row)? {
-                    individuals.push(individual);
-                }
-            }
-            Ok(individuals)
-        }
+    // Convert SerdeIndividual instances to regular Individual instances
+    let mut individuals: Vec<Individual> = serde_individuals
+        .into_iter()
+        .map(|si| si.into_inner())
+        .collect();
+
+    // Post-process each individual if needed
+    for individual in &mut individuals {
+        post_process_individual(individual);
     }
+
+    debug!("Successfully deserialized IND batch with SerdeIndividual");
+    Ok(individuals)
 }
 
 /// Deserialize a single row from a RecordBatch to an Individual
@@ -79,47 +69,21 @@ pub fn deserialize_batch(batch: &RecordBatch) -> Result<Vec<Individual>> {
 ///
 /// An Option containing the deserialized Individual, or None if deserialization failed
 pub fn deserialize_row(batch: &RecordBatch, row: usize) -> Result<Option<Individual>> {
-    // For single row, extract the PNR and create a minimal Individual
-    use crate::models::core::types::Gender;
-    use crate::utils::array_utils::{downcast_array, get_column};
-    use arrow::array::StringArray;
-    use arrow::datatypes::DataType;
+    // Create a new RecordBatch with just the specified row
+    let columns = batch
+        .columns()
+        .iter()
+        .map(|col| col.slice(row, 1))
+        .collect::<Vec<_>>();
 
-    // Extract PNR from IND registry data
-    let pnr_col = get_column(batch, "PNR", &DataType::Utf8, false)?;
-    let pnr = if let Some(array) = pnr_col {
-        let string_array = downcast_array::<StringArray>(&array, "PNR", "String")?;
-        if row < string_array.len() && !string_array.is_null(row) {
-            string_array.value(row).to_string()
-        } else {
-            return Ok(None); // No valid PNR
-        }
-    } else {
-        return Ok(None); // No PNR column
-    };
+    let row_batch = RecordBatch::try_new(batch.schema(), columns)
+        .map_err(|e| anyhow::anyhow!("Failed to create row batch: {}", e))?;
 
-    // Create a basic individual with just the PNR
-    Ok(Some(Individual::new(pnr, Gender::Unknown, None)))
-}
+    // Use the batch deserialization method
+    let individuals = deserialize_batch(&row_batch)?;
 
-/// Inner implementation of SerdeIndividual-based deserialization
-///
-/// This function handles the process of deserializing an IND registry batch
-/// into a vector of Individual models using the SerdeIndividual wrapper.
-fn deserialize_with_serde_individual(batch: &RecordBatch) -> Result<Vec<Individual>> {
-    // Create a mapped schema with field name conversions if needed
-    let batch_with_mapping = create_mapped_batch(batch, field_mapping())?;
-
-    // Use the SerdeIndividual to deserialize
-    let serde_individuals = SerdeIndividual::from_batch(&batch_with_mapping)?;
-
-    // Convert SerdeIndividual to regular Individual
-    let individuals = serde_individuals
-        .into_iter()
-        .map(|si| si.into_inner())
-        .collect();
-
-    Ok(individuals)
+    // Get the first (and only) Individual from the result
+    Ok(individuals.into_iter().next())
 }
 
 /// Post-process an Individual after deserialization from IND data
@@ -152,7 +116,7 @@ fn post_process_individual(individual: &mut Individual) {
 /// # Returns
 ///
 /// A new RecordBatch with mapped field names
-fn create_mapped_batch(
+pub fn create_mapped_batch(
     batch: &RecordBatch,
     field_mapping: HashMap<String, String>,
 ) -> Result<RecordBatch> {

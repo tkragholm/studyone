@@ -11,6 +11,7 @@ use schema::{lpr3_diagnoser_schema, lpr3_kontakter_schema};
 use crate::async_io::parallel_ops::load_parquet_files_parallel_with_pnr_filter_async;
 use crate::filter::async_filtering::read_parquet_with_optional_pnr_filter_async;
 use crate::load_parquet_files_parallel;
+
 use crate::read_parquet;
 use arrow::datatypes::SchemaRef;
 use std::collections::HashSet;
@@ -115,6 +116,15 @@ pub struct Lpr3DiagnoserRegister {
     pub pnr_lookup: Option<std::collections::HashMap<String, String>>,
 }
 
+// Implement StatefulAdapter for Lpr3DiagnoserRegister
+impl crate::common::traits::adapter::StatefulAdapter<crate::models::Diagnosis> for Lpr3DiagnoserRegister {
+    fn convert_batch(&self, batch: &RecordBatch) -> Result<Vec<crate::models::Diagnosis>> {
+        // Delegate to LPR registry for diagnosis conversion
+        use crate::common::traits::LprRegistry;
+        crate::models::Diagnosis::from_lpr_batch(batch)
+    }
+}
+
 impl Lpr3DiagnoserRegister {
     /// Create a new `LPR3_DIAGNOSER` registry loader
     #[must_use]
@@ -122,15 +132,6 @@ impl Lpr3DiagnoserRegister {
         Self {
             schema: lpr3_diagnoser_schema(),
             pnr_lookup: None,
-        }
-    }
-
-    /// Create a new `LPR3_DIAGNOSER` registry loader with a PNR lookup
-    #[must_use]
-    pub fn with_pnr_lookup(pnr_lookup: std::collections::HashMap<String, String>) -> Self {
-        Self {
-            schema: lpr3_diagnoser_schema(),
-            pnr_lookup: Some(pnr_lookup),
         }
     }
 }

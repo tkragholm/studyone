@@ -117,6 +117,15 @@ pub struct LprDiagRegister {
     pub pnr_lookup: Option<HashMap<String, String>>,
 }
 
+// Implement StatefulAdapter for LprDiagRegister
+impl crate::common::traits::adapter::StatefulAdapter<crate::models::Diagnosis> for LprDiagRegister {
+    fn convert_batch(&self, batch: &RecordBatch) -> Result<Vec<crate::models::Diagnosis>> {
+        // Delegate to LPR registry for diagnosis conversion
+        use crate::common::traits::LprRegistry;
+        crate::models::Diagnosis::from_lpr_batch(batch)
+    }
+}
+
 impl LprDiagRegister {
     /// Create a new `LPR_DIAG` registry loader
     #[must_use]

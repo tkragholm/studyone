@@ -4,6 +4,8 @@
 
 pub mod schema;
 pub mod conversion;
+pub mod deserializer;
+pub mod individual;
 use crate::RecordBatch;
 use crate::RegisterLoader;
 use crate::Result;

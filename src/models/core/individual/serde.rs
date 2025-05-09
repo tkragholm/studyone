@@ -107,6 +107,7 @@ where
 }
 
 /// Compute is_rural from municipality_code
+#[allow(dead_code)]
 fn compute_is_rural(municipality_code: &Option<String>) -> bool {
     if let Some(code) = municipality_code {
         let code_num = code.parse::<i32>().unwrap_or(0);
@@ -323,14 +324,13 @@ impl SerdeIndividual {
 
     /// Convert directly from a RecordBatch using serde_arrow
     pub fn from_batch(batch: &RecordBatch) -> Result<Vec<Self>> {
-        match serde_arrow::from_record_batch::<Self>(batch) {
+        match serde_arrow::from_record_batch::<Vec<Self>>(batch) {
             Ok(mut individuals) => {
                 // Compute any derived fields if needed
-                let mut result = Vec::new();
-                let mut individual = individuals;
-                individual.inner.compute_rural_status();
-                result.push(individual);
-                Ok(result)
+                for individual in &mut individuals {
+                    individual.inner.compute_rural_status();
+                }
+                Ok(individuals)
             }
             Err(e) => Err(anyhow::anyhow!("Failed to deserialize: {}", e)),
         }

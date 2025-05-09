@@ -65,7 +65,7 @@ pub trait RegistryConverter<T: RegistryModel> {
     fn enhance_model(&self, model: &mut T, batch: &RecordBatch, row: usize) -> Result<bool>;
     
     /// Apply additional transformations to models
-    fn transform_models(&self, models: &mut [T]) -> Result<()> {
+    fn transform_models(&self, _models: &mut [T]) -> Result<()> {
         // Default implementation does nothing
         Ok(())
     }

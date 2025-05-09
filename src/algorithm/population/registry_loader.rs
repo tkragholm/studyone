@@ -10,13 +10,15 @@ use std::path::Path;
 use std::sync::Arc;
 
 use crate::error::Result;
-use crate::models::family::FamilyCollection;
+use crate::models::derived::family::FamilyCollection;
 
-use crate::models::child::{DiseaseOrigin, DiseaseSeverity, ScdCategory};
-use crate::models::registry::{BefRegistry, IndRegistry, LprRegistry, MfrRegistry};
-use crate::models::{Child, Diagnosis, Family, Income, Individual, Parent};
+use crate::models::{
+    Child, Diagnosis, DiseaseOrigin, DiseaseSeverity, Family, Income, Individual, Parent,
+    ScdCategory,
+};
+// Registry traits are imported from higher-level imports
+use crate::common::traits::adapter::StatefulAdapter;
 use crate::registry::BefCombinedRegister;
-use crate::registry::model_conversion::ModelConversion;
 use crate::registry::{
     Lpr3DiagnoserRegister, LprDiagRegister, MfrChildRegister, YearConfiguredIndRegister,
 };
@@ -211,13 +213,13 @@ impl RegistryIntegration {
             let pnr_lookup: HashMap<String, String> = HashMap::new();
 
             // Create the adapter with lookup
-            use crate::registry::lpr_model_conversion::PnrLookupRegistry;
+            use crate::registry::lpr::conversion::PnrLookupRegistry;
             let mut adapter = Lpr3DiagnoserRegister::new();
             adapter.set_pnr_lookup(pnr_lookup);
 
             for batch in batches {
-                // Use the adapter's to_models method
-                let batch_diagnoses = adapter.to_models(&batch)?;
+                // Use the adapter's process_batch method from StatefulAdapter trait
+                let batch_diagnoses = adapter.process_batch(&batch)?;
 
                 // Group diagnoses by individual
                 for diagnosis in batch_diagnoses {
@@ -242,8 +244,8 @@ impl RegistryIntegration {
             adapter.set_pnr_lookup(pnr_lookup);
 
             for batch in batches {
-                // Use the adapter's to_models method
-                let batch_diagnoses = adapter.to_models(&batch)?;
+                // Use the adapter's process_batch method from StatefulAdapter trait
+                let batch_diagnoses = adapter.process_batch(&batch)?;
 
                 // Group diagnoses by individual
                 for diagnosis in batch_diagnoses {
@@ -275,9 +277,8 @@ impl RegistryIntegration {
         let adapter = YearConfiguredIndRegister::new(year);
 
         for batch in batches {
-            // Use the IndRegistry trait through to_models method
-            // This now relies on the new trait system internally
-            let batch_incomes = adapter.to_models(&batch)?;
+            // Use the StatefulAdapter trait's process_batch method
+            let batch_incomes = adapter.process_batch(&batch)?;
 
             // Group incomes by individual
             for income in batch_incomes {

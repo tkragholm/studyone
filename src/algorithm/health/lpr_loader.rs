@@ -13,6 +13,7 @@ use crate::algorithm::health::lpr2_processor::integrate_lpr2_components;
 use crate::algorithm::health::lpr3_processor::integrate_lpr3_components;
 use crate::algorithm::population::Population;
 use crate::error::Result;
+use crate::models::collections::ModelCollection;
 use crate::models::diagnosis::DiagnosisCollection;
 
 use anyhow::anyhow;
@@ -108,7 +109,7 @@ pub fn load_diagnoses(population: &Population) -> Result<DiagnosisCollection> {
             // Add diagnoses to combined collection
             for pnr in &all_pnrs {
                 for diagnosis in lpr2_collection.get_diagnoses(pnr) {
-                    combined_diagnosis_collection.add_diagnosis(diagnosis.as_ref().clone());
+                    combined_diagnosis_collection.add(diagnosis.as_ref().clone());
                 }
             }
         }
@@ -127,7 +128,7 @@ pub fn load_diagnoses(population: &Population) -> Result<DiagnosisCollection> {
             // Add diagnoses to combined collection
             for pnr in &all_pnrs {
                 for diagnosis in lpr3_collection.get_diagnoses(pnr) {
-                    combined_diagnosis_collection.add_diagnosis(diagnosis.as_ref().clone());
+                    combined_diagnosis_collection.add(diagnosis.as_ref().clone());
                 }
             }
         }
@@ -239,7 +240,7 @@ fn load_lpr2_data(
         for pnr in all_pnrs {
             let diagnoses = year_diagnoses.get_diagnoses(pnr);
             for diagnosis in diagnoses {
-                combined_collection.add_diagnosis(diagnosis.as_ref().clone());
+                combined_collection.add(diagnosis.as_ref().clone());
                 diagnoses_count += 1;
             }
         }
@@ -329,7 +330,7 @@ fn load_lpr3_data(
         for pnr in all_pnrs {
             let diagnoses = year_diagnoses.get_diagnoses(pnr);
             for diagnosis in diagnoses {
-                combined_collection.add_diagnosis(diagnosis.as_ref().clone());
+                combined_collection.add(diagnosis.as_ref().clone());
                 diagnoses_count += 1;
             }
         }

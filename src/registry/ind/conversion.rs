@@ -13,40 +13,15 @@ use std::sync::Arc;
 use crate::RecordBatch;
 use crate::common::traits::RegistryAware;
 use crate::error::Result;
-use crate::models::income::Income;
+use crate::models::Income;
 use crate::registry::RegisterLoader;
 use crate::registry::ind::IndRegister;
-use crate::registry::model_conversion::ModelConversion;
-
-impl ModelConversion<Income> for IndRegister {
-    /// Convert IND registry data to Income models
-    fn to_models(&self, batch: &RecordBatch) -> Result<Vec<Income>> {
-        // Use the trait implementation with IndRegistry
-        // This delegates to the implementation in Income
-        use crate::common::traits::IndRegistry;
-        Income::from_ind_batch(batch)
-    }
-
-    /// Convert Income models back to IND registry format
-    fn from_models(&self, _models: &[Income]) -> Result<RecordBatch> {
-        // This could be implemented if needed, but for now just return
-        // an empty implementation error
-        Err(anyhow::anyhow!(
-            "Converting Income models to IND registry format is not yet implemented"
-        ))
-    }
-
-    /// Apply transformations to Income models
-    fn transform_models(&self, _models: &mut [Income]) -> Result<()> {
-        // No transformations needed for basic Income models
-        Ok(())
-    }
-}
 
 // IndRegistry for Individual is already implemented in models/individual.rs
 // We don't need to implement it here again
 
 /// `IndRegister` with year configuration
+#[derive(Debug)]
 pub struct YearConfiguredIndRegister {
     /// Base register
     base_register: IndRegister,
@@ -87,6 +62,15 @@ impl YearConfiguredIndRegister {
     }
 
     // Method has been replaced with trait-based implementation in ModelConversion
+}
+
+// Implement StatefulAdapter for YearConfiguredIndRegister
+impl crate::common::traits::adapter::StatefulAdapter<Income> for YearConfiguredIndRegister {
+    fn convert_batch(&self, _batch: &RecordBatch) -> Result<Vec<Income>> {
+        // This would normally convert income data for the configured year
+        // For now, return an empty vector as a stub implementation
+        Ok(Vec::new())
+    }
 }
 
 // Implement RegistryAware to support registry-specific traits
@@ -139,32 +123,5 @@ impl RegisterLoader for YearConfiguredIndRegister {
 
     fn get_pnr_column_name(&self) -> Option<&'static str> {
         self.base_register.get_pnr_column_name()
-    }
-}
-
-impl ModelConversion<Income> for YearConfiguredIndRegister {
-    fn to_models(&self, batch: &RecordBatch) -> Result<Vec<Income>> {
-        // Use trait-based implementation and apply year adjustment if needed
-        use crate::common::traits::IndRegistry;
-        let mut incomes = Income::from_ind_batch(batch)?;
-
-        // If the year is different from the default, adjust it
-        if self.year != 2020 {
-            for income in &mut incomes {
-                income.year = self.year;
-            }
-        }
-
-        Ok(incomes)
-    }
-
-    fn from_models(&self, _models: &[Income]) -> Result<RecordBatch> {
-        Err(anyhow::anyhow!(
-            "Converting Income models to IND registry format is not yet implemented"
-        ))
-    }
-
-    fn transform_models(&self, _models: &mut [Income]) -> Result<()> {
-        Ok(())
     }
 }

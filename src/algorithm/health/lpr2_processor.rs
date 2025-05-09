@@ -5,8 +5,9 @@
 
 use crate::algorithm::health::lpr_config::LprConfig;
 use crate::error::{ParquetReaderError, Result};
-use crate::models::diagnosis::{Diagnosis, DiagnosisCollection, DiagnosisType};
-use crate::models::traits::HealthStatus;
+use crate::models::collections::ModelCollection;
+use crate::models::diagnosis::{Diagnosis, DiagnosisCollection};
+use crate::models::DiagnosisType;
 use crate::utils::array_utils::get_column;
 use crate::utils::arrow_utils::arrow_array_to_date;
 
@@ -157,7 +158,7 @@ pub fn integrate_lpr2_components(
                 diagnosis_date,
             );
 
-            diagnosis_collection.get_diagnosis(diagnosis);
+            diagnosis_collection.add(diagnosis);
         }
 
         // Add secondary diagnoses if available
@@ -181,7 +182,7 @@ pub fn integrate_lpr2_components(
                         diagnosis_date,
                     );
 
-                    diagnosis_collection.get_diagnosis(diagnosis);
+                    diagnosis_collection.add(diagnosis);
                 }
             }
         }

@@ -7,8 +7,6 @@ use crate::DodRegister;
 use crate::DodsaarsagRegister;
 use crate::RecordBatch;
 use crate::error::{ParquetReaderError, Result};
-use crate::models::individual::Individual;
-use crate::registry::model_conversion::ModelConvertingRegisterLoader;
 use std::collections::HashSet;
 use std::path::Path;
 use std::sync::Arc;
@@ -178,165 +176,102 @@ pub async fn load_multiple_registries_async(
     Ok(all_batches)
 }
 
-/// Create a registry loader with model conversion capability from a registry name
-///
-/// This function is specifically designed to work with Individual models
-/// as these are the only ones currently supported for direct model conversion
-pub fn model_converting_registry_from_name<T>(
-    name: &str,
-) -> Result<Arc<dyn ModelConvertingRegisterLoader<T>>>
-where
-    T: 'static + Send + Sync,
-{
-    // This function is specialized for Individual models
-    // Use type IDs to match the requested type and use the appropriate concrete implementation
-    // to avoid unsafe downcasting
-    if std::any::TypeId::of::<T>() == std::any::TypeId::of::<Individual>() {
-        // This is inherently unsafe due to transmuting between different generic types
-        // but it's safe in this case because we've verified T is Individual at runtime
-        unsafe {
-            let registry = model_converting_registry_for_individual(name)?;
-            // Transmute the Arc to change the generic parameter
-            return Ok(std::mem::transmute(registry));
-        }
-    }
+// /// Load data directly as Individual models from a registry
+// pub fn load_as_individuals(
+//     registry_name: &str,
+//     base_path: &Path,
+//     pnr_filter: Option<&HashSet<String>>,
+// ) -> Result<Vec<Individual>> {
+//     let registry = model_converting_registry_from_name::<Individual>(registry_name)?;
+//     registry.load_as_models(base_path, pnr_filter)
+// }
 
-    // For other types, we don't yet have implementations
-    Err(ParquetReaderError::MetadataError(
-        "Only Individual models are currently supported for direct conversion".to_string(),
-    )
-    .into())
-}
+// /// Load data directly as Individual models from a registry asynchronously
+// pub async fn load_as_individuals_async(
+//     registry_name: &str,
+//     base_path: &Path,
+//     pnr_filter: Option<&HashSet<String>>,
+// ) -> Result<Vec<Individual>> {
+//     let registry = model_converting_registry_from_name::<Individual>(registry_name)?;
+//     registry.load_as_models_async(base_path, pnr_filter).await
+// }
 
-/// Helper function for creating registry loaders specifically for Individual models
-/// This avoids type casting issues with generics
-fn model_converting_registry_for_individual(
-    name: &str,
-) -> Result<Arc<dyn ModelConvertingRegisterLoader<Individual>>> {
-    match name.to_lowercase().as_str() {
-        "akm" => {
-            let registry = super::akm::AkmRegister::new();
-            Ok(Arc::new(registry) as Arc<dyn ModelConvertingRegisterLoader<Individual>>)
-        }
-        "uddf" => {
-            let registry = super::uddf::UddfRegister::new();
-            Ok(Arc::new(registry) as Arc<dyn ModelConvertingRegisterLoader<Individual>>)
-        }
-        "vnds" => {
-            let registry = super::vnds::VndsRegister::new();
-            Ok(Arc::new(registry) as Arc<dyn ModelConvertingRegisterLoader<Individual>>)
-        }
-        "dod" => {
-            let registry = super::death::dod::DodRegister::new();
-            Ok(Arc::new(registry) as Arc<dyn ModelConvertingRegisterLoader<Individual>>)
-        }
-        "bef" => {
-            let registry = super::bef::BefRegister::new();
-            Ok(Arc::new(registry) as Arc<dyn ModelConvertingRegisterLoader<Individual>>)
-        }
-        _ => Err(ParquetReaderError::MetadataError(format!(
-            "Registry '{name}' does not support model conversion to Individual"
-        ))
-        .into()),
-    }
-}
+// /// Load data from multiple registries and convert it directly to Individual models
+// pub async fn load_multiple_registries_as_individuals(
+//     base_paths: &[(&str, &Path)], // (registry_name, path)
+//     pnr_filter: Option<&HashSet<String>>,
+// ) -> Result<Vec<Individual>> {
+//     use futures::future::join_all;
+//     use tokio::task::spawn;
 
-/// Load data directly as Individual models from a registry
-pub fn load_as_individuals(
-    registry_name: &str,
-    base_path: &Path,
-    pnr_filter: Option<&HashSet<String>>,
-) -> Result<Vec<Individual>> {
-    let registry = model_converting_registry_from_name::<Individual>(registry_name)?;
-    registry.load_as_models(base_path, pnr_filter)
-}
+//     // Map of registry names to paths for error reporting
+//     let registry_paths: Vec<(String, String)> = base_paths
+//         .iter()
+//         .map(|(name, path)| ((*name).to_string(), path.to_string_lossy().to_string()))
+//         .collect();
 
-/// Load data directly as Individual models from a registry asynchronously
-pub async fn load_as_individuals_async(
-    registry_name: &str,
-    base_path: &Path,
-    pnr_filter: Option<&HashSet<String>>,
-) -> Result<Vec<Individual>> {
-    let registry = model_converting_registry_from_name::<Individual>(registry_name)?;
-    registry.load_as_models_async(base_path, pnr_filter).await
-}
+//     // Create futures for each registry load operation
+//     let futures = base_paths
+//         .iter()
+//         .enumerate()
+//         .filter_map(|(idx, (registry_name, path))| {
+//             // Only use registries that support model conversion to Individual
+//             if matches!(
+//                 registry_name.to_lowercase().as_str(),
+//                 "akm" | "uddf" | "vnds" | "dod" | "bef"
+//             ) {
+//                 let registry_name = (*registry_name).to_string();
+//                 let path = path.to_path_buf();
+//                 let pnr_filter = pnr_filter.cloned();
 
-/// Load data from multiple registries and convert it directly to Individual models
-pub async fn load_multiple_registries_as_individuals(
-    base_paths: &[(&str, &Path)], // (registry_name, path)
-    pnr_filter: Option<&HashSet<String>>,
-) -> Result<Vec<Individual>> {
-    use futures::future::join_all;
-    use tokio::task::spawn;
+//                 // Spawn each load operation as a separate task
+//                 Some(spawn(async move {
+//                     let registry =
+//                         model_converting_registry_from_name::<Individual>(&registry_name)?;
+//                     let pnr_filter_ref = pnr_filter.as_ref();
+//                     let result = registry.load_as_models_async(&path, pnr_filter_ref).await?;
+//                     Ok::<_, ParquetReaderError>((idx, result))
+//                 }))
+//             } else {
+//                 None
+//             }
+//         });
 
-    // Map of registry names to paths for error reporting
-    let registry_paths: Vec<(String, String)> = base_paths
-        .iter()
-        .map(|(name, path)| ((*name).to_string(), path.to_string_lossy().to_string()))
-        .collect();
+//     // Wait for all futures to complete
+//     let results = join_all(futures).await;
 
-    // Create futures for each registry load operation
-    let futures = base_paths
-        .iter()
-        .enumerate()
-        .filter_map(|(idx, (registry_name, path))| {
-            // Only use registries that support model conversion to Individual
-            if matches!(
-                registry_name.to_lowercase().as_str(),
-                "akm" | "uddf" | "vnds" | "dod" | "bef"
-            ) {
-                let registry_name = (*registry_name).to_string();
-                let path = path.to_path_buf();
-                let pnr_filter = pnr_filter.cloned();
+//     // Process results
+//     let mut indexed_results: Vec<(usize, Vec<Individual>)> = Vec::new();
+//     for (i, task_result) in results.into_iter().enumerate() {
+//         match task_result {
+//             Ok(result) => match result {
+//                 Ok((idx, individuals)) => indexed_results.push((idx, individuals)),
+//                 Err(e) => {
+//                     let (name, path) = &registry_paths[i];
+//                     return Err(ParquetReaderError::IoError(format!(
+//                         "Failed to load registry '{name}' from path '{path}' as individuals: {e}"
+//                     ))
+//                     .into());
+//                 }
+//             },
+//             Err(e) => {
+//                 let (name, path) = &registry_paths[i];
+//                 return Err(ParquetReaderError::IoError(format!(
+//                     "Task error loading registry '{name}' from path '{path}' as individuals: {e}"
+//                 ))
+//                 .into());
+//             }
+//         }
+//     }
 
-                // Spawn each load operation as a separate task
-                Some(spawn(async move {
-                    let registry =
-                        model_converting_registry_from_name::<Individual>(&registry_name)?;
-                    let pnr_filter_ref = pnr_filter.as_ref();
-                    let result = registry.load_as_models_async(&path, pnr_filter_ref).await?;
-                    Ok::<_, ParquetReaderError>((idx, result))
-                }))
-            } else {
-                None
-            }
-        });
+//     // Sort results by original index to maintain order
+//     indexed_results.sort_by_key(|(idx, _)| *idx);
 
-    // Wait for all futures to complete
-    let results = join_all(futures).await;
+//     // Combine all individuals
+//     let all_individuals = indexed_results
+//         .into_iter()
+//         .flat_map(|(_, individuals)| individuals)
+//         .collect();
 
-    // Process results
-    let mut indexed_results: Vec<(usize, Vec<Individual>)> = Vec::new();
-    for (i, task_result) in results.into_iter().enumerate() {
-        match task_result {
-            Ok(result) => match result {
-                Ok((idx, individuals)) => indexed_results.push((idx, individuals)),
-                Err(e) => {
-                    let (name, path) = &registry_paths[i];
-                    return Err(ParquetReaderError::IoError(format!(
-                        "Failed to load registry '{name}' from path '{path}' as individuals: {e}"
-                    ))
-                    .into());
-                }
-            },
-            Err(e) => {
-                let (name, path) = &registry_paths[i];
-                return Err(ParquetReaderError::IoError(format!(
-                    "Task error loading registry '{name}' from path '{path}' as individuals: {e}"
-                ))
-                .into());
-            }
-        }
-    }
-
-    // Sort results by original index to maintain order
-    indexed_results.sort_by_key(|(idx, _)| *idx);
-
-    // Combine all individuals
-    let all_individuals = indexed_results
-        .into_iter()
-        .flat_map(|(_, individuals)| individuals)
-        .collect();
-
-    Ok(all_individuals)
-}
+//     Ok(all_individuals)
+// }

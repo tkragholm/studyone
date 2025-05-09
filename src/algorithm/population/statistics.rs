@@ -5,7 +5,8 @@
 
 use std::collections::HashMap;
 
-use crate::models::family::{FamilyCollection, FamilySnapshot, FamilyType};
+use crate::models::derived::family::{FamilyCollection, FamilySnapshot};
+use crate::models::FamilyType;
 
 /// Functions for population statistics and summaries
 pub struct PopulationStatistics;
