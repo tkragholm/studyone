@@ -60,28 +60,60 @@ fn deserialize_citizenship_status<'de, D>(
 where
     D: Deserializer<'de>,
 {
-    // Try to deserialize as i32 first
-    let code_result = i32::deserialize(deserializer);
+    // Use a more flexible approach to handle different types
+    // Use serde's untagged enum visitor pattern
+    struct FlexibleCitizenshipVisitor;
 
-    // If that fails, try to deserialize as string and convert
-    let code = match code_result {
-        Ok(code) => code,
-        Err(_) => {
-            // Try to parse from string
-            let code_str = String::deserialize(deserializer)?;
-            code_str.parse::<i32>().map_err(|_| {
-                serde::de::Error::custom(format!("Invalid citizenship code: {}", code_str))
-            })?
+    impl<'de> serde::de::Visitor<'de> for FlexibleCitizenshipVisitor {
+        type Value = CitizenshipStatus;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            formatter.write_str("an integer or a string representing citizenship status")
         }
-    };
 
-    Ok(if code == 5100 {
-        CitizenshipStatus::Danish
-    } else if (5001..=5999).contains(&code) {
-        CitizenshipStatus::EuropeanUnion
-    } else {
-        CitizenshipStatus::NonEUWithResidence
-    })
+        // Handle integer values
+        fn visit_i32<E>(self, value: i32) -> std::result::Result<Self::Value, E>
+        where
+            E: serde::de::Error,
+        {
+            self.process_code(value)
+        }
+
+        fn visit_i64<E>(self, value: i64) -> std::result::Result<Self::Value, E>
+        where
+            E: serde::de::Error,
+        {
+            self.process_code(value as i32)
+        }
+
+        // Handle string values
+        fn visit_str<E>(self, value: &str) -> std::result::Result<Self::Value, E>
+        where
+            E: serde::de::Error,
+        {
+            match value.parse::<i32>() {
+                Ok(code) => self.process_code(code),
+                Err(_) => Err(E::custom(format!("Invalid citizenship code: {}", value))),
+            }
+        }
+    }
+
+    impl FlexibleCitizenshipVisitor {
+        fn process_code<E>(&self, code: i32) -> std::result::Result<CitizenshipStatus, E>
+        where
+            E: serde::de::Error,
+        {
+            Ok(if code == 5100 {
+                CitizenshipStatus::Danish
+            } else if (5001..=5999).contains(&code) {
+                CitizenshipStatus::EuropeanUnion
+            } else {
+                CitizenshipStatus::NonEUWithResidence
+            })
+        }
+    }
+
+    deserializer.deserialize_any(FlexibleCitizenshipVisitor)
 }
 
 /// Custom deserializer for `HousingType` from HUSTYPE field
