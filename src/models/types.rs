@@ -3,8 +3,10 @@
 //! This module contains common enum types and data structures used across
 //! domain models to ensure consistency and facilitate code reuse.
 
+use serde::{Deserialize, Serialize};
+
 /// Gender of an individual
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Gender {
     /// Male gender
     Male,
@@ -35,7 +37,7 @@ impl From<i32> for Gender {
 }
 
 /// Geographic origin category
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Origin {
     /// Danish origin
     Danish,
@@ -70,7 +72,7 @@ impl From<i32> for Origin {
 }
 
 /// Education level using ISCED classification
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum EducationLevel {
     /// ISCED 0-2: Low education
     Low,
@@ -105,7 +107,7 @@ impl From<i32> for EducationLevel {
 }
 
 /// Type of diagnosis (primary or secondary)
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DiagnosisType {
     /// Primary (main) diagnosis
     Primary,
@@ -136,7 +138,7 @@ impl From<i32> for DiagnosisType {
 }
 
 /// Severe Chronic Disease category
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ScdCategory {
     /// Blood disorders
     BloodDisorder,
@@ -181,7 +183,7 @@ impl From<i32> for ScdCategory {
 }
 
 /// Disease severity classification
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DiseaseSeverity {
     /// Mild conditions (e.g., asthma)
     Mild,
@@ -205,7 +207,7 @@ impl From<i32> for DiseaseSeverity {
 }
 
 /// Origin of the disease
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DiseaseOrigin {
     /// Congenital disease (present at birth)
     Congenital,
@@ -226,7 +228,7 @@ impl From<i32> for DiseaseOrigin {
 }
 
 /// Job situation category
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum JobSituation {
     /// Employed full-time
     EmployedFullTime,
@@ -289,7 +291,7 @@ impl From<i32> for FamilyType {
 }
 
 /// Marital status according to Danish registries
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum MaritalStatus {
     /// Unmarried
     Unmarried,
@@ -340,7 +342,7 @@ impl From<i32> for MaritalStatus {
 }
 
 /// Citizenship status
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum CitizenshipStatus {
     /// Danish citizen
     Danish,
@@ -370,7 +372,7 @@ impl From<i32> for CitizenshipStatus {
 }
 
 /// Housing type categories
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum HousingType {
     /// Single-family house
     SingleFamilyHouse,
@@ -403,7 +405,7 @@ impl From<i32> for HousingType {
 }
 
 /// Socioeconomic status classification
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SocioeconomicStatus {
     /// Self-employed with employees
     SelfEmployedWithEmployees,
@@ -448,7 +450,7 @@ impl From<i32> for SocioeconomicStatus {
 }
 
 /// Primary field of education
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum EducationField {
     /// General education (non-specialized)
     General,

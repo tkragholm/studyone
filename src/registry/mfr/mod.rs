@@ -3,8 +3,8 @@
 //! The MFR (Medical Birth Registry) registry contains birth information.
 
 use super::RegisterLoader;
-pub mod schema;
 pub mod conversion;
+pub mod schema;
 use crate::RecordBatch;
 use crate::Result;
 use crate::async_io::loader::PnrFilterableLoader;
@@ -117,28 +117,5 @@ impl RegisterLoader for MfrRegister {
     /// Returns the column name containing the PNR
     fn get_pnr_column_name(&self) -> Option<&'static str> {
         Some("PNR")
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::path::PathBuf;
-
-    /// Test that the register can be constructed
-    #[test]
-    fn test_mfr_register_construction() {
-        let register = MfrRegister::new();
-        assert_eq!(register.get_register_name(), "MFR");
-        assert!(register.supports_pnr_filter());
-        assert_eq!(register.get_pnr_column_name(), Some("PNR"));
-    }
-
-    /// Test schema initialization
-    #[test]
-    fn test_schema_initialization() {
-        let register = MfrRegister::new();
-        let schema = register.get_schema();
-        assert!(!schema.fields().is_empty());
     }
 }

@@ -133,13 +133,3 @@ impl ModelConversion<Individual> for VndsRegister {
         Ok(())
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_vnds_conversion() {
-        // TODO: Add tests for VNDS conversion
-    }
-}

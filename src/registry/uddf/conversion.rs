@@ -105,13 +105,3 @@ impl ModelConversion<Individual> for UddfRegister {
         Ok(())
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_uddf_conversion() {
-        // TODO: Add tests for UDDF conversion
-    }
-}

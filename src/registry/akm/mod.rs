@@ -3,8 +3,8 @@
 //! The AKM (Arbejdsklassifikationsmodulet) registry contains employment information.
 
 use super::RegisterLoader;
-pub mod schema;
 pub mod conversion;
+pub mod schema;
 use crate::RecordBatch;
 use crate::Result;
 use crate::async_io::loader::PnrFilterableLoader;
@@ -127,7 +127,6 @@ impl RegisterLoader for AkmRegister {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::path::PathBuf;
 
     /// Test that the register can be constructed
     #[test]
@@ -145,7 +144,7 @@ mod tests {
         let schema = register.get_schema();
         assert!(!schema.fields().is_empty());
     }
-    
+
     /// Test model conversion
     #[test]
     fn test_model_conversion() {

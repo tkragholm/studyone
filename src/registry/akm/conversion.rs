@@ -95,7 +95,6 @@ impl ModelConversion<Individual> for AkmRegister {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
 
     #[test]
     fn test_akm_conversion() {

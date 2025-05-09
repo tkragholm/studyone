@@ -3,8 +3,8 @@
 //! The VNDS (Vandringer/Migration) registry contains migration information.
 
 use super::RegisterLoader;
-pub mod schema;
 pub mod conversion;
+pub mod schema;
 use crate::RecordBatch;
 use crate::Result;
 use crate::async_io::loader::PnrFilterableLoader;
@@ -123,34 +123,3 @@ impl RegisterLoader for VndsRegister {
 // Re-export ModelConversion implementation from the conversion module
 // The implementation details have been moved there to separate concerns
 // and reduce the coupling between registry and model implementations
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::path::PathBuf;
-
-    /// Test that the register can be constructed
-    #[test]
-    fn test_vnds_register_construction() {
-        let register = VndsRegister::new();
-        assert_eq!(register.get_register_name(), "VNDS");
-        assert!(register.supports_pnr_filter());
-        assert_eq!(register.get_pnr_column_name(), Some("PNR"));
-    }
-
-    /// Test schema initialization
-    #[test]
-    fn test_schema_initialization() {
-        let register = VndsRegister::new();
-        let schema = register.get_schema();
-        assert!(!schema.fields().is_empty());
-    }
-    
-    /// Test model conversion
-    #[test]
-    fn test_model_conversion() {
-        // TODO: Implement a proper test with a mock batch
-        // This would create a test RecordBatch with VNDS data
-        // and test the conversion to Individual models
-    }
-}

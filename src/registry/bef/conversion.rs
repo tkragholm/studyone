@@ -20,7 +20,7 @@ use std::collections::HashMap;
 pub fn from_bef_record(batch: &RecordBatch, row: usize) -> Result<Option<Individual>> {
     use crate::models::types::{CitizenshipStatus, HousingType, MaritalStatus, Origin};
     use crate::utils::field_extractors::{
-        extract_date32, extract_int32, extract_int8_as_padded_string, extract_string,
+        extract_date32, extract_int8_as_padded_string, extract_int32, extract_string,
     };
 
     // Extract PNR - required for identification
@@ -71,13 +71,13 @@ pub fn from_bef_record(batch: &RecordBatch, row: usize) -> Result<Option<Individ
 
     // Extract municipality code
     let municipality_code = extract_int8_as_padded_string(batch, row, "KOM", false, 3)?;
-    
+
     // Extract marital status
     let marital_status = match extract_string(batch, row, "CIVST", false)? {
         Some(status_code) => MaritalStatus::from(status_code.as_str()),
         None => MaritalStatus::Unknown,
     };
-    
+
     // Extract citizenship status from STATSB field
     let citizenship_status = match extract_int32(batch, row, "STATSB", false)? {
         Some(code) => {
@@ -88,10 +88,10 @@ pub fn from_bef_record(batch: &RecordBatch, row: usize) -> Result<Option<Individ
             } else {
                 CitizenshipStatus::NonEUWithResidence
             }
-        },
+        }
         None => CitizenshipStatus::Unknown,
     };
-    
+
     // Extract housing type from HUSTYPE field
     let housing_type = match extract_int32(batch, row, "HUSTYPE", false)? {
         Some(code) => match code {
@@ -104,7 +104,7 @@ pub fn from_bef_record(batch: &RecordBatch, row: usize) -> Result<Option<Individ
         },
         None => HousingType::Unknown,
     };
-    
+
     // Extract household size from ANTPERSF or ANTPERSH field
     let household_size = match (
         extract_int32(batch, row, "ANTPERSF", false)?,
@@ -114,7 +114,7 @@ pub fn from_bef_record(batch: &RecordBatch, row: usize) -> Result<Option<Individ
         (None, Some(household_size)) => Some(household_size),
         _ => None,
     };
-    
+
     // Create a new Individual with all extracted data
     let mut individual = Individual::new(pnr, gender, birth_date);
     individual.family_id = family_id;
@@ -122,15 +122,15 @@ pub fn from_bef_record(batch: &RecordBatch, row: usize) -> Result<Option<Individ
     individual.father_pnr = father_pnr;
     individual.origin = origin;
     individual.municipality_code = municipality_code;
-    
+
     // Set additional demographic information fields
     individual.marital_status = marital_status;
     individual.citizenship_status = citizenship_status;
     individual.housing_type = housing_type;
     individual.household_size = household_size;
-    
+
     // Set is_rural field based on municipality code
-    // This is a simplified approximation - in a real implementation, 
+    // This is a simplified approximation - in a real implementation,
     // this would use a proper lookup table of rural municipalities
     if let Some(code) = &individual.municipality_code {
         let code_num = code.parse::<i32>().unwrap_or(0);
@@ -241,15 +241,5 @@ impl ModelConversion<Family> for BefRegister {
     /// Apply additional transformations to Family models
     fn transform_models(&self, _models: &mut [Family]) -> Result<()> {
         Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_bef_conversion() {
-        // TODO: Add tests for BEF conversion
     }
 }

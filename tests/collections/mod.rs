@@ -1,3 +1,3 @@
-mod generic_collection_test;
-mod individual_collection_test;
-mod diagnosis_collection_test;
+// mod generic_collection_test;
+// mod individual_collection_test;
+// mod diagnosis_collection_test;

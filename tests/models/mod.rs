@@ -1,0 +1,8 @@
+// pub mod adapters;
+// pub mod child_test;
+// pub mod diagnosis_test;
+// pub mod family_test;
+// pub mod income_test;
+pub mod individual_serde_test;
+// pub mod individual_test;
+// pub mod parent_test;

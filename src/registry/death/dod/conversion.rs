@@ -15,13 +15,13 @@ pub fn enhance_with_death_date(
     row: usize,
 ) -> Result<bool> {
     use crate::utils::field_extractors::extract_date_from_string;
-    
+
     // Extract death date using the field extractor
     if let Some(date) = extract_date_from_string(batch, row, "DODDATO", false)? {
         individual.death_date = Some(date);
         return Ok(true);
     }
-    
+
     Ok(false)
 }
 
@@ -31,7 +31,7 @@ pub fn enhance_individuals_with_death_info(
     batch: &RecordBatch,
 ) -> Result<usize> {
     use crate::utils::field_extractors::extract_string;
-    
+
     let mut count = 0;
 
     // Create a map of PNRs to row indices for fast lookup
@@ -71,15 +71,5 @@ impl ModelConversion<Individual> for DodRegister {
         // This would need to be implemented in a way that accesses the actual data
         // Here we just provide a placeholder
         Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_enhance_with_death_date() {
-        // TODO: Add tests for death date enhancement
     }
 }
