@@ -7,6 +7,7 @@
 // Import submodules
 pub mod conversion;
 pub mod discovery;
+pub mod individual;
 pub mod v2;
 pub mod v3;
 

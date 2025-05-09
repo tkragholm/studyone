@@ -113,8 +113,10 @@ pub use transform::{
 pub mod model_conversion;
 pub use model_conversion::{ModelConversion, ModelConvertingRegisterLoader};
 
-// Registry-specific model conversion implementations
-pub mod registry_aware_models;
+// Centralized registry deserialization and detection
+pub mod deserializer;
+pub mod detect;
+pub mod models;
 
 // Centralized registry conversions module with serde_arrow support
 //pub mod conversions;

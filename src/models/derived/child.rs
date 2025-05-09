@@ -102,8 +102,8 @@ impl Child {
 
     /// Enhance this Child with data from a registry record
     pub fn enhance_from_registry(&mut self, batch: &RecordBatch, row: usize) -> Result<bool> {
-        use crate::registry::registry_aware_models::detect_registry_type;
-        use crate::utils::field_extractors::{extract_int32, extract_string};
+        use crate::registry::detect::detect_registry_type;
+        use crate::utils::field_extractors::{extract_int32};
 
         let mut enhanced = false;
 
@@ -121,7 +121,7 @@ impl Child {
         let registry_type = detect_registry_type(batch);
 
         // MFR registry contains birth-related information
-        if registry_type == "MFR" {
+        if registry_type.as_str() == "MFR" {
             // Extract birth-related fields if they're not already set
             if self.birth_weight.is_none() {
                 if let Ok(Some(weight)) = extract_int32(batch, row, "VAEGT", false) {
@@ -146,7 +146,7 @@ impl Child {
         }
 
         // LPR registry contains diagnosis information that could affect SCD status
-        if registry_type == "LPR" {
+        if registry_type.as_str() == "LPR" {
             // Extract diagnoses if applicable
             // This would be more complex and would require building Diagnosis objects
             // and potentially updating SCD status

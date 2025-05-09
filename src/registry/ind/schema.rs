@@ -1,6 +1,7 @@
 //! IND schema definitions
 
 use arrow::datatypes::{DataType, Field, Schema};
+use std::collections::HashMap;
 use std::sync::Arc;
 
 /// Get the Arrow schema for IND data
@@ -17,4 +18,22 @@ use std::sync::Arc;
         Field::new("PRE_SOCIO", DataType::Int8, true),
         Field::new("VERSION", DataType::Utf8, true),
     ]))
+}
+
+/// Field mapping from IND registry to SerdeIndividual
+///
+/// This function provides a mapping between IND registry field names and
+/// the corresponding field names in the SerdeIndividual struct.
+#[must_use] pub fn field_mapping() -> HashMap<String, String> {
+    let mut mapping = HashMap::new();
+    mapping.insert("PNR".to_string(), "pnr".to_string());
+    mapping.insert("PERINDKIALT_13".to_string(), "annual_income".to_string());
+    mapping.insert("DISPON_NY".to_string(), "disposable_income".to_string());
+    mapping.insert("LOENMV_13".to_string(), "employment_income".to_string());
+    mapping.insert("NETOVSKUD".to_string(), "self_employment_income".to_string());
+    mapping.insert("KPITALIND".to_string(), "capital_income".to_string());
+    mapping.insert("OFFHJ".to_string(), "transfer_income".to_string());
+    mapping.insert("AAR".to_string(), "income_year".to_string());
+    mapping.insert("PRE_SOCIO".to_string(), "socioeconomic_status_code".to_string());
+    mapping
 }

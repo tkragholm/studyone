@@ -6,6 +6,8 @@ mod register;
 pub use register::BefCombinedRegister;
 
 pub mod conversion;
+pub mod deserializer;
+pub mod individual;
 pub mod schema;
 
 use super::RegisterLoader;

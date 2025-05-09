@@ -3,6 +3,7 @@
 //! The BEF (Befolkning) registry contains population demographic information.
 
 use arrow::datatypes::{DataType, Field, Schema};
+use std::collections::HashMap;
 use std::sync::Arc;
 
 /// Get the Arrow schema for BEF data
@@ -37,4 +38,25 @@ use std::sync::Arc;
         Field::new("STATSB", DataType::Int8, true),
         Field::new("VERSION", DataType::Utf8, true),
     ]))
+}
+
+/// Field mapping from BEF registry to SerdeIndividual
+///
+/// This function provides a mapping between BEF registry field names and
+/// the corresponding field names in the SerdeIndividual struct.
+#[must_use] pub fn field_mapping() -> HashMap<String, String> {
+    let mut mapping = HashMap::new();
+    mapping.insert("PNR".to_string(), "pnr".to_string());
+    mapping.insert("KOEN".to_string(), "gender".to_string());
+    mapping.insert("FOED_DAG".to_string(), "birth_date".to_string());
+    mapping.insert("MOR_ID".to_string(), "mother_pnr".to_string());
+    mapping.insert("FAR_ID".to_string(), "father_pnr".to_string());
+    mapping.insert("OPR_LAND".to_string(), "origin_code".to_string());
+    mapping.insert("KOM".to_string(), "municipality_code".to_string());
+    mapping.insert("CIVST".to_string(), "marital_status".to_string());
+    mapping.insert("STATSB".to_string(), "citizenship_status".to_string());
+    mapping.insert("HUSTYPE".to_string(), "housing_type".to_string());
+    mapping.insert("ANTPERSF".to_string(), "household_size".to_string());
+    mapping.insert("FAMILIE_ID".to_string(), "family_id".to_string());
+    mapping
 }

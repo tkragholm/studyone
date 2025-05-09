@@ -120,7 +120,7 @@ fn compute_is_rural(municipality_code: &Option<String>) -> bool {
 ///
 /// This wrapper adds serde attributes to the base Individual model
 /// to enable direct conversion from registry data.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct SerdeIndividual {
     /// The inner Individual that holds the actual data
     #[serde(with = "IndividualDef")]
@@ -325,11 +325,12 @@ impl SerdeIndividual {
     pub fn from_batch(batch: &RecordBatch) -> Result<Vec<Self>> {
         match serde_arrow::from_record_batch::<Self>(batch) {
             Ok(mut individuals) => {
-                // Compute any derived fields
-                for individual in &mut individuals {
-                    individual.inner.compute_rural_status();
-                }
-                Ok(individuals)
+                // Compute any derived fields if needed
+                let mut result = Vec::new();
+                let mut individual = individuals;
+                individual.inner.compute_rural_status();
+                result.push(individual);
+                Ok(result)
             }
             Err(e) => Err(anyhow::anyhow!("Failed to deserialize: {}", e)),
         }
