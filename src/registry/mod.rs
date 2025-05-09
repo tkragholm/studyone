@@ -83,17 +83,17 @@ pub mod vnds;
 
 // Re-export registry structs for easier access
 pub use akm::AkmRegister;
-pub use bef::BefRegister;
 pub use bef::BefCombinedRegister;
+pub use bef::BefRegister;
 pub use death::dod::DodRegister;
 pub use death::dodsaarsag::DodsaarsagRegister;
 // Removed IdanRegister
 pub use ind::IndRegister;
 pub use ind::conversion::YearConfiguredIndRegister;
 pub use lpr::{
+    discovery::{LprPaths, find_lpr_files},
     v2::{LprAdmRegister, LprBesRegister, LprDiagRegister},
     v3::{Lpr3DiagnoserRegister, Lpr3KontakterRegister},
-    discovery::{LprPaths, find_lpr_files},
 };
 pub use mfr::MfrRegister;
 pub use mfr::conversion::MfrChildRegister;
@@ -115,3 +115,6 @@ pub use model_conversion::{ModelConversion, ModelConvertingRegisterLoader};
 
 // Registry-specific model conversion implementations
 pub mod registry_aware_models;
+
+// Centralized registry conversions module with serde_arrow support
+//pub mod conversions;

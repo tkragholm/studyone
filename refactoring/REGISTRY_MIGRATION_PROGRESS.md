@@ -4,18 +4,18 @@ This document tracks the progress of migrating all registry implementations to t
 
 ## Registry Implementations
 
-| Registry | Trait-Based Implementation | Model Conversion | Tests | Status |
-|----------|---------------------------|-----------------|-------|--------|
-| BEF      | ✅                        | ✅              | ✅    | Complete |
-| IND      | ✅                        | ✅              | ✅    | Complete |
-| LPR      | ✅                        | ✅              | ✅    | Complete |
-| MFR      | ✅                        | ✅              | ✅    | Complete |
-| AKM      | ✅                        | ✅              | ✅    | Complete |
-| UDDF     | ✅                        | ✅              | ✅    | Complete |
-| VNDS     | ✅                        | ✅              | ✅    | Complete |
-| IDAN     | ❌                        | ❌              | ❌    | Pending |
-| DOD      | ✅                        | ❌              | ✅    | Partial |
-| DODSAARSAG| ✅                       | ❌              | ✅    | Partial |
+| Registry   | Trait-Based Implementation | Model Conversion | Tests | Status   |
+| ---------- | -------------------------- | ---------------- | ----- | -------- |
+| BEF        | ✅                         | ✅               | ✅    | Complete |
+| IND        | ✅                         | ✅               | ✅    | Complete |
+| LPR        | ✅                         | ✅               | ✅    | Complete |
+| MFR        | ✅                         | ✅               | ✅    | Complete |
+| AKM        | ✅                         | ✅               | ✅    | Complete |
+| UDDF       | ✅                         | ✅               | ✅    | Complete |
+| VNDS       | ✅                         | ✅               | ✅    | Complete |
+| IDAN       | ❌                         | ❌               | ❌    | Pending  |
+| DOD        | ✅                         | ❌               | ✅    | Partial  |
+| DODSAARSAG | ✅                         | ❌               | ✅    | Partial  |
 
 ## Factory Methods
 
@@ -33,14 +33,14 @@ All factory methods have been updated to support the new trait-based approach:
 The following registries support direct model conversion to domain models:
 
 | Registry | Individual | Income | Diagnosis | Family | Child | Parent |
-|----------|-----------|--------|-----------|--------|-------|--------|
-| BEF      | ✅        | ❌     | ❌        | ✅     | ✅    | ✅     |
-| IND      | ❌        | ✅     | ❌        | ❌     | ❌    | ❌     |
-| LPR      | ❌        | ❌     | ✅        | ❌     | ❌    | ❌     |
-| MFR      | ❌        | ❌     | ❌        | ❌     | ✅    | ❌     |
-| AKM      | ✅        | ❌     | ❌        | ❌     | ❌    | ❌     |
-| UDDF     | ✅        | ❌     | ❌        | ❌     | ❌    | ❌     |
-| VNDS     | ✅        | ❌     | ❌        | ❌     | ❌    | ❌     |
+| -------- | ---------- | ------ | --------- | ------ | ----- | ------ |
+| BEF      | ✅         | ❌     | ❌        | ✅     | ✅    | ✅     |
+| IND      | ❌         | ✅     | ❌        | ❌     | ❌    | ❌     |
+| LPR      | ❌         | ❌     | ✅        | ❌     | ❌    | ❌     |
+| MFR      | ❌         | ❌     | ❌        | ❌     | ✅    | ❌     |
+| AKM      | ✅         | ❌     | ❌        | ❌     | ❌    | ❌     |
+| UDDF     | ✅         | ❌     | ❌        | ❌     | ❌    | ❌     |
+| VNDS     | ✅         | ❌     | ❌        | ❌     | ❌    | ❌     |
 
 ## Recent Implementations
 
@@ -64,7 +64,6 @@ The following registries support direct model conversion to domain models:
 
 ## Next Steps
 
-1. Implement the remaining IDAN registry
 2. Add model conversion support for remaining registries (DOD, DODSAARSAG)
 3. Continue with model cleanup to remove registry-specific code
 4. Complete integration tests for the new implementations

@@ -4,6 +4,7 @@
 //! Children have specific attributes related to health conditions, birth details,
 //! and can be associated with severe chronic diseases (SCD).
 
+use crate::common::traits::registry::RegistryAware;
 use crate::error::Result;
 use crate::models::collections::ModelCollection;
 use crate::models::core::Individual;
@@ -82,6 +83,92 @@ impl Child {
             diagnoses: Vec::new(),
             birth_order: None,
         }
+    }
+
+    /// Create a Child directly from a registry record
+    pub fn from_registry_record(batch: &RecordBatch, row: usize) -> Result<Option<Self>> {
+        // First create an Individual from the registry record
+        if let Some(individual) = Individual::from_registry_record(batch, row)? {
+            let mut child = Self::from_individual(Arc::new(individual));
+
+            // Enhance with child-specific registry data
+            child.enhance_from_registry(batch, row)?;
+
+            Ok(Some(child))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Enhance this Child with data from a registry record
+    pub fn enhance_from_registry(&mut self, batch: &RecordBatch, row: usize) -> Result<bool> {
+        use crate::registry::registry_aware_models::detect_registry_type;
+        use crate::utils::field_extractors::{extract_int32, extract_string};
+
+        let mut enhanced = false;
+
+        // First enhance the underlying Individual
+        let mut individual = Individual::clone(&self.individual);
+        let individual_enhanced = individual.enhance_from_registry(batch, row)?;
+
+        if individual_enhanced {
+            // Update our Individual reference if it was enhanced
+            self.individual = Arc::new(individual);
+            enhanced = true;
+        }
+
+        // Detect registry type to add Child-specific fields
+        let registry_type = detect_registry_type(batch);
+
+        // MFR registry contains birth-related information
+        if registry_type == "MFR" {
+            // Extract birth-related fields if they're not already set
+            if self.birth_weight.is_none() {
+                if let Ok(Some(weight)) = extract_int32(batch, row, "VAEGT", false) {
+                    self.birth_weight = Some(weight);
+                    enhanced = true;
+                }
+            }
+
+            if self.gestational_age.is_none() {
+                if let Ok(Some(ga)) = extract_int32(batch, row, "SVLENGTH", false) {
+                    self.gestational_age = Some(ga);
+                    enhanced = true;
+                }
+            }
+
+            if self.apgar_score.is_none() {
+                if let Ok(Some(apgar)) = extract_int32(batch, row, "APGAR5", false) {
+                    self.apgar_score = Some(apgar);
+                    enhanced = true;
+                }
+            }
+        }
+
+        // LPR registry contains diagnosis information that could affect SCD status
+        if registry_type == "LPR" {
+            // Extract diagnoses if applicable
+            // This would be more complex and would require building Diagnosis objects
+            // and potentially updating SCD status
+            // For now, we'll just leave this as a placeholder
+        }
+
+        Ok(enhanced)
+    }
+
+    /// Create Child models from a batch of registry records using serde_arrow
+    pub fn from_registry_batch_with_serde_arrow(batch: &RecordBatch) -> Result<Vec<Self>> {
+        // First create Individuals from the registry batch
+        let individuals = Individual::from_registry_batch_with_serde_arrow(batch)?;
+
+        // Then convert those Individuals to Children and enhance them
+        let mut children = Vec::with_capacity(individuals.len());
+        for individual in individuals {
+            let child = Self::from_individual(Arc::new(individual));
+            children.push(child);
+        }
+
+        Ok(children)
     }
 
     /// Get a reference to the underlying Individual
@@ -255,18 +342,8 @@ impl ArrowSchema for Child {
     }
 
     fn from_record_batch(batch: &RecordBatch) -> Result<Vec<Self>> {
-        // Note: This requires having the Individual object available.
-        // We're implementing it here but it will only work in limited scenarios
-        // where we have a way to obtain the Individual separately.
-        match serde_arrow::from_record_batch(batch) {
-            Ok(children) => {
-                // In a real implementation, we would need to associate each Child with its
-                // corresponding Individual, which might require a lookup.
-                // This is just a placeholder for the actual implementation.
-                Ok(children)
-            }
-            Err(e) => Err(anyhow::anyhow!("Failed to deserialize Child: {}", e)),
-        }
+        // Use registry-aware from_registry_batch_with_serde_arrow which handles Individual creation
+        Self::from_registry_batch_with_serde_arrow(batch)
     }
 
     fn to_record_batch(children: &[Self]) -> Result<RecordBatch> {

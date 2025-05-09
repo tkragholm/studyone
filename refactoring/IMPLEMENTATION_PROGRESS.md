@@ -50,9 +50,8 @@ This document tracks our progress implementing the code cleanup plan outlined in
    - [x] Migrate LPR registry
    - [x] Migrate MFR registry
    - [x] Migrate AKM registry
-   - [x] Migrate UDDF registry 
+   - [x] Migrate UDDF registry
    - [x] Migrate VNDS registry
-   - [ ] Migrate IDAN registry (pending)
    - [ ] Clean up other model files
    - [ ] Update the factory classes
 

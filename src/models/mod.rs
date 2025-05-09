@@ -29,7 +29,7 @@ pub use core::types::{
 };
 
 // Re-export commonly used entity models for backward compatibility
-pub use core::Individual;
+pub use core::individual::Individual;
 pub use derived::Child;
 pub use derived::Family;
 pub use derived::Parent;

@@ -179,3 +179,113 @@ fn test_child_registry_aware_implementation() {
     // Test registry name
     assert_eq!(Child::registry_name(), "MFR", "Registry name should be MFR");
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use arrow::datatypes::{Field, Schema};
+    use std::sync::Arc;
+
+    #[test]
+    fn test_individual_from_registry_record() -> Result<()> {
+        // Create a simple test batch with a PNR column
+        let schema = Schema::new(vec![Field::new("PNR", DataType::Utf8, false)]);
+
+        // Create a simple batch with one row
+        let pnr_array = StringArray::from(vec!["1234567890"]);
+        let batch = RecordBatch::try_new(Arc::new(schema), vec![Arc::new(pnr_array)]).unwrap();
+
+        // Test generic conversion
+        let individual = Individual::from_registry_record(&batch, 0)?;
+
+        assert!(individual.is_some());
+        let individual = individual.unwrap();
+        assert_eq!(individual.pnr, "1234567890");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_child_from_registry_record() -> Result<()> {
+        // Create a simple test batch with a PNR column
+        let schema = Schema::new(vec![Field::new("PNR", DataType::Utf8, false)]);
+
+        // Create a simple batch with one row
+        let pnr_array = StringArray::from(vec!["1234567890"]);
+        let batch = RecordBatch::try_new(Arc::new(schema), vec![Arc::new(pnr_array)]).unwrap();
+
+        // Test generic conversion
+        let child = Child::from_registry_record(&batch, 0)?;
+
+        assert!(child.is_some());
+        let child = child.unwrap();
+        assert_eq!(child.individual().pnr, "1234567890");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_registry_type_detection() {
+        // Test BEF schema
+        let bef_schema = Schema::new(vec![
+            Field::new("PNR", DataType::Utf8, false),
+            Field::new("KOEN", DataType::Utf8, false),
+        ]);
+        let batch = RecordBatch::new_empty(Arc::new(bef_schema));
+        assert_eq!(detect_registry_type(&batch), "BEF");
+
+        // Test IND schema
+        let ind_schema = Schema::new(vec![
+            Field::new("PNR", DataType::Utf8, false),
+            Field::new("PERINDKIALT", DataType::Float64, true),
+        ]);
+        let batch = RecordBatch::new_empty(Arc::new(ind_schema));
+        assert_eq!(detect_registry_type(&batch), "IND");
+
+        // Test LPR schema
+        let lpr_schema = Schema::new(vec![
+            Field::new("PNR", DataType::Utf8, false),
+            Field::new("RECNUM", DataType::Int32, false),
+        ]);
+        let batch = RecordBatch::new_empty(Arc::new(lpr_schema));
+        assert_eq!(detect_registry_type(&batch), "LPR");
+    }
+
+    #[test]
+    fn test_from_registry_batch_with_serde_arrow() -> Result<()> {
+        // Create a test batch with BEF-like schema
+        let schema = Schema::new(vec![
+            Field::new("PNR", DataType::Utf8, false),
+            Field::new("KOEN", DataType::Utf8, false),
+            Field::new("FAMILIE_ID", DataType::Utf8, true),
+        ]);
+
+        // Create arrays for the batch
+        let pnr_array = StringArray::from(vec!["1234567890", "2345678901"]);
+        let koen_array = StringArray::from(vec!["M", "F"]);
+        let familie_id_array = StringArray::from(vec![Some("FAM001"), Some("FAM002")]);
+
+        // Create the batch
+        let batch = RecordBatch::try_new(
+            Arc::new(schema),
+            vec![
+                Arc::new(pnr_array),
+                Arc::new(koen_array),
+                Arc::new(familie_id_array),
+            ],
+        )
+        .unwrap();
+
+        // Use serde_arrow for deserialization
+        let individuals = Individual::from_registry_batch_with_serde_arrow(&batch)?;
+
+        // Verify results
+        assert_eq!(individuals.len(), 2);
+        assert_eq!(individuals[0].pnr, "1234567890");
+        assert_eq!(individuals[1].pnr, "2345678901");
+        assert_eq!(individuals[0].family_id, Some("FAM001".to_string()));
+        assert_eq!(individuals[1].family_id, Some("FAM002".to_string()));
+
+        Ok(())
+    }
+}
