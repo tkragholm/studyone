@@ -25,13 +25,11 @@ impl Individual {
     /// Determine if this individual is a parent based on relations
     pub fn is_parent_in_dataset(&self, all_individuals: &[Individual]) -> bool {
         all_individuals.iter().any(|ind| {
-            ind.mother_pnr
-                .as_ref()
-                .map_or(false, |pnr| pnr == &self.pnr)
-                || ind
+            (ind.mother_pnr
+                .as_ref() == Some(&self.pnr))
+                || (ind
                     .father_pnr
-                    .as_ref()
-                    .map_or(false, |pnr| pnr == &self.pnr)
+                    .as_ref() == Some(&self.pnr))
         })
     }
 

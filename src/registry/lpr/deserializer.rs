@@ -87,7 +87,6 @@ pub fn deserialize_row(batch: &RecordBatch, row: usize) -> Result<Option<Individ
 
     // Try to get PNR column (might be called CPR in some LPR data)
     let pnr_col = get_column(batch, "PNR", &DataType::Utf8, false)
-        .and_then(|pnr| Ok(pnr))
         .or_else(|_| get_column(batch, "CPR", &DataType::Utf8, false))?;
     
     let pnr = if let Some(array) = pnr_col {

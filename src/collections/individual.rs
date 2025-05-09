@@ -94,7 +94,7 @@ impl IndividualCollection {
             individual
                 .municipality_code
                 .as_ref()
-                .map_or(false, |code| code == municipality_code)
+                .is_some_and(|code| code == municipality_code)
         })
     }
 
@@ -109,23 +109,23 @@ impl IndividualCollection {
             "mother" => self.filter(|ind| {
                 ind.mother_pnr
                     .as_ref()
-                    .map_or(false, |pnr| pnr == related_pnr)
+                    .is_some_and(|pnr| pnr == related_pnr)
             }),
             "father" => self.filter(|ind| {
                 ind.father_pnr
                     .as_ref()
-                    .map_or(false, |pnr| pnr == related_pnr)
+                    .is_some_and(|pnr| pnr == related_pnr)
             }),
             "child" => {
                 // Find individuals where this person is their mother or father
                 self.filter(|ind| {
                     (ind.mother_pnr
                         .as_ref()
-                        .map_or(false, |pnr| pnr == related_pnr))
+                        .is_some_and(|pnr| pnr == related_pnr))
                         || (ind
                             .father_pnr
                             .as_ref()
-                            .map_or(false, |pnr| pnr == related_pnr))
+                            .is_some_and(|pnr| pnr == related_pnr))
                 })
             }
             _ => Vec::new(),
