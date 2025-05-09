@@ -30,17 +30,17 @@ pub enum RegistryType {
 
 impl RegistryType {
     /// Convert `RegistryType` to static string
-    #[must_use] pub fn as_str(&self) -> &'static str {
+    #[must_use] pub const fn as_str(&self) -> &'static str {
         match self {
-            RegistryType::BEF => "BEF",
-            RegistryType::IND => "IND",
-            RegistryType::LPR => "LPR",
-            RegistryType::MFR => "MFR",
-            RegistryType::VNDS => "VNDS",
-            RegistryType::DOD => "DOD",
-            RegistryType::AKM => "AKM",
-            RegistryType::UDDF => "UDDF",
-            RegistryType::Unknown => "UNKNOWN",
+            Self::BEF => "BEF",
+            Self::IND => "IND",
+            Self::LPR => "LPR",
+            Self::MFR => "MFR",
+            Self::VNDS => "VNDS",
+            Self::DOD => "DOD",
+            Self::AKM => "AKM",
+            Self::UDDF => "UDDF",
+            Self::Unknown => "UNKNOWN",
         }
     }
 }
@@ -48,15 +48,15 @@ impl RegistryType {
 impl From<&str> for RegistryType {
     fn from(s: &str) -> Self {
         match s.trim().to_uppercase().as_str() {
-            "BEF" => RegistryType::BEF,
-            "IND" => RegistryType::IND,
-            "LPR" => RegistryType::LPR,
-            "MFR" => RegistryType::MFR,
-            "VNDS" => RegistryType::VNDS,
-            "DOD" => RegistryType::DOD,
-            "AKM" => RegistryType::AKM,
-            "UDDF" => RegistryType::UDDF,
-            _ => RegistryType::Unknown,
+            "BEF" => Self::BEF,
+            "IND" => Self::IND,
+            "LPR" => Self::LPR,
+            "MFR" => Self::MFR,
+            "VNDS" => Self::VNDS,
+            "DOD" => Self::DOD,
+            "AKM" => Self::AKM,
+            "UDDF" => Self::UDDF,
+            _ => Self::Unknown,
         }
     }
 }

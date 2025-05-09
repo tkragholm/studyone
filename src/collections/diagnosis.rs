@@ -110,12 +110,12 @@ impl DiagnosisCollection {
     
     /// Get the raw collection
     #[must_use]
-    pub fn raw(&self) -> &GenericCollection<Diagnosis> {
+    pub const fn raw(&self) -> &GenericCollection<Diagnosis> {
         &self.inner
     }
     
     /// Get a mutable reference to the raw collection
-    pub fn raw_mut(&mut self) -> &mut GenericCollection<Diagnosis> {
+    pub const fn raw_mut(&mut self) -> &mut GenericCollection<Diagnosis> {
         &mut self.inner
     }
 }

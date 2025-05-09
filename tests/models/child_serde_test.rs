@@ -30,7 +30,7 @@ fn test_child_serialization() {
     let child = create_test_child();
 
     // Convert to record batch
-    let children = vec![child.clone()];
+    let children = vec![child];
     let batch = Child::to_record_batch(&children).expect("Failed to convert to record batch");
 
     // Verify the structure of the batch

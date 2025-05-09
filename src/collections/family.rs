@@ -306,12 +306,12 @@ impl FamilyCollection {
     
     /// Get the raw collection
     #[must_use]
-    pub fn raw(&self) -> &GenericCollection<Family> {
+    pub const fn raw(&self) -> &GenericCollection<Family> {
         &self.inner
     }
     
     /// Get a mutable reference to the raw collection
-    pub fn raw_mut(&mut self) -> &mut GenericCollection<Family> {
+    pub const fn raw_mut(&mut self) -> &mut GenericCollection<Family> {
         &mut self.inner
     }
 }

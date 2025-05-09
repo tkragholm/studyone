@@ -76,7 +76,7 @@ impl Individual {
     /// # Arguments
     ///
     /// * `source` - The Individual to copy fields from
-    fn merge_fields(&mut self, source: &Individual) {
+    fn merge_fields(&mut self, source: &Self) {
         use crate::models::core::types::Gender;
 
         // Only copy fields if they're not already set

@@ -134,12 +134,12 @@ impl IndividualCollection {
 
     /// Get the raw collection
     #[must_use]
-    pub fn raw(&self) -> &GenericCollection<Individual> {
+    pub const fn raw(&self) -> &GenericCollection<Individual> {
         &self.inner
     }
 
     /// Get a mutable reference to the raw collection
-    pub fn raw_mut(&mut self) -> &mut GenericCollection<Individual> {
+    pub const fn raw_mut(&mut self) -> &mut GenericCollection<Individual> {
         &mut self.inner
     }
 }

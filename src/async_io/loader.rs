@@ -29,7 +29,7 @@ pub struct ParquetLoader {
 
 impl ParquetLoader {
     /// Create a new loader with no schema projection
-    #[must_use] pub fn new() -> Self {
+    #[must_use] pub const fn new() -> Self {
         Self {
             schema: None,
             batch_size: None,
@@ -45,7 +45,7 @@ impl ParquetLoader {
     }
     
     /// Create a new loader with schema reference
-    #[must_use] pub fn with_schema_ref(schema: SchemaRef) -> Self {
+    #[must_use] pub const fn with_schema_ref(schema: SchemaRef) -> Self {
         Self {
             schema: Some(schema),
             batch_size: None,
@@ -53,7 +53,7 @@ impl ParquetLoader {
     }
     
     /// Set the batch size for loading operations
-    #[must_use] pub fn with_batch_size(mut self, batch_size: usize) -> Self {
+    #[must_use] pub const fn with_batch_size(mut self, batch_size: usize) -> Self {
         self.batch_size = Some(batch_size);
         self
     }
@@ -117,7 +117,7 @@ pub struct PnrFilterableLoader {
 
 impl PnrFilterableLoader {
     /// Create a new PNR-filterable loader
-    #[must_use] pub fn new() -> Self {
+    #[must_use] pub const fn new() -> Self {
         Self {
             base_loader: ParquetLoader::new(),
             pnr_column: "PNR",
@@ -133,7 +133,7 @@ impl PnrFilterableLoader {
     }
     
     /// Create a new loader with schema reference
-    #[must_use] pub fn with_schema_ref(schema: SchemaRef) -> Self {
+    #[must_use] pub const fn with_schema_ref(schema: SchemaRef) -> Self {
         Self {
             base_loader: ParquetLoader::with_schema_ref(schema),
             pnr_column: "PNR",
@@ -147,7 +147,7 @@ impl PnrFilterableLoader {
     }
     
     /// Set the PNR column name
-    #[must_use] pub fn with_pnr_column(mut self, column_name: &'static str) -> Self {
+    #[must_use] pub const fn with_pnr_column(mut self, column_name: &'static str) -> Self {
         self.pnr_column = column_name;
         self
     }

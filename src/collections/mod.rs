@@ -81,7 +81,7 @@ impl<T: EntityModel> GenericCollection<T> {
     
     /// Get a map of all items by their ID
     #[must_use]
-    pub fn as_map(&self) -> &HashMap<T::Id, Arc<T>> {
+    pub const fn as_map(&self) -> &HashMap<T::Id, Arc<T>> {
         &self.items
     }
 }
@@ -395,23 +395,23 @@ where
     
     /// Get the primary model collection
     #[must_use]
-    pub fn primary(&self) -> &GenericCollection<P> {
+    pub const fn primary(&self) -> &GenericCollection<P> {
         &self.primary
     }
     
     /// Get the related model collection
     #[must_use]
-    pub fn related(&self) -> &GenericCollection<C> {
+    pub const fn related(&self) -> &GenericCollection<C> {
         &self.related
     }
     
     /// Get a mutable reference to the primary model collection
-    pub fn primary_mut(&mut self) -> &mut GenericCollection<P> {
+    pub const fn primary_mut(&mut self) -> &mut GenericCollection<P> {
         &mut self.primary
     }
     
     /// Get a mutable reference to the related model collection
-    pub fn related_mut(&mut self) -> &mut GenericCollection<C> {
+    pub const fn related_mut(&mut self) -> &mut GenericCollection<C> {
         &mut self.related
     }
 }

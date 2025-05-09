@@ -116,7 +116,7 @@ impl Individual {
     }
     
     /// Get the role of this individual at a reference date
-    #[must_use] pub fn role_at(&self, reference_date: &NaiveDate, all_individuals: &[Individual]) -> super::Role {
+    #[must_use] pub fn role_at(&self, reference_date: &NaiveDate, all_individuals: &[Self]) -> super::Role {
         let is_child = self.is_child(reference_date);
         let is_parent = self.is_parent_in_dataset(all_individuals);
 

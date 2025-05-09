@@ -123,7 +123,7 @@ pub struct Individual {
 impl Individual {
     /// Create a new Individual with minimal required information
     #[must_use]
-    pub fn new(pnr: String, gender: Gender, birth_date: Option<NaiveDate>) -> Self {
+    pub const fn new(pnr: String, gender: Gender, birth_date: Option<NaiveDate>) -> Self {
         Self {
             pnr,
             gender,

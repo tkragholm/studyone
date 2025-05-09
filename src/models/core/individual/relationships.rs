@@ -23,7 +23,7 @@ impl Individual {
     }
 
     /// Determine if this individual is a parent based on relations
-    #[must_use] pub fn is_parent_in_dataset(&self, all_individuals: &[Individual]) -> bool {
+    #[must_use] pub fn is_parent_in_dataset(&self, all_individuals: &[Self]) -> bool {
         all_individuals.iter().any(|ind| {
             (ind.mother_pnr
                 .as_ref() == Some(&self.pnr))
@@ -103,7 +103,7 @@ impl Individual {
         individuals
             .iter()
             .filter(|ind| ind.is_child(reference_date))
-            .map(super::base::Individual::to_child)
+            .map(Self::to_child)
             .collect()
     }
 
@@ -118,7 +118,7 @@ impl Individual {
         individuals
             .iter()
             .filter(|ind| parent_pnrs.contains(&ind.pnr))
-            .map(super::base::Individual::to_parent)
+            .map(Self::to_parent)
             .collect()
     }
 }

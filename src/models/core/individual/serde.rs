@@ -308,12 +308,12 @@ impl SerdeIndividual {
     }
 
     /// Get reference to the underlying Individual
-    #[must_use] pub fn inner(&self) -> &Individual {
+    #[must_use] pub const fn inner(&self) -> &Individual {
         &self.inner
     }
 
     /// Get mutable reference to the underlying Individual
-    pub fn inner_mut(&mut self) -> &mut Individual {
+    pub const fn inner_mut(&mut self) -> &mut Individual {
         &mut self.inner
     }
 
@@ -362,7 +362,7 @@ impl<'de> Deserialize<'de> for SerdeIndividual {
         // Compute derived fields after deserialization
         wrapper.inner.compute_rural_status();
 
-        Ok(SerdeIndividual {
+        Ok(Self {
             inner: wrapper.inner,
         })
     }

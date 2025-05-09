@@ -59,7 +59,7 @@ impl IndRegister {
 
     /// Get the configured year, if any
     #[must_use]
-    pub fn year(&self) -> Option<i32> {
+    pub const fn year(&self) -> Option<i32> {
         self.year
     }
 }
