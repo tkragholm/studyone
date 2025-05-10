@@ -167,7 +167,7 @@ fn check_lpr3_availability() -> Result<bool> {
 /// Load LPR2 data from available files asynchronously
 async fn load_lpr2_data_async(
     manager: &RegistryManager,
-    pnrs: &HashSet<String>,
+    _pnrs: &HashSet<String>,
     all_pnrs: &[String],
     lpr_config: &LprConfig,
 ) -> Result<DiagnosisCollection> {
@@ -194,11 +194,14 @@ async fn load_lpr2_data_async(
         let adm_file = adm_file_opt.as_ref().unwrap();
 
         // Extract year from filenames for logging
-        let year = extract_year_from_file_path(diag_file, diag_idx);
+        let _year = extract_year_from_file_path(diag_file, diag_idx);
 
         // Register files with manager for async loading
         if !manager.has_registry("lpr_diag") {
-            manager.register("lpr_diag", diag_file.parent().unwrap_or(diag_file.as_path()))?;
+            manager.register(
+                "lpr_diag",
+                diag_file.parent().unwrap_or(diag_file.as_path()),
+            )?;
         }
 
         if !manager.has_registry("lpr_adm") {
@@ -233,6 +236,7 @@ async fn load_lpr2_data_async(
 }
 
 /// Load LPR2 data from available files using synchronous loading
+#[allow(dead_code)]
 fn load_lpr2_data(
     manager: &RegistryManager,
     pnrs: &HashSet<String>,
@@ -322,7 +326,7 @@ fn load_lpr2_data(
 /// Load LPR3 data from available files asynchronously
 async fn load_lpr3_data_async(
     manager: &RegistryManager,
-    pnrs: &HashSet<String>,
+    _pnrs: &HashSet<String>,
     all_pnrs: &[String],
     lpr_config: &LprConfig,
 ) -> Result<DiagnosisCollection> {
@@ -349,15 +353,21 @@ async fn load_lpr3_data_async(
         let diagnoser_file = diagnoser_file_opt.as_ref().unwrap();
 
         // Extract year from filenames for logging
-        let year = extract_year_from_file_path(kontakter_file, idx);
+        let _year = extract_year_from_file_path(kontakter_file, idx);
 
         // Register files with manager for async loading
         if !manager.has_registry("lpr3_kontakter") {
-            manager.register("lpr3_kontakter", kontakter_file.parent().unwrap_or(kontakter_file.as_path()))?;
+            manager.register(
+                "lpr3_kontakter",
+                kontakter_file.parent().unwrap_or(kontakter_file.as_path()),
+            )?;
         }
 
         if !manager.has_registry("lpr3_diagnoser") {
-            manager.register("lpr3_diagnoser", diagnoser_file.parent().unwrap_or(diagnoser_file.as_path()))?;
+            manager.register(
+                "lpr3_diagnoser",
+                diagnoser_file.parent().unwrap_or(diagnoser_file.as_path()),
+            )?;
         }
 
         // Use async loading
@@ -388,6 +398,7 @@ async fn load_lpr3_data_async(
 }
 
 /// Load LPR3 data from available files
+#[allow(dead_code)]
 fn load_lpr3_data(
     manager: &RegistryManager,
     pnrs: &HashSet<String>,

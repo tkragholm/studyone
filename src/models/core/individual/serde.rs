@@ -93,7 +93,7 @@ where
         {
             match value.parse::<i32>() {
                 Ok(code) => self.process_code(code),
-                Err(_) => Err(E::custom(format!("Invalid citizenship code: {}", value))),
+                Err(_) => Err(E::custom(format!("Invalid citizenship code: {value}"))),
             }
         }
     }
@@ -125,7 +125,7 @@ where
     Ok(HousingType::from(code))
 }
 
-/// Custom deserializer for municipality_code from KOM field
+/// Custom deserializer for `municipality_code` from KOM field
 /// This converts from integer to string
 fn deserialize_municipality_code<'de, D>(
     deserializer: D,
@@ -133,8 +133,16 @@ fn deserialize_municipality_code<'de, D>(
 where
     D: Deserializer<'de>,
 {
-    let code = i32::deserialize(deserializer).map_err(serde::de::Error::custom)?;
-    Ok(Some(code.to_string()))
+    // Try to deserialize as i32
+    let result = i32::deserialize(deserializer);
+
+    match result {
+        Ok(code) => Ok(Some(code.to_string())),
+        Err(_) => {
+            // If deserialization fails, return None (which is valid for Option<String>)
+            Ok(None)
+        }
+    }
 }
 
 /// Custom deserializer for `SocioeconomicStatus` from SOCIO field
@@ -217,7 +225,7 @@ struct IndividualDef {
     education_level: EducationLevel,
 
     /// Municipality code at index date
-    #[serde(alias = "KOM", deserialize_with = "deserialize_municipality_code")]
+    #[serde(alias = "KOM", deserialize_with = "deserialize_municipality_code", default)]
     municipality_code: Option<String>,
 
     /// Whether the individual lives in a rural area

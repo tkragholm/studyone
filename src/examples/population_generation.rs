@@ -16,7 +16,7 @@ use crate::registry::factory;
 pub fn generate_population_step_by_step(
     bef_path: &Path,
     mfr_path: &Path,
-    pnr_filter: Option<HashSet<String>>,
+    _pnr_filter: Option<HashSet<String>>,
 ) -> Result<Population> {
     // Create a population configuration
     let config = PopulationConfig {
@@ -119,11 +119,12 @@ pub fn run_population_example() -> Result<()> {
 
     // Example 1: Step-by-step generation
     println!("Example 1: Step-by-step population generation");
-    let _population1 = generate_population_step_by_step(bef_path, mfr_path, Some(pnr_filter.clone()))?;
+    let _population1 =
+        generate_population_step_by_step(bef_path, mfr_path, Some(pnr_filter.clone()))?;
 
     // Example 2: Comprehensive generation
     println!("\nExample 2: Comprehensive population generation");
-    
+
     // Create a map of registry paths
     let mut registry_paths = HashMap::new();
     registry_paths.insert("bef", bef_path);
@@ -132,12 +133,12 @@ pub fn run_population_example() -> Result<()> {
     registry_paths.insert("dod", dod_path);
     registry_paths.insert("lpr", lpr_path);
     registry_paths.insert("ind", ind_path);
-    
+
     let population2 = generate_complete_population(registry_paths, Some(pnr_filter))?;
-    
+
     // Example 3: Preparing for case-control matching
     println!("\nExample 3: Preparing for case-control matching");
     prepare_case_control_matching(&population2);
-    
+
     Ok(())
 }

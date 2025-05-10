@@ -2,9 +2,9 @@
 //!
 //! This module provides utility functions to make error handling more convenient.
 
-use std::path::Path;
 use std::fs;
 use std::io;
+use std::path::Path;
 
 use crate::error::{ParquetReaderError, Result};
 
@@ -22,16 +22,18 @@ use crate::error::{ParquetReaderError, Result};
 pub fn safe_open_file(path: &Path, purpose: &str) -> Result<fs::File> {
     // Check if the path exists
     if !path.exists() {
-        return Err(ParquetReaderError::io_error(format!("File not found"))
+        return Err(ParquetReaderError::io_error("File not found".to_string())
             .with_path(path)
-            .context(format!("Needed for: {}", purpose)));
+            .context(format!("Needed for: {purpose}"))
+            .into());
     }
 
     // Check if the path is a file
     if !path.is_file() {
-        return Err(ParquetReaderError::io_error(format!("Path is not a file"))
+        return Err(ParquetReaderError::io_error("Path is not a file".to_string())
             .with_path(path)
-            .context(format!("Expected a file for: {}", purpose)));
+            .context(format!("Expected a file for: {purpose}"))
+            .into());
     }
 
     // Try to open the file
@@ -41,16 +43,17 @@ pub fn safe_open_file(path: &Path, purpose: &str) -> Result<fs::File> {
             // Provide different error messages based on the error kind
             let context = match e.kind() {
                 io::ErrorKind::PermissionDenied => {
-                    format!("Permission denied - check file permissions")
+                    "Permission denied - check file permissions".to_string()
                 }
                 io::ErrorKind::NotFound => {
-                    format!("File not found - it may have been deleted during operation")
+                    "File not found - it may have been deleted during operation".to_string()
                 }
-                _ => format!("Failed to open file for: {}", purpose),
+                _ => format!("Failed to open file for: {purpose}"),
             };
 
             Err(ParquetReaderError::io_error_with_source(context, e)
-                .with_path(path))
+                .with_path(path)
+                .into())
         }
     }
 }
@@ -59,16 +62,20 @@ pub fn safe_open_file(path: &Path, purpose: &str) -> Result<fs::File> {
 pub fn validate_directory(path: &Path, purpose: &str) -> Result<()> {
     // Check if the path exists
     if !path.exists() {
-        return Err(ParquetReaderError::io_error(format!("Directory not found"))
+        return Err(ParquetReaderError::io_error("Directory not found".to_string())
             .with_path(path)
-            .context(format!("Needed for: {}", purpose)));
+            .context(format!("Needed for: {purpose}"))
+            .into());
     }
 
     // Check if the path is a directory
     if !path.is_dir() {
-        return Err(ParquetReaderError::io_error(format!("Path is not a directory"))
-            .with_path(path)
-            .context(format!("Expected a directory for: {}", purpose)));
+        return Err(
+            ParquetReaderError::io_error("Path is not a directory".to_string())
+                .with_path(path)
+                .context(format!("Expected a directory for: {purpose}"))
+                .into(),
+        );
     }
 
     // Try to read the directory to check permissions
@@ -77,13 +84,14 @@ pub fn validate_directory(path: &Path, purpose: &str) -> Result<()> {
         Err(e) => {
             let context = match e.kind() {
                 io::ErrorKind::PermissionDenied => {
-                    format!("Permission denied - check directory permissions")
+                    "Permission denied - check directory permissions".to_string()
                 }
-                _ => format!("Failed to access directory for: {}", purpose),
+                _ => format!("Failed to access directory for: {purpose}"),
             };
 
             Err(ParquetReaderError::io_error_with_source(context, e)
-                .with_path(path))
+                .with_path(path)
+                .into())
         }
     }
 }
@@ -92,7 +100,7 @@ pub fn validate_directory(path: &Path, purpose: &str) -> Result<()> {
 pub fn safe_read_to_string(path: &Path, purpose: &str) -> Result<String> {
     // Open the file with rich error information
     let mut file = safe_open_file(path, purpose)?;
-    
+
     // Read the file content
     let mut content = String::new();
     match std::io::Read::read_to_string(&mut file, &mut content) {
@@ -100,13 +108,14 @@ pub fn safe_read_to_string(path: &Path, purpose: &str) -> Result<String> {
         Err(e) => {
             let context = match e.kind() {
                 io::ErrorKind::InvalidData => {
-                    format!("File contains invalid UTF-8 data - cannot read as text")
+                    "File contains invalid UTF-8 data - cannot read as text".to_string()
                 }
-                _ => format!("Failed to read file content for: {}", purpose),
+                _ => format!("Failed to read file content for: {purpose}"),
             };
 
             Err(ParquetReaderError::io_error_with_source(context, e)
-                .with_path(path))
+                .with_path(path)
+                .into())
         }
     }
 }
@@ -158,7 +167,7 @@ where
         .join("\n");
 
     Err(ParquetReaderError::other(format!(
-        "All attempts failed for operation: {}\n{}",
-        operation_name, error_details
-    )))
+        "All attempts failed for operation: {operation_name}\n{error_details}"
+    ))
+    .into())
 }

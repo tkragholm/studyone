@@ -21,6 +21,8 @@ pub mod registry_manager;
 pub mod schema;
 pub mod utils;
 
+pub mod filter_expression;
+
 // Examples
 pub mod examples;
 

@@ -81,7 +81,7 @@ impl ArrowSchema for Individual {
         let fields: Vec<arrow::datatypes::FieldRef> = schema
             .fields()
             .iter()
-            .map(|f| std::sync::Arc::clone(f))
+            .map(std::sync::Arc::clone)
             .collect();
 
         // Convert to record batch using the defined schema fields

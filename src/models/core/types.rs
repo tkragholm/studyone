@@ -18,7 +18,7 @@ pub enum Gender {
 
 impl Gender {
     /// Default value for Gender when not specified
-    pub fn default() -> Self {
+    #[must_use] pub fn default() -> Self {
         Self::Unknown
     }
 }
@@ -58,7 +58,7 @@ pub enum Origin {
 
 impl Origin {
     /// Default value for Origin when not specified
-    pub fn default() -> Self {
+    #[must_use] pub fn default() -> Self {
         Self::Unknown
     }
 }
@@ -99,8 +99,8 @@ pub enum EducationLevel {
 }
 
 impl EducationLevel {
-    /// Default value for EducationLevel when not specified
-    pub fn default() -> Self {
+    /// Default value for `EducationLevel` when not specified
+    #[must_use] pub fn default() -> Self {
         Self::Unknown
     }
 }
@@ -333,8 +333,8 @@ pub enum MaritalStatus {
 }
 
 impl MaritalStatus {
-    /// Default value for MaritalStatus when not specified
-    pub fn default() -> Self {
+    /// Default value for `MaritalStatus` when not specified
+    #[must_use] pub fn default() -> Self {
         Self::Unknown
     }
 }
@@ -387,8 +387,8 @@ pub enum CitizenshipStatus {
 }
 
 impl CitizenshipStatus {
-    /// Default value for CitizenshipStatus when not specified
-    pub fn default() -> Self {
+    /// Default value for `CitizenshipStatus` when not specified
+    #[must_use] pub fn default() -> Self {
         Self::Unknown
     }
 }
@@ -426,8 +426,8 @@ pub enum HousingType {
 }
 
 impl HousingType {
-    /// Default value for HousingType when not specified
-    pub fn default() -> Self {
+    /// Default value for `HousingType` when not specified
+    #[must_use] pub fn default() -> Self {
         Self::Unknown
     }
 }
@@ -474,8 +474,8 @@ pub enum SocioeconomicStatus {
 }
 
 impl SocioeconomicStatus {
-    /// Default value for SocioeconomicStatus when not specified
-    pub fn default() -> Self {
+    /// Default value for `SocioeconomicStatus` when not specified
+    #[must_use] pub fn default() -> Self {
         Self::Unknown
     }
 }
@@ -524,8 +524,8 @@ pub enum EducationField {
 }
 
 impl EducationField {
-    /// Default value for EducationField when not specified
-    pub fn default() -> Self {
+    /// Default value for `EducationField` when not specified
+    #[must_use] pub fn default() -> Self {
         Self::Unknown
     }
 }

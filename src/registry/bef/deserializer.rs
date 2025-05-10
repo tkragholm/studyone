@@ -47,7 +47,7 @@ pub fn deserialize_batch(batch: &RecordBatch) -> Result<Vec<Individual>> {
     let serde_individuals = match serde_result {
         Ok(individuals) => individuals,
         Err(e) => {
-            log::error!("Deserialization error: {}", e);
+            log::error!("Deserialization error: {e}");
             return Err(anyhow::anyhow!("Failed to deserialize: {}", e));
         }
     };
