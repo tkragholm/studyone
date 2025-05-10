@@ -20,7 +20,7 @@ async fn main() -> Result<()> {
     }
 
     println!("Running async loader example with real data directory");
-    run_async_loader_example(&data_dir).await?;
+    run_async_loader_example(data_dir).await?;
 
     Ok(())
 }
