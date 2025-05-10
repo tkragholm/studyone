@@ -182,45 +182,62 @@ pub trait AsyncParallelLoader: AsyncLoader {
 pub struct AsyncFileHelper;
 
 impl AsyncFileHelper {
-    /// Find all Parquet files in a directory asynchronously
+    /// Find all Parquet files in a directory asynchronously, recursively searching subdirectories
     pub async fn find_parquet_files(dir: &Path) -> Result<Vec<PathBuf>> {
         use tokio::fs;
-        use crate::utils::{log_operation_start, log_operation_complete, log_warning, validate_directory};
-        
-        log_operation_start("Searching for parquet files asynchronously in", dir);
-        
+        use crate::utils::{log_operation_start, log_warning, validate_directory};
+
+        log_operation_start("Searching for parquet files recursively in", dir);
+
         // Validate directory
         validate_directory(dir)?;
-        
-        // Find all parquet files in the directory
-        let mut parquet_files = Vec::<PathBuf>::new();
-        
-        let mut entries = fs::read_dir(dir)
-            .await
-            .map_err(|e| anyhow::anyhow!("Failed to read directory {}: {}", dir.display(), e))?;
-        
-        while let Some(entry_result) = entries
-            .next_entry()
-            .await
-            .map_err(|e| anyhow::anyhow!("Failed to read directory entry: {e}"))?
-        {
-            let path = entry_result.path();
-            let metadata = fs::metadata(&path).await.map_err(|e| {
-                anyhow::anyhow!("Failed to read metadata for {}: {}", path.display(), e)
-            })?;
-            
-            if metadata.is_file() && path.extension().is_some_and(|ext| ext == "parquet") {
-                parquet_files.push(path);
-            }
+
+        // Define a recursive async function that uses Box::pin to handle recursion
+        fn find_recursively<'a>(dir: &'a Path, results: &'a mut Vec<PathBuf>) ->
+            Pin<Box<dyn Future<Output = Result<()>> + Send + 'a>> {
+            Box::pin(async move {
+                let mut entries = fs::read_dir(dir)
+                    .await
+                    .map_err(|e| anyhow::anyhow!("Failed to read directory {}: {}", dir.display(), e))?;
+
+                while let Some(entry_result) = entries
+                    .next_entry()
+                    .await
+                    .map_err(|e| anyhow::anyhow!("Failed to read directory entry: {e}"))?
+                {
+                    let path = entry_result.path();
+                    let metadata = fs::metadata(&path).await.map_err(|e| {
+                        anyhow::anyhow!("Failed to read metadata for {}: {}", path.display(), e)
+                    })?;
+
+                    if metadata.is_file() && path.extension().is_some_and(|ext| ext == "parquet") {
+                        results.push(path);
+                    } else if metadata.is_dir() {
+                        // Recursively search subdirectories
+                        find_recursively(&path, results).await?;
+                    }
+                }
+
+                Ok(())
+            })
         }
-        
+
+        // Find all parquet files in the directory and its subdirectories
+        let mut parquet_files = Vec::<PathBuf>::new();
+        find_recursively(dir, &mut parquet_files).await?;
+
         // If no files found, log a warning
         if parquet_files.is_empty() {
-            log_warning("No Parquet files found in directory", Some(dir));
+            log_warning("No Parquet files found in directory or subdirectories", Some(dir));
         } else {
-            log_operation_complete("found", dir, parquet_files.len(), None);
+            // Log successful completion
+            log::info!(
+                "Successfully found {} items from {} (searched recursively)",
+                parquet_files.len(),
+                dir.display()
+            );
         }
-        
+
         Ok(parquet_files)
     }
     

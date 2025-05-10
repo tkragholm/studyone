@@ -9,17 +9,17 @@ async fn main() -> Result<()> {
     // Setup logging
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
-    // Skip test if test data directory doesn't exist
-    let data_dir = par_reader::utils::test_utils::test_data_dir();
+    // Use the real data directory with generated data
+    let data_dir = std::path::Path::new("/Users/tobiaskragholm/generated_data/parquet");
     if !data_dir.exists() {
         println!(
-            "Test data directory not found, skipping test: {}",
+            "Data directory not found, skipping test: {}",
             data_dir.display()
         );
         return Ok(());
     }
 
-    println!("Running async loader example with test data directory");
+    println!("Running async loader example with real data directory");
     run_async_loader_example(&data_dir).await?;
 
     Ok(())

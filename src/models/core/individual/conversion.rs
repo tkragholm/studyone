@@ -8,8 +8,6 @@ use crate::models::core::individual::Individual;
 use crate::models::core::traits::ArrowSchema;
 use arrow::datatypes::{DataType, Field, Schema};
 use arrow::record_batch::RecordBatch;
-use serde_arrow::schema::SchemaLike;
-use serde_arrow::schema::TracingOptions;
 
 // Implement ArrowSchema trait
 impl ArrowSchema for Individual {
@@ -76,14 +74,17 @@ impl ArrowSchema for Individual {
 
     /// Convert a vector of Individual objects to a `RecordBatch`
     fn to_record_batch(individuals: &[Self]) -> Result<RecordBatch> {
-        // Generate schema from samples
-        let fields = Vec::<arrow::datatypes::FieldRef>::from_samples(
-            individuals,
-            TracingOptions::default().allow_null_fields(true),
-        )
-        .map_err(|e| anyhow::anyhow!("Schema generation error: {}", e))?;
+        // Use the predefined schema to ensure consistent date handling
+        let schema = Self::schema();
 
-        // Convert to record batch
+        // Convert schema fields to a Vec<FieldRef>
+        let fields: Vec<arrow::datatypes::FieldRef> = schema
+            .fields()
+            .iter()
+            .map(|f| std::sync::Arc::clone(f))
+            .collect();
+
+        // Convert to record batch using the defined schema fields
         serde_arrow::to_record_batch(&fields, &individuals)
             .map_err(|e| anyhow::anyhow!("Serialization error: {}", e))
     }
