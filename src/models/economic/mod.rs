@@ -4,5 +4,4 @@
 //! income, employment, and socioeconomic status.
 
 pub mod income;
-
 pub use income::Income;

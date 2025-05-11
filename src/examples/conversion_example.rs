@@ -7,6 +7,7 @@ use crate::registry::bef::deserializer;
 use arrow::array::Array;
 use arrow::compute::kernels::take;
 use arrow::record_batch::RecordBatch;
+use std::collections::HashSet;
 use std::path::Path;
 
 /// Run an example that loads BEF files, filters by date range, and converts to Individual models
@@ -28,14 +29,16 @@ pub async fn run_conversion_example(data_dir: &Path) -> Result<usize> {
     let date_filter = col("FOED_DAG").contains(""); // We'll filter by date afterwards
 
     // Define columns to include - only request columns that we know exist in all files
-    let column_vec = ["PNR".to_string(),
+    let column_vec = [
+        "PNR".to_string(),
         "FOED_DAG".to_string(),
         "KOEN".to_string(),
         "FAR_ID".to_string(),
         "MOR_ID".to_string(),
         "CIVST".to_string(),
         "STATSB".to_string(),
-        "FAMILIE_ID".to_string()];
+        "FAMILIE_ID".to_string(),
+    ];
     let columns = Some(&column_vec[..]);
 
     // Load BEF files in parallel
@@ -43,7 +46,10 @@ pub async fn run_conversion_example(data_dir: &Path) -> Result<usize> {
     println!(
         "Loaded {} record batches with {} total rows",
         record_batches.len(),
-        record_batches.iter().map(arrow::array::RecordBatch::num_rows).sum::<usize>()
+        record_batches
+            .iter()
+            .map(arrow::array::RecordBatch::num_rows)
+            .sum::<usize>()
     );
 
     // Filter by date range and convert to Individual models
@@ -90,23 +96,24 @@ pub async fn run_conversion_example(data_dir: &Path) -> Result<usize> {
 
     // 2. Convert filtered batches to Individual models
     // Keep track of error types to avoid printing the same error repeatedly
-    let mut seen_errors = std::collections::HashSet::new();
+    let mut seen_errors = HashSet::new();
     let mut error_count = 0;
 
     for (batch_idx, batch) in filtered_batches.iter().enumerate() {
         // Apply field mapping to match the expected field names
-        let mapped_batch = match deserializer::create_mapped_batch(batch, deserializer::field_mapping()) {
-            Ok(batch) => batch,
-            Err(e) => {
-                let error_msg = e.to_string();
-                if seen_errors.insert(error_msg.clone()) {
-                    // Only log unique errors
-                    log::warn!("Failed to map batch {batch_idx}: {error_msg}");
+        let mapped_batch =
+            match deserializer::create_mapped_batch(batch, deserializer::field_mapping()) {
+                Ok(batch) => batch,
+                Err(e) => {
+                    let error_msg = e.to_string();
+                    if seen_errors.insert(error_msg.clone()) {
+                        // Only log unique errors
+                        log::warn!("Failed to map batch {batch_idx}: {error_msg}");
+                    }
+                    error_count += 1;
+                    continue;
                 }
-                error_count += 1;
-                continue;
-            }
-        };
+            };
 
         // Use SerdeIndividual to deserialize the batch
         match SerdeIndividual::from_batch(&mapped_batch) {
@@ -133,14 +140,17 @@ pub async fn run_conversion_example(data_dir: &Path) -> Result<usize> {
 
     // If we had errors, print a summary instead of individual messages
     if error_count > 0 {
-        log::warn!("{} batches failed to deserialize with {} unique error types",
-            error_count, seen_errors.len());
+        log::warn!(
+            "{} batches failed to deserialize with {} unique error types",
+            error_count,
+            seen_errors.len()
+        );
 
         // Print a few examples of error types if there are multiple
         if seen_errors.len() > 1 {
             log::warn!("Error types include:");
             for (i, error) in seen_errors.iter().take(3).enumerate() {
-                log::warn!("  {}. {}", i+1, error);
+                log::warn!("  {}. {}", i + 1, error);
             }
             if seen_errors.len() > 3 {
                 log::warn!("  ... and {} more error types", seen_errors.len() - 3);

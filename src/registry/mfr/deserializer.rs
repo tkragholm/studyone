@@ -19,9 +19,10 @@ use std::sync::Arc;
 #[must_use] pub fn field_mapping() -> HashMap<String, String> {
     let mut mapping = HashMap::new();
     // MFR-specific field mappings
-    mapping.insert("BARNETS_CPR".to_string(), "pnr".to_string());
-    mapping.insert("MOR_CPR".to_string(), "mother_pnr".to_string());
-    mapping.insert("FAR_CPR".to_string(), "father_pnr".to_string());
+    mapping.insert("CPR_BARN".to_string(), "pnr".to_string());
+    mapping.insert("CPR_MODER".to_string(), "mother_pnr".to_string());
+    mapping.insert("CPR_FADER".to_string(), "father_pnr".to_string());
+    mapping.insert("FOEDSELSDATO".to_string(), "birth_date".to_string());
     mapping
 }
 
@@ -38,7 +39,7 @@ pub fn deserialize_batch(batch: &RecordBatch) -> Result<Vec<Individual>> {
     debug!("Deserializing MFR batch with SerdeIndividual");
 
     // Check if batch has necessary columns for serde_arrow approach
-    if batch.schema().field_with_name("BARNETS_CPR").is_ok() {
+    if batch.schema().field_with_name("CPR_BARN").is_ok() {
         // Try serde_arrow approach
         let batch_with_mapping = create_mapped_batch(batch, field_mapping())?;
 
@@ -123,16 +124,24 @@ pub fn deserialize_child_batch(
         let mut child = Child::from_individual(individual_arc);
 
         // Enhance with birth-related data
-        if batch.schema().field_with_name("VAEGT").is_ok() {
+        if batch.schema().field_with_name("VAEGT_BARN").is_ok() {
             // Extract birth weight
-            if let Ok(Some(weight)) = crate::utils::field_extractors::extract_int32(batch, i, "VAEGT", false) {
+            if let Ok(Some(weight)) = crate::utils::field_extractors::extract_int32(batch, i, "VAEGT_BARN", false) {
                 child.birth_weight = Some(weight);
             }
         }
 
-        if batch.schema().field_with_name("SVLENGTH").is_ok() {
+        if batch.schema().field_with_name("LAENGDE_BARN").is_ok() {
+            // Extract birth length
+            if let Ok(Some(length)) = crate::utils::field_extractors::extract_int32(batch, i, "LAENGDE_BARN", false) {
+                // For now, we can't store length as there's no dedicated field
+                // In a full implementation, you might add a birth_length field to the Child struct
+            }
+        }
+
+        if batch.schema().field_with_name("GESTATIONSALDER_DAGE").is_ok() {
             // Extract gestational age
-            if let Ok(Some(ga)) = crate::utils::field_extractors::extract_int32(batch, i, "SVLENGTH", false) {
+            if let Ok(Some(ga)) = crate::utils::field_extractors::extract_int32(batch, i, "GESTATIONSALDER_DAGE", false) {
                 child.gestational_age = Some(ga);
             }
         }
@@ -145,7 +154,7 @@ pub fn deserialize_child_batch(
         }
 
         // Look up parent details if available (just adding to logic, not necessarily implemented)
-        if let Ok(Some(mother_pnr)) = crate::utils::field_extractors::extract_string(batch, i, "MOR_CPR", false) {
+        if let Ok(Some(mother_pnr)) = crate::utils::field_extractors::extract_string(batch, i, "CPR_MODER", false) {
             if let Some(_mother) = individual_lookup.get(&mother_pnr) {
                 // Could enhance child with mother's details here if needed
                 debug!("Found mother in lookup table for child: {}", child.individual().pnr);

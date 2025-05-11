@@ -10,7 +10,10 @@ use crate::registry::bef;
 use crate::registry::detect::{RegistryType, detect_registry_type};
 use crate::registry::ind;
 use arrow::array::Array;
+use arrow::datatypes::{Field, Schema};
 use log::debug;
+use std::collections::HashMap;
+use std::sync::Arc;
 
 /// Deserialize a `RecordBatch` into Individual models
 ///
@@ -103,4 +106,48 @@ pub fn deserialize_minimal_row(batch: &RecordBatch, row: usize) -> Result<Option
 
     // Create minimal Individual with just the PNR
     Ok(Some(Individual::new(pnr, Gender::Unknown, None)))
+}
+
+/// Create a record batch with mapped field names
+///
+/// This function creates a new `RecordBatch` with field names mapped
+/// according to the provided mapping table, to facilitate deserialization.
+///
+/// # Arguments
+///
+/// * `batch` - The original record batch
+/// * `field_mapping` - Mapping from source field names to target field names
+///
+/// # Returns
+///
+/// A new `RecordBatch` with mapped field names
+pub fn create_mapped_batch(
+    batch: &RecordBatch,
+    field_mapping: HashMap<String, String>,
+) -> Result<RecordBatch> {
+    // Create a new schema with mapped field names
+    let mut fields = Vec::new();
+    for field in batch.schema().fields() {
+        let field_name = field.name();
+        if let Some(mapped_name) = field_mapping.get(field_name) {
+            fields.push(Field::new(
+                mapped_name,
+                field.data_type().clone(),
+                field.is_nullable(),
+            ));
+        } else {
+            // Keep the original field name
+            fields.push(Field::new(
+                field.name(),
+                field.data_type().clone(),
+                field.is_nullable(),
+            ));
+        }
+    }
+
+    let mapped_schema = Schema::new(fields);
+
+    // Create a new RecordBatch with the mapped schema
+    RecordBatch::try_new(Arc::new(mapped_schema), batch.columns().to_vec())
+        .map_err(|e| anyhow::anyhow!("Failed to create mapped batch: {}", e))
 }
