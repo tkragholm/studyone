@@ -1,6 +1,6 @@
 use crate::error::Result;
 use crate::examples::parrallel_loader::load_parquet_files_parallel_with_filter;
-use crate::filter_expression::{col, Expr};
+use crate::filter_expression::{Expr, col};
 use crate::models::Individual;
 use crate::models::core::individual::serde::SerdeIndividual;
 use crate::registry::bef;
@@ -23,26 +23,22 @@ use super::utils::map_socio_to_enum;
 pub struct SequentialRegistryProcessor {
     /// Base directory containing registry data
     base_dir: Arc<Path>,
-
     /// Date ranges for filtering
     start_date: String,
     end_date: String,
-
     /// Individuals loaded from BEF registry
     individuals: HashMap<String, Individual>,
-
     /// Statistics collected during processing
     stats: HashMap<String, usize>,
-
     /// IDs of individuals of interest (valid PNRs)
     valid_pnrs: HashSet<String>,
-
-    /// Parent-child relationships (child_pnr -> (mother_pnr, father_pnr))
+    /// Parent-child relationships (`child_pnr` -> (`mother_pnr`, `father_pnr`))
     relationships: HashMap<String, (Option<String>, Option<String>)>,
 }
 
 impl SequentialRegistryProcessor {
     /// Create a new processor with the specified date range
+    #[must_use]
     pub fn new(base_dir: &Path, start_date: &str, end_date: &str) -> Self {
         Self {
             base_dir: Arc::from(base_dir),
@@ -160,10 +156,7 @@ impl SequentialRegistryProcessor {
             }
         }
 
-        info!(
-            "Identified {} individuals born between {} and {}",
-            initial_count, start_date, end_date
-        );
+        info!("Identified {initial_count} individuals born between {start_date} and {end_date}");
 
         // Record statistics
         self.stats.insert("bef_total_batches".into(), batch_count);
@@ -187,10 +180,10 @@ impl SequentialRegistryProcessor {
 
         // MFR columns needed for birth details
         let columns = vec![
-            "CPR_BARN".to_string(),            // Child's PNR
-            "CPR_MODER".to_string(),           // Mother's PNR
-            "CPR_FADER".to_string(),           // Father's PNR
-            "FLERFOLDSGRAVIDITET".to_string(), // Multiple birth indicator
+            "CPR_BARN".to_string(),             // Child's PNR
+            "CPR_MODER".to_string(),            // Mother's PNR
+            "CPR_FADER".to_string(),            // Father's PNR
+            "FLERFOLDSGRAVIDITET".to_string(),  // Multiple birth indicator
             "GESTATIONSALDER_DAGE".to_string(), // Gestational age
             "VAEGT_BARN".to_string(),           // Birth weight
             "LAENGDE_BARN".to_string(),         // Birth length
@@ -274,7 +267,7 @@ impl SequentialRegistryProcessor {
             }
         }
 
-        info!("Enriched {} individuals with MFR data", enriched_count);
+        info!("Enriched {enriched_count} individuals with MFR data");
 
         // Record statistics
         self.stats.insert("mfr_enriched".into(), enriched_count);
@@ -349,7 +342,7 @@ impl SequentialRegistryProcessor {
             }
         }
 
-        info!("Added death information to {} individuals", death_count);
+        info!("Added death information to {death_count} individuals");
 
         // Record statistics
         self.stats.insert("dod_enriched".into(), death_count);
@@ -451,10 +444,7 @@ impl SequentialRegistryProcessor {
             }
         }
 
-        info!(
-            "Added migration information to {} individuals",
-            migration_count
-        );
+        info!("Added migration information to {migration_count} individuals");
 
         // Record statistics
         self.stats.insert("vnds_enriched".into(), migration_count);
@@ -487,7 +477,7 @@ impl SequentialRegistryProcessor {
         // For parents, we want to get their employment information
         // Collect all parent PNRs
         let mut parent_pnrs = HashSet::new();
-        for (_, (mother, father)) in &self.relationships {
+        for (mother, father) in self.relationships.values() {
             if let Some(mother_pnr) = mother {
                 parent_pnrs.insert(mother_pnr.clone());
             }
@@ -557,7 +547,7 @@ impl SequentialRegistryProcessor {
                             if !socio_col.is_null(row) {
                                 let socio_val = socio_col.value(row);
                                 individual.socioeconomic_status =
-                                    map_socio_to_enum(socio_val as i32);
+                                    map_socio_to_enum(i32::from(socio_val));
                                 status_updated = true;
                             }
                         }
@@ -572,7 +562,7 @@ impl SequentialRegistryProcessor {
                                 if !socio_col.is_null(row) {
                                     let socio_val = socio_col.value(row);
                                     individual.socioeconomic_status =
-                                        map_socio_to_enum(socio_val as i32);
+                                        map_socio_to_enum(i32::from(socio_val));
                                     status_updated = true;
                                 }
                             }
@@ -586,7 +576,7 @@ impl SequentialRegistryProcessor {
                                 if !socio_col.is_null(row) {
                                     let socio_val = socio_col.value(row);
                                     individual.socioeconomic_status =
-                                        map_socio_to_enum(socio_val as i32);
+                                        map_socio_to_enum(i32::from(socio_val));
                                 }
                             }
                         }
@@ -607,10 +597,7 @@ impl SequentialRegistryProcessor {
             }
         }
 
-        info!(
-            "Added employment information to {} individuals",
-            employment_count
-        );
+        info!("Added employment information to {employment_count} individuals");
 
         // Record statistics
         self.stats.insert("akm_enriched".into(), employment_count);
@@ -633,8 +620,8 @@ impl SequentialRegistryProcessor {
 
         // UDDF columns
         let columns = vec![
-            "PNR".to_string(),    // Person ID
-            "HFAUDD".to_string(), // Highest completed education
+            "PNR".to_string(),     // Person ID
+            "HFAUDD".to_string(),  // Highest completed education
             "HF_VFRA".to_string(), // Valid from date
             "HF_VTIL".to_string(), // Valid to date
             "INSTNR".to_string(),  // Institution number
@@ -724,10 +711,7 @@ impl SequentialRegistryProcessor {
             }
         }
 
-        info!(
-            "Added education information to {} individuals",
-            education_count
-        );
+        info!("Added education information to {education_count} individuals");
 
         // Record statistics
         self.stats.insert("uddf_enriched".into(), education_count);
@@ -818,7 +802,7 @@ impl SequentialRegistryProcessor {
                                 if !socio_col.is_null(row) {
                                     let socio_val = socio_col.value(row);
                                     individual.socioeconomic_status =
-                                        map_socio_to_enum(socio_val as i32);
+                                        map_socio_to_enum(i32::from(socio_val));
                                 }
                             }
                         }
@@ -832,7 +816,7 @@ impl SequentialRegistryProcessor {
             }
         }
 
-        info!("Added income information to {} individuals", income_count);
+        info!("Added income information to {income_count} individuals");
 
         // Record statistics
         self.stats.insert("ind_enriched".into(), income_count);
@@ -841,11 +825,13 @@ impl SequentialRegistryProcessor {
     }
 
     /// Get a vector of all individuals
+    #[must_use]
     pub fn get_individuals(&self) -> Vec<Individual> {
         self.individuals.values().cloned().collect()
     }
 
     /// Get the statistics collected during processing
+    #[must_use]
     pub fn get_stats(&self) -> &HashMap<String, usize> {
         &self.stats
     }
@@ -918,7 +904,7 @@ pub async fn run_sequential_registry_example(base_dir: &Path) -> Result<usize> {
 
     info!("Starting sequential registry processing");
     info!("Base directory: {}", base_dir.display());
-    info!("Date range: {} to {}", start_date, end_date);
+    info!("Date range: {start_date} to {end_date}");
 
     // Create processor
     let mut processor = SequentialRegistryProcessor::new(base_dir, start_date, end_date);
@@ -934,8 +920,8 @@ pub async fn run_sequential_registry_example(base_dir: &Path) -> Result<usize> {
     // Print summary statistics
     println!("Sequential Registry Processing Complete");
     println!("--------------------------------------");
-    println!("Date range: {} to {}", start_date, end_date);
-    println!("Total individuals processed: {}", total_individuals);
+    println!("Date range: {start_date} to {end_date}");
+    println!("Total individuals processed: {total_individuals}");
     println!();
 
     // Print registry-specific statistics
@@ -976,7 +962,7 @@ pub async fn run_sequential_registry_example(base_dir: &Path) -> Result<usize> {
     // Print sample individuals if available
     if !individuals.is_empty() {
         let sample_size = std::cmp::min(5, individuals.len());
-        println!("Sample Individuals (first {}):", sample_size);
+        println!("Sample Individuals (first {sample_size}):");
 
         for (i, individual) in individuals.iter().take(sample_size).enumerate() {
             println!(

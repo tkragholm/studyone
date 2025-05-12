@@ -14,7 +14,7 @@ use crate::algorithm::health::lpr3_processor::integrate_lpr3_components;
 use crate::algorithm::population::Population;
 use crate::error::Result;
 use crate::models::collections::ModelCollection;
-use crate::models::diagnosis::DiagnosisCollection;
+use crate::models::health::diagnosis::DiagnosisCollection;
 
 use anyhow::anyhow;
 use arrow::record_batch::RecordBatch;

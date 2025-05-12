@@ -5,7 +5,7 @@
 //! It standardizes common operations like adding, getting, and filtering items.
 
 use crate::error::Result;
-use crate::models::traits::{EntityModel, TemporalValidity};
+use crate::models::{EntityModel, TemporalValidity};
 use arrow::record_batch::RecordBatch;
 use chrono::NaiveDate;
 use std::collections::HashMap;
@@ -19,26 +19,26 @@ use std::sync::Arc;
 pub trait ModelCollection<T: EntityModel>: Send + Sync + std::fmt::Debug {
     /// Add a model to the collection
     fn add(&mut self, model: T);
-    
+
     /// Get a model by its identifier
     fn get(&self, id: &T::Id) -> Option<Arc<T>>;
-    
+
     /// Get all models in the collection
     fn all(&self) -> Vec<Arc<T>>;
-    
+
     /// Count the total number of models in the collection
     fn count(&self) -> usize;
-    
+
     /// Filter models by a predicate function
     fn filter<F>(&self, predicate: F) -> Vec<Arc<T>>
     where
         F: Fn(&T) -> bool;
-        
+
     /// Check if the collection contains a model with the given ID
     fn contains(&self, id: &T::Id) -> bool {
         self.get(id).is_some()
     }
-    
+
     /// Add multiple models to the collection
     fn add_all(&mut self, models: Vec<T>) {
         for model in models {
@@ -52,26 +52,26 @@ pub trait ModelCollection<T: EntityModel>: Send + Sync + std::fmt::Debug {
 /// This trait extends the basic collection functionality with methods
 /// for working with temporal data, including filtering by date ranges
 /// and creating temporal snapshots.
-pub trait TemporalCollection<T>: ModelCollection<T> 
-where 
-    T: EntityModel + TemporalValidity
+pub trait TemporalCollection<T>: ModelCollection<T>
+where
+    T: EntityModel + TemporalValidity,
 {
     /// Get all models valid at a specific date
     fn valid_at(&self, date: &NaiveDate) -> Vec<Arc<T>> {
         self.filter(|model| model.was_valid_at(date))
     }
-    
+
     /// Get all models valid during a date range
     fn valid_during(&self, start_date: &NaiveDate, end_date: &NaiveDate) -> Vec<Arc<T>> {
         self.filter(|model| {
             // Valid if the model's validity period overlaps with the given range
             let valid_from = model.valid_from();
             let valid_to = model.valid_to().unwrap_or(chrono::NaiveDate::MAX);
-            
+
             valid_from <= *end_date && valid_to >= *start_date
         })
     }
-    
+
     /// Create snapshots of all valid models at a specific date
     fn snapshots_at(&self, date: &NaiveDate) -> Vec<T> {
         self.valid_at(date)
@@ -88,10 +88,10 @@ where
 pub trait BatchCollection<T: EntityModel>: ModelCollection<T> {
     /// Load models from a `RecordBatch`
     fn load_from_batch(&mut self, batch: &RecordBatch) -> Result<()>;
-    
+
     /// Update models with data from a `RecordBatch`
     fn update_from_batch(&mut self, batch: &RecordBatch) -> Result<()>;
-    
+
     /// Export models to a `RecordBatch`
     fn export_to_batch(&self) -> Result<RecordBatch>;
 }
@@ -114,7 +114,7 @@ pub trait LookupCollection<T: EntityModel>: ModelCollection<T> {
         }
         lookup
     }
-    
+
     /// Create a lookup map using multiple values per key
     fn create_multi_lookup<K, F>(&self, key_fn: F) -> HashMap<K, Vec<Arc<T>>>
     where
@@ -137,7 +137,7 @@ pub trait LookupCollection<T: EntityModel>: ModelCollection<T> {
 pub trait RelatedCollection<T: EntityModel, R: EntityModel>: ModelCollection<T> {
     /// Get related entities for a model
     fn get_related(&self, model: &T) -> Vec<Arc<R>>;
-    
+
     /// Get related entities for a model ID
     fn get_related_by_id(&self, id: &T::Id) -> Vec<Arc<R>> {
         match self.get(id) {
@@ -145,10 +145,10 @@ pub trait RelatedCollection<T: EntityModel, R: EntityModel>: ModelCollection<T> 
             None => Vec::new(),
         }
     }
-    
+
     /// Find all models related to a specific entity
     fn find_by_related(&self, related: &R) -> Vec<Arc<T>>;
-    
+
     /// Find all models related to a specific entity ID
     fn find_by_related_id(&self, related_id: &R::Id) -> Vec<Arc<T>>;
 }
@@ -160,10 +160,10 @@ pub trait RelatedCollection<T: EntityModel, R: EntityModel>: ModelCollection<T> 
 pub trait CacheableCollection<T: EntityModel>: ModelCollection<T> {
     /// Clear all cached data in the collection
     fn clear_cache(&mut self);
-    
+
     /// Update the cache with new data
     fn update_cache(&mut self);
-    
+
     /// Check if the cache is valid
     fn is_cache_valid(&self) -> bool;
 }

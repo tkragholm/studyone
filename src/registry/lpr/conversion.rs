@@ -3,7 +3,9 @@
 //! This module implements bidirectional conversion between LPR registry data
 //! and domain models (Diagnosis).
 
-use crate::models::diagnosis::{Diagnosis, ScdCriteria, ScdResult};
+use crate::models::health::diagnosis::{
+    Diagnosis, ScdCriteria, ScdResult, get_scd_category_for_code,
+};
 
 /// Utility trait for LPR registries that require a PNR lookup
 pub trait PnrLookupRegistry {
@@ -50,9 +52,7 @@ pub trait PnrLookupRegistry {
             for diagnosis in &diags {
                 if diagnosis.is_scd {
                     // Add SCD diagnosis to result
-                    let category = crate::models::diagnosis::get_scd_category_for_code(
-                        &diagnosis.diagnosis_code,
-                    );
+                    let category = get_scd_category_for_code(&diagnosis.diagnosis_code);
                     let is_congenital = scd_criteria.is_congenital(&diagnosis.diagnosis_code);
                     result.add_scd_diagnosis(diagnosis.clone(), category, is_congenital);
                 }

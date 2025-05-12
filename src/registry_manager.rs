@@ -22,19 +22,14 @@ use std::sync::{Arc, Mutex, RwLock};
 pub struct RegistryManager {
     /// Registered loaders
     loaders: RwLock<HashMap<String, Arc<dyn RegisterLoader>>>,
-
     /// Registry paths
     paths: RwLock<HashMap<String, PathBuf>>,
-
     /// Cached data
     data_cache: RwLock<HashMap<String, Vec<RecordBatch>>>,
-
     /// Cached filtered data
     filtered_cache: Mutex<HashMap<String, HashMap<String, Vec<RecordBatch>>>>,
-
     /// Cache size limit
     max_cache_entries: usize,
-
     /// Join relationships between registries
     joins: HashMap<String, (String, String, String)>, // (child, parent, parent_column, child_column)
 }
@@ -72,7 +67,8 @@ impl RegistryManager {
         let loader = registry_from_name(name)?;
 
         // Register the loader and path
-        self.loaders.write()
+        self.loaders
+            .write()
             .map_err(|_| Error::InvalidOperation("Failed to acquire lock on loaders".to_string()))?
             .insert(name.to_string(), loader);
 
@@ -91,7 +87,8 @@ impl RegistryManager {
         let name = loader.get_register_name().to_string();
 
         // Register the loader and path
-        self.loaders.write()
+        self.loaders
+            .write()
             .map_err(|_| Error::InvalidOperation("Failed to acquire lock on loaders".to_string()))?
             .insert(name.clone(), loader);
 
@@ -126,14 +123,22 @@ impl RegistryManager {
         }
 
         // Get loader and path from the registry
-        let loader = self.loaders.read()
-            .map_err(|_| Error::InvalidOperation("Failed to acquire read lock on loaders".to_string()))?
+        let loader = self
+            .loaders
+            .read()
+            .map_err(|_| {
+                Error::InvalidOperation("Failed to acquire read lock on loaders".to_string())
+            })?
             .get(name)
             .ok_or_else(|| Error::ValidationError(format!("No loader registered for {name}")))?
             .clone();
 
-        let path = self.paths.read()
-            .map_err(|_| Error::InvalidOperation("Failed to acquire read lock on paths".to_string()))?
+        let path = self
+            .paths
+            .read()
+            .map_err(|_| {
+                Error::InvalidOperation("Failed to acquire read lock on paths".to_string())
+            })?
             .get(name)
             .ok_or_else(|| Error::ValidationError(format!("No path registered for {name}")))?
             .clone();
@@ -174,14 +179,22 @@ impl RegistryManager {
         }
 
         // Get loader and path from the registry
-        let loader = self.loaders.read()
-            .map_err(|_| Error::InvalidOperation("Failed to acquire read lock on loaders".to_string()))?
+        let loader = self
+            .loaders
+            .read()
+            .map_err(|_| {
+                Error::InvalidOperation("Failed to acquire read lock on loaders".to_string())
+            })?
             .get(name)
             .ok_or_else(|| Error::ValidationError(format!("No loader registered for {name}")))?
             .clone();
 
-        let path = self.paths.read()
-            .map_err(|_| Error::InvalidOperation("Failed to acquire read lock on paths".to_string()))?
+        let path = self
+            .paths
+            .read()
+            .map_err(|_| {
+                Error::InvalidOperation("Failed to acquire read lock on paths".to_string())
+            })?
             .get(name)
             .ok_or_else(|| Error::ValidationError(format!("No path registered for {name}")))?
             .clone();
@@ -412,7 +425,7 @@ impl RegistryManager {
     pub fn has_registry(&self, name: &str) -> bool {
         match self.loaders.read() {
             Ok(loaders) => loaders.contains_key(name),
-            Err(_) => false // In case of error, assume not registered
+            Err(_) => false, // In case of error, assume not registered
         }
     }
 

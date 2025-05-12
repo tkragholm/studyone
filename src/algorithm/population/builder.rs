@@ -11,9 +11,10 @@ use chrono::{Datelike, NaiveDate};
 
 use crate::RecordBatch;
 use crate::error::Result;
+use crate::models::FamilyCollection;
 use crate::models::core::traits::HealthStatus;
 use crate::models::core::traits::TemporalValidity;
-use crate::models::family::FamilyCollection;
+use crate::models::derived::family::FamilySnapshot;
 use crate::models::{Child, Family, Individual, Parent};
 use crate::registry::BefCombinedRegister;
 use crate::registry::{MfrChildRegister, RegisterLoader};
@@ -196,14 +197,14 @@ impl Population {
 
     /// Get eligible case families at the index date
     #[must_use]
-    pub fn get_case_families(&self) -> Vec<crate::models::family::FamilySnapshot> {
+    pub fn get_case_families(&self) -> Vec<FamilySnapshot> {
         self.collection
             .get_case_families_at(&self.config.index_date)
     }
 
     /// Get eligible control families at the index date
     #[must_use]
-    pub fn get_control_families(&self) -> Vec<crate::models::family::FamilySnapshot> {
+    pub fn get_control_families(&self) -> Vec<FamilySnapshot> {
         self.collection
             .get_control_families_at(&self.config.index_date)
     }

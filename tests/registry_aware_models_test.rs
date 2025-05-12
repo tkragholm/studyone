@@ -3,12 +3,12 @@
 //! This module contains tests to verify the registry-aware model implementations
 //! which centralize registry-specific behavior in registry files instead of models.
 
-use par_reader::common::traits::{BefRegistry, RegistryAware};
-use par_reader::Individual;
 use arrow::array::{Date32Array, Int8Array, StringArray};
 use arrow::datatypes::{DataType, Field, Schema};
 use arrow::record_batch::RecordBatch;
-use par_reader::models::types::Gender;
+use par_reader::Individual;
+use par_reader::common::traits::{BefRegistry, RegistryAware};
+use par_reader::models::Gender;
 use std::sync::Arc;
 
 /// Create a test BEF record batch for testing
@@ -27,29 +27,25 @@ fn create_test_bef_batch() -> RecordBatch {
 
     // Create arrays for each column
     let pnr_array = StringArray::from(vec!["1234567890", "2345678901", "3456789012"]);
-    
+
     // Date32 days since 1970-01-01 (representing birth dates)
     let birth_date_array = Date32Array::from(vec![
         Some(365 * 30), // ~30 years ago
         Some(365 * 25), // ~25 years ago
         Some(365 * 5),  // ~5 years ago
     ]);
-    
+
     let far_id_array = StringArray::from(vec![Some("2345678901"), None, Some("2345678901")]);
     let mor_id_array = StringArray::from(vec![None, Some("1234567890"), Some("1234567890")]);
-    
-    let familie_id_array = StringArray::from(vec![
-        Some("FAM001"),
-        Some("FAM001"),
-        Some("FAM001"),
-    ]);
-    
+
+    let familie_id_array = StringArray::from(vec![Some("FAM001"), Some("FAM001"), Some("FAM001")]);
+
     let gender_array = StringArray::from(vec![Some("F"), Some("M"), Some("M")]);
-    
+
     let municipality_array = Int8Array::from(vec![Some(101), Some(101), Some(101)]);
-    
+
     let origin_array = StringArray::from(vec![Some("5100"), Some("5100"), Some("5100")]);
-    
+
     // Combine into record batch
     RecordBatch::try_new(
         Arc::new(schema),
@@ -71,31 +67,47 @@ fn create_test_bef_batch() -> RecordBatch {
 fn test_registry_aware_model_implementation() {
     // Create test data
     let batch = create_test_bef_batch();
-    
+
     // Test registry-aware from_registry_record implementation
     let individual = Individual::from_registry_record(&batch, 0).unwrap();
-    
+
     // Verify results
     assert!(individual.is_some(), "Should convert individual");
     let individual = individual.unwrap();
     assert_eq!(individual.pnr, "1234567890", "PNR should match");
-    assert_eq!(individual.father_pnr, Some("2345678901".to_string()), "Father PNR should match");
+    assert_eq!(
+        individual.father_pnr,
+        Some("2345678901".to_string()),
+        "Father PNR should match"
+    );
     assert_eq!(individual.mother_pnr, None, "Mother PNR should be None");
-    assert_eq!(individual.family_id, Some("FAM001".to_string()), "Family ID should match");
-    
+    assert_eq!(
+        individual.family_id,
+        Some("FAM001".to_string()),
+        "Family ID should match"
+    );
+
     // Test registry-aware from_registry_batch implementation
     let individuals = Individual::from_registry_batch(&batch).unwrap();
     assert_eq!(individuals.len(), 3, "Should convert 3 individuals");
-    
+
     // Test BefRegistry implementation
     let individuals_from_bef = Individual::from_bef_batch(&batch).unwrap();
-    assert_eq!(individuals_from_bef.len(), 3, "Should convert 3 individuals from BEF");
-    
+    assert_eq!(
+        individuals_from_bef.len(),
+        3,
+        "Should convert 3 individuals from BEF"
+    );
+
     // Verify first individual from BEF
     let ind1 = &individuals_from_bef[0];
     assert_eq!(ind1.pnr, "1234567890");
     assert_eq!(ind1.gender, Gender::Female);
-    
+
     // Test registry name
-    assert_eq!(Individual::registry_name(), "BEF", "Registry name should be BEF");
+    assert_eq!(
+        Individual::registry_name(),
+        "BEF",
+        "Registry name should be BEF"
+    );
 }

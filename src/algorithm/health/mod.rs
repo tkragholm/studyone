@@ -14,7 +14,7 @@ pub mod lpr_utility;
 pub mod scd;
 
 // Re-export common types
-pub use crate::models::diagnosis::ScdResult;
+pub use crate::models::health::diagnosis::ScdResult;
 pub use lpr_config::LprConfig;
 pub use lpr_loader::{load_diagnoses, process_lpr_data};
 pub use scd::categories::ScdCategory;

@@ -5,7 +5,7 @@
 
 use crate::error::Result;
 use crate::models::collections::ModelCollection;
-use crate::models::diagnosis::DiagnosisCollection;
+use crate::models::health::diagnosis::DiagnosisCollection;
 use crate::utils::test_utils::{get_available_year_files, registry_dir};
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
@@ -94,7 +94,8 @@ pub fn get_lpr3_diagnoser_files() -> Result<Vec<PathBuf>> {
 ///
 /// Attempts to extract the year from a file name, typically in formats like
 /// "2010.parquet", "`lpr_diag_2015.parquet`", etc.
-#[must_use] pub fn extract_year_from_file_path(path: &PathBuf) -> Option<i32> {
+#[must_use]
+pub fn extract_year_from_file_path(path: &PathBuf) -> Option<i32> {
     let file_stem = path.file_stem()?.to_string_lossy();
 
     // Try to parse the entire file stem as a year
@@ -117,7 +118,8 @@ pub fn get_lpr3_diagnoser_files() -> Result<Vec<PathBuf>> {
 ///
 /// This function takes vectors of LPR file paths and matches them by year
 /// to ensure data is processed with the correct complementary files.
-#[must_use] pub fn match_lpr_files_by_year(
+#[must_use]
+pub fn match_lpr_files_by_year(
     diag_files: &[PathBuf],
     adm_files: &[PathBuf],
 ) -> Vec<(Option<PathBuf>, Option<PathBuf>)> {
@@ -161,7 +163,8 @@ pub fn get_lpr3_diagnoser_files() -> Result<Vec<PathBuf>> {
 }
 
 /// Match corresponding LPR3 files by year
-#[must_use] pub fn match_lpr3_files_by_year(
+#[must_use]
+pub fn match_lpr3_files_by_year(
     kontakter_files: &[PathBuf],
     diagnoser_files: &[PathBuf],
 ) -> Vec<(Option<PathBuf>, Option<PathBuf>)> {
@@ -208,7 +211,8 @@ pub fn get_lpr3_diagnoser_files() -> Result<Vec<PathBuf>> {
 ///
 /// This function filters a `DiagnosisCollection` to only include diagnoses
 /// that match any of the provided ICD-10 codes (prefix match).
-#[must_use] pub fn filter_diagnoses_by_icd10(
+#[must_use]
+pub fn filter_diagnoses_by_icd10(
     collection: &DiagnosisCollection,
     icd10_codes: &[&str],
 ) -> DiagnosisCollection {
@@ -242,7 +246,8 @@ pub fn get_lpr3_diagnoser_files() -> Result<Vec<PathBuf>> {
 ///
 /// Returns the standard mappings between registry column names and
 /// standardized column names for LPR2 and LPR3.
-#[must_use] pub fn get_standard_lpr_mappings() -> (HashMap<String, String>, HashMap<String, String>) {
+#[must_use]
+pub fn get_standard_lpr_mappings() -> (HashMap<String, String>, HashMap<String, String>) {
     let mut lpr2_mapping = HashMap::new();
     lpr2_mapping.insert("PNR".to_string(), "patient_id".to_string());
     lpr2_mapping.insert("C_ADIAG".to_string(), "primary_diagnosis".to_string());

@@ -7,17 +7,11 @@ pub mod adapter;
 pub mod async_loading;
 pub mod collection;
 pub mod registry;
-pub mod registry_v2;
 
 // Re-export core traits for convenience
 pub use registry::{
     AkmRegistry, BefRegistry, DodRegistry, IndRegistry, LprRegistry, MfrRegistry, RegistryAware,
     UddfRegistry, VndsRegistry,
-};
-
-// Re-export new registry traits
-pub use registry_v2::{
-    RegistryModel, RegistryConverter, RegistryDetector, MultiRegistryModel,
 };
 
 // Re-export adapter traits

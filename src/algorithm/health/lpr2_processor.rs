@@ -5,9 +5,9 @@
 
 use crate::algorithm::health::lpr_config::LprConfig;
 use crate::error::{ParquetReaderError, Result};
-use crate::models::collections::ModelCollection;
-use crate::models::diagnosis::{Diagnosis, DiagnosisCollection};
 use crate::models::DiagnosisType;
+use crate::models::collections::ModelCollection;
+use crate::models::health::diagnosis::{Diagnosis, DiagnosisCollection};
 use crate::utils::array_utils::get_column;
 use crate::utils::arrow_utils::arrow_array_to_date;
 

@@ -8,8 +8,8 @@ use std::path::Path;
 use std::sync::Arc;
 
 use crate::error::Result;
-use crate::models::child::Child;
-use crate::models::individual::Individual;
+use crate::models::Child;
+use crate::models::Individual;
 use crate::registry::RegisterLoader;
 use crate::registry::mfr::MfrRegister;
 use arrow::record_batch::RecordBatch;
@@ -45,7 +45,10 @@ impl MfrChildRegister {
     /// Process a batch to extract Child models from MFR data
     pub fn process_batch(&self, batch: &RecordBatch) -> Result<Vec<Child>> {
         // Use the deserializer directly to convert the batch to Child models
-        let children = crate::registry::mfr::deserializer::deserialize_child_batch(batch, &self.individual_lookup)?;
+        let children = crate::registry::mfr::deserializer::deserialize_child_batch(
+            batch,
+            &self.individual_lookup,
+        )?;
         Ok(children)
     }
 

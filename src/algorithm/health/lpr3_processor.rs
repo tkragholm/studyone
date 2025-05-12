@@ -5,9 +5,9 @@
 
 use crate::algorithm::health::lpr_config::LprConfig;
 use crate::error::{ParquetReaderError, Result};
-use crate::models::collections::ModelCollection;
-use crate::models::diagnosis::{Diagnosis, DiagnosisCollection};
 use crate::models::DiagnosisType;
+use crate::models::collections::ModelCollection;
+use crate::models::health::diagnosis::{Diagnosis, DiagnosisCollection};
 use crate::utils::arrow_utils::arrow_date_to_naive_date;
 
 use arrow::array::{Array, Date32Array, StringArray};
@@ -143,7 +143,7 @@ pub fn integrate_lpr3_components(
                 None
             } else {
                 let record_date = arrow_date_to_naive_date(date_array.value(row_idx));
-                
+
                 // Skip if outside date range
                 if let Some(start_date) = config.start_date {
                     if record_date < start_date {
@@ -156,7 +156,7 @@ pub fn integrate_lpr3_components(
                         continue;
                     }
                 }
-                
+
                 Some(record_date)
             };
 
@@ -181,7 +181,7 @@ pub fn integrate_lpr3_components(
 #[must_use]
 pub fn create_contact_id_index(batch: &RecordBatch) -> HashMap<String, usize> {
     let mut index = HashMap::new();
-    
+
     if let Some(id_col) = batch.column_by_name("kontakt_id") {
         if let Some(id_array) = id_col.as_any().downcast_ref::<StringArray>() {
             for i in 0..id_array.len() {
@@ -191,7 +191,7 @@ pub fn create_contact_id_index(batch: &RecordBatch) -> HashMap<String, usize> {
             }
         }
     }
-    
+
     index
 }
 
@@ -200,7 +200,7 @@ pub fn extract_diagnoses_from_lpr3(
     batch: &RecordBatch,
 ) -> Result<HashMap<String, Vec<(String, DiagnosisType)>>> {
     let mut diagnoses_by_kontakt_id: HashMap<String, Vec<(String, DiagnosisType)>> = HashMap::new();
-    
+
     // Extract required columns
     let kontakt_id_col = batch
         .column_by_name("kontakt_id")
@@ -230,16 +230,16 @@ pub fn extract_diagnoses_from_lpr3(
     } else {
         None
     };
-    
+
     // Process each row
     for i in 0..batch.num_rows() {
         if kontakt_id_array.is_null(i) || diag_array.is_null(i) {
             continue;
         }
-        
+
         let kontakt_id = kontakt_id_array.value(i).to_string();
         let diagnosis = diag_array.value(i).to_string();
-        
+
         let diag_type = if let Some(array) = diag_type_array {
             if i < array.len() && !array.is_null(i) {
                 let type_str = array.value(i);
@@ -255,13 +255,13 @@ pub fn extract_diagnoses_from_lpr3(
         } else {
             DiagnosisType::Other
         };
-        
+
         diagnoses_by_kontakt_id
             .entry(kontakt_id)
             .or_default()
             .push((diagnosis, diag_type));
     }
-    
+
     Ok(diagnoses_by_kontakt_id)
 }
 
@@ -273,7 +273,7 @@ pub fn is_valid_lpr3_diagnosis(code: &str) -> bool {
     if code.is_empty() {
         return false;
     }
-    
+
     let first_char = code.chars().next().unwrap();
     first_char.is_ascii_alphabetic() && code.len() >= 3
 }

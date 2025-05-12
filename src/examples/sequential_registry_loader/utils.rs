@@ -6,7 +6,8 @@ use crate::models::core::types::SocioeconomicStatus;
 use crate::registry::{bef, death, ind, mfr, vnds};
 use arrow::array::Array;
 
-/// Map SOCIO code values to SocioeconomicStatus enum
+/// Map SOCIO code values to `SocioeconomicStatus` enum
+#[must_use]
 pub fn map_socio_to_enum(socio_value: i32) -> SocioeconomicStatus {
     // Map SOCIO values (which might be encoded differently) to the standard enum values
     // Actual mapping may need adjustment based on the specific encoding in the data
@@ -26,6 +27,7 @@ pub fn map_socio_to_enum(socio_value: i32) -> SocioeconomicStatus {
 }
 
 /// Get a string value from a record batch column at the specified row index
+#[must_use]
 pub fn get_string_value(batch: &RecordBatch, column_name: &str, row: usize) -> Option<String> {
     batch
         .column_by_name(column_name)
@@ -40,6 +42,7 @@ pub fn get_string_value(batch: &RecordBatch, column_name: &str, row: usize) -> O
 }
 
 /// Get the schema for a specific registry type
+#[must_use]
 pub fn get_registry_schema(registry: &str) -> Option<Arc<arrow::datatypes::Schema>> {
     match registry.to_uppercase().as_str() {
         "BEF" => Some(bef::schema::bef_schema()),
