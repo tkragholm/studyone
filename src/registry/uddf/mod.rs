@@ -3,10 +3,11 @@
 //! The UDDF (Uddannelse) registry contains educational information.
 
 use super::RegisterLoader;
-pub mod conversion;
-pub mod deserializer;
+
 pub mod individual;
 pub mod schema;
+
+pub mod trait_deserializer_macro;
 use crate::RecordBatch;
 use crate::Result;
 use crate::async_io::loader::PnrFilterableLoader;

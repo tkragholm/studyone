@@ -1,0 +1,15 @@
+par-reader on  main [✘!?] is 📦 v0.1.0 via 🦀 v1.86.0
+❯ cargo check
+    Checking par-reader v0.1.0 (/Users/tobiaskragholm/par-reader)
+error: expected identifier, found `AkmTraitDeserializer`
+  --> src/registry/deserializer_macros.rs:19:20
+   |
+19 |         pub struct $registry {
+   |                    ^^^^^^^^^ expected identifier
+   |
+  ::: src/registry/akm/trait_deserializer_macro.rs:10:1
+   |
+10 | generate_trait_deserializer!(AkmTraitDeserializer, "AKM", create_akm_schema);
+   | ---------------------------------------------------------------------------- in this macro invocation
+   |
+   = note: this error originates in the macro `generate_trait_deserializer` (in Nightly builds, run with -Z macro-backtrace for more info)

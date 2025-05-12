@@ -11,13 +11,13 @@ use std::sync::Arc;
 
 impl MfrRegistry for Individual {
     fn from_mfr_record(batch: &RecordBatch, row: usize) -> Result<Option<Self>> {
-        // Use the MFR-specific deserializer
-        crate::registry::mfr::deserializer::deserialize_row(batch, row)
+        // Use the trait-based deserializer from the unified schema
+        crate::registry::mfr::trait_deserializer_macro::deserialize_row(batch, row)
     }
 
     fn from_mfr_batch(batch: &RecordBatch) -> Result<Vec<Self>> {
-        // Use the MFR-specific deserializer
-        crate::registry::mfr::deserializer::deserialize_batch(batch)
+        // Use the trait-based deserializer from the unified schema
+        crate::registry::mfr::trait_deserializer_macro::deserialize_batch(batch)
     }
 }
 

@@ -5,10 +5,10 @@
 mod register;
 pub use register::BefCombinedRegister;
 
-pub mod conversion;
-pub mod deserializer;
 pub mod individual;
 pub mod schema;
+pub mod trait_deserializer;
+pub mod trait_deserializer_macro;
 
 use super::RegisterLoader;
 use crate::RecordBatch;
@@ -29,6 +29,7 @@ use std::sync::Arc;
 pub struct BefRegister {
     schema: SchemaRef,
     loader: Arc<PnrFilterableLoader>,
+    unified_system: bool,
 }
 
 impl BefRegister {
@@ -41,7 +42,30 @@ impl BefRegister {
         Self {
             schema,
             loader: Arc::new(loader),
+            unified_system: false,
         }
+    }
+
+    /// Enable or disable the unified schema system
+    pub fn use_unified_system(&mut self, enable: bool) {
+        self.unified_system = enable;
+
+        // Update schema based on the unified system setting
+        self.schema = if enable {
+            schema::bef_schema()
+        } else {
+            schema::bef_schema()
+        };
+
+        // Update the loader with the new schema
+        self.loader = Arc::new(
+            PnrFilterableLoader::with_schema_ref(self.schema.clone()).with_pnr_column("PNR"),
+        );
+    }
+
+    /// Check if the unified schema system is enabled
+    pub fn is_unified_system_enabled(&self) -> bool {
+        self.unified_system
     }
 }
 
@@ -60,6 +84,17 @@ impl RegisterLoader for BefRegister {
     /// Get the schema for this register
     fn get_schema(&self) -> SchemaRef {
         self.schema.clone()
+    }
+
+    /// Enable or disable the unified schema system
+    fn use_unified_system(&mut self, enable: bool) {
+        // Call the struct's own method
+        BefRegister::use_unified_system(self, enable);
+    }
+
+    /// Check if the unified schema system is enabled
+    fn is_unified_system_enabled(&self) -> bool {
+        self.unified_system
     }
 
     /// Load records from the BEF register

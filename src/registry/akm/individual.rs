@@ -6,37 +6,55 @@ use crate::RecordBatch;
 use crate::common::traits::AkmRegistry;
 use crate::error::Result;
 use crate::models::core::Individual;
-use crate::utils::field_extractors::{extract_float64, extract_string};
+//use crate::utils::field_extractors::extract_string;
 
 impl AkmRegistry for Individual {
     fn from_akm_record(batch: &RecordBatch, row: usize) -> Result<Option<Self>> {
-        // Use the serde_arrow-based deserializer for the row
-        crate::registry::akm::deserializer::deserialize_row(batch, row)
+        // Use the trait-based deserializer from the unified schema
+        crate::registry::akm::trait_deserializer_macro::deserialize_row(batch, row)
     }
 
     fn from_akm_batch(batch: &RecordBatch) -> Result<Vec<Self>> {
-        // Use the serde_arrow-based deserializer for the batch
-        crate::registry::akm::deserializer::deserialize_batch(batch)
+        // Use the trait-based deserializer from the unified schema
+        crate::registry::akm::trait_deserializer_macro::deserialize_batch(batch)
     }
 
     fn enhance_with_employment_data(&mut self, batch: &RecordBatch, row: usize) -> Result<bool> {
-        // Extract employment-related fields
-        if let Ok(Some(occupation_code)) = extract_string(batch, row, "DISCO", false) {
-            self.occupation_code = Some(occupation_code);
-        }
+        // With our unified schema approach, enhancement is handled automatically by the deserializer
+        // The trait-based deserializer uses registry traits and field mappings from the unified schema
 
-        if let Ok(Some(industry_code)) = extract_string(batch, row, "BRANCHE", false) {
-            self.industry_code = Some(industry_code);
-        }
+        // Create a temporary Individual using the deserializer
+        if let Some(enhanced) =
+            crate::registry::akm::trait_deserializer_macro::deserialize_row(batch, row)?
+        {
+            // // Copy employment-specific fields from the enhanced Individual to this one
+            // if let Some(occupation_code) = enhanced.occupation_code {
+            //     self.socioeconomic_status = Some(occupation_code);
+            // }
 
-        if let Ok(Some(workplace_id)) = extract_string(batch, row, "ARB_STED_ID", false) {
-            self.workplace_id = Some(workplace_id);
-        }
+            // if let Some(industry_code) = enhanced.industry_code {
+            //     self.industry_code = Some(industry_code);
+            // }
 
-        if let Ok(Some(hours)) = extract_float64(batch, row, "HELTID", false) {
-            self.working_hours = Some(hours);
-        }
+            if let Some(workplace_id) = enhanced.workplace_id {
+                self.workplace_id = Some(workplace_id);
+            }
 
-        Ok(true)
+            // if let Some(employment_start_date) = enhanced.employment_start_date {
+            //     self.employment_start_date = Some(employment_start_date);
+            // }
+
+            // if let Some(employment_end_date) = enhanced.employment_end_date {
+            //     self.employment_end_date = Some(employment_end_date);
+            // }
+
+            // if let Some(working_hours) = enhanced.working_hours {
+            //     self.working_hours = Some(working_hours);
+            // }
+
+            Ok(true)
+        } else {
+            Ok(false)
+        }
     }
 }

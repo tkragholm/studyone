@@ -18,7 +18,8 @@ pub enum Gender {
 
 impl Gender {
     /// Default value for Gender when not specified
-    #[must_use] pub fn default() -> Self {
+    #[must_use]
+    pub fn default() -> Self {
         Self::Unknown
     }
 }
@@ -58,7 +59,8 @@ pub enum Origin {
 
 impl Origin {
     /// Default value for Origin when not specified
-    #[must_use] pub fn default() -> Self {
+    #[must_use]
+    pub fn default() -> Self {
         Self::Unknown
     }
 }
@@ -100,7 +102,8 @@ pub enum EducationLevel {
 
 impl EducationLevel {
     /// Default value for `EducationLevel` when not specified
-    #[must_use] pub fn default() -> Self {
+    #[must_use]
+    pub fn default() -> Self {
         Self::Unknown
     }
 }
@@ -334,7 +337,8 @@ pub enum MaritalStatus {
 
 impl MaritalStatus {
     /// Default value for `MaritalStatus` when not specified
-    #[must_use] pub fn default() -> Self {
+    #[must_use]
+    pub fn default() -> Self {
         Self::Unknown
     }
 }
@@ -388,7 +392,8 @@ pub enum CitizenshipStatus {
 
 impl CitizenshipStatus {
     /// Default value for `CitizenshipStatus` when not specified
-    #[must_use] pub fn default() -> Self {
+    #[must_use]
+    pub fn default() -> Self {
         Self::Unknown
     }
 }
@@ -427,7 +432,8 @@ pub enum HousingType {
 
 impl HousingType {
     /// Default value for `HousingType` when not specified
-    #[must_use] pub fn default() -> Self {
+    #[must_use]
+    pub fn default() -> Self {
         Self::Unknown
     }
 }
@@ -475,7 +481,8 @@ pub enum SocioeconomicStatus {
 
 impl SocioeconomicStatus {
     /// Default value for `SocioeconomicStatus` when not specified
-    #[must_use] pub fn default() -> Self {
+    #[must_use]
+    pub fn default() -> Self {
         Self::Unknown
     }
 }
@@ -498,51 +505,51 @@ impl From<i32> for SocioeconomicStatus {
     }
 }
 
-/// Primary field of education
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum EducationField {
-    /// General education (non-specialized)
-    General,
-    /// Education (teaching)
-    Education,
-    /// Humanities and arts
-    HumanitiesArts,
-    /// Social sciences, business, law
-    SocialScienceBusinessLaw,
-    /// Science, mathematics, computing
-    ScienceMathematicsComputing,
-    /// Engineering, manufacturing, construction
-    EngineeringManufacturingConstruction,
-    /// Agriculture and veterinary
-    AgricultureVeterinary,
-    /// Health and welfare
-    HealthWelfare,
-    /// Services
-    Services,
-    /// Unknown or not specified
-    Unknown,
-}
+// /// Primary field of education
+// #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+// pub enum EducationField {
+//     /// General education (non-specialized)
+//     General,
+//     /// Education (teaching)
+//     Education,
+//     /// Humanities and arts
+//     HumanitiesArts,
+//     /// Social sciences, business, law
+//     SocialScienceBusinessLaw,
+//     /// Science, mathematics, computing
+//     ScienceMathematicsComputing,
+//     /// Engineering, manufacturing, construction
+//     EngineeringManufacturingConstruction,
+//     /// Agriculture and veterinary
+//     AgricultureVeterinary,
+//     /// Health and welfare
+//     HealthWelfare,
+//     /// Services
+//     Services,
+//     /// Unknown or not specified
+//     Unknown,
+// }
 
-impl EducationField {
-    /// Default value for `EducationField` when not specified
-    #[must_use] pub fn default() -> Self {
-        Self::Unknown
-    }
-}
+// impl EducationField {
+//     /// Default value for `EducationField` when not specified
+//     #[must_use] pub fn default() -> Self {
+//         Self::Unknown
+//     }
+// }
 
-impl From<i32> for EducationField {
-    fn from(value: i32) -> Self {
-        match value {
-            0 => Self::General,
-            1 => Self::Education,
-            2 => Self::HumanitiesArts,
-            3 => Self::SocialScienceBusinessLaw,
-            4 => Self::ScienceMathematicsComputing,
-            5 => Self::EngineeringManufacturingConstruction,
-            6 => Self::AgricultureVeterinary,
-            7 => Self::HealthWelfare,
-            8 => Self::Services,
-            _ => Self::Unknown,
-        }
-    }
-}
+// impl From<i32> for EducationField {
+//     fn from(value: i32) -> Self {
+//         match value {
+//             0 => Self::General,
+//             1 => Self::Education,
+//             2 => Self::HumanitiesArts,
+//             3 => Self::SocialScienceBusinessLaw,
+//             4 => Self::ScienceMathematicsComputing,
+//             5 => Self::EngineeringManufacturingConstruction,
+//             6 => Self::AgricultureVeterinary,
+//             7 => Self::HealthWelfare,
+//             8 => Self::Services,
+//             _ => Self::Unknown,
+//         }
+//     }
+// }

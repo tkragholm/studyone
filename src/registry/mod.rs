@@ -65,21 +65,43 @@ pub trait RegisterLoader: Send + Sync {
     fn get_join_column_name(&self) -> Option<&'static str> {
         None
     }
+
+    /// Enable or disable the unified schema system
+    /// Default implementation does nothing, registries that support the unified system
+    /// should override this method.
+    fn use_unified_system(&mut self, _enable: bool) {
+        // Default implementation does nothing
+    }
+
+    /// Check if the unified schema system is enabled
+    /// Default implementation returns false, registries that support the unified system
+    /// should override this method.
+    fn is_unified_system_enabled(&self) -> bool {
+        false
+    }
 }
 
-// Will contain registry implementations
+// Registry implementations
 pub mod akm;
 pub mod bef;
 pub mod death {
     pub mod dod;
     pub mod dodsaarsag;
 }
-// Removed IDAN registry
 pub mod ind;
 pub mod lpr;
 pub mod mfr;
 pub mod uddf;
 pub mod vnds;
+
+// Centralized field definitions for all registries
+pub mod field_definitions;
+
+// Generic deserializer for all registries
+pub mod generic_deserializer;
+
+// Unified registry system support
+pub mod unified_registry;
 
 // Re-export registry structs for easier access
 pub use akm::AkmRegister;
@@ -87,21 +109,20 @@ pub use bef::BefCombinedRegister;
 pub use bef::BefRegister;
 pub use death::dod::DodRegister;
 pub use death::dodsaarsag::DodsaarsagRegister;
-// Removed IdanRegister
 pub use ind::IndRegister;
-pub use ind::conversion::YearConfiguredIndRegister;
 pub use lpr::{
     discovery::{LprPaths, find_lpr_files},
     v2::{LprAdmRegister, LprBesRegister, LprDiagRegister},
     v3::{Lpr3DiagnoserRegister, Lpr3KontakterRegister},
 };
 pub use mfr::MfrRegister;
-pub use mfr::conversion::MfrChildRegister;
 pub use uddf::UddfRegister;
 pub use vnds::VndsRegister;
 
 pub mod factory;
+pub mod factory_unified;
 pub use factory::{load_multiple_registries, registry_from_name, registry_from_path};
+pub use factory_unified as unified;
 
 mod transform;
 pub use transform::{
@@ -109,13 +130,9 @@ pub use transform::{
     map_categorical_values, scale_numeric_values, transform_records,
 };
 
-// Modern serde_arrow-based serialization and deserialization
-// provides direct conversion between registry data and domain models
-
 // Centralized registry deserialization and detection
-pub mod deserializer;
+pub mod deserializer_macros;
 pub mod detect;
+pub mod extractors;
 pub mod models;
-
-// Centralized registry conversions module with serde_arrow support
-//pub mod conversions;
+pub mod trait_deserializer;

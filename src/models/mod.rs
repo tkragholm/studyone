@@ -21,9 +21,8 @@ pub use crate::common::traits::{
 
 // Re-export common types for backward compatibility
 pub use core::types::{
-    CitizenshipStatus, DiagnosisType, DiseaseOrigin, DiseaseSeverity, EducationField,
-    EducationLevel, FamilyType, Gender, HousingType, JobSituation, MaritalStatus, Origin,
-    ScdCategory, SocioeconomicStatus,
+    CitizenshipStatus, DiagnosisType, DiseaseOrigin, DiseaseSeverity, EducationLevel, FamilyType,
+    Gender, HousingType, JobSituation, MaritalStatus, Origin, ScdCategory, SocioeconomicStatus,
 };
 
 // Re-export commonly used entity models for backward compatibility

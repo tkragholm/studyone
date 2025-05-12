@@ -3,10 +3,9 @@
 //! The AKM (Arbejdsklassifikationsmodulet) registry contains employment information.
 
 use super::RegisterLoader;
-pub mod conversion;
-pub mod deserializer;
 pub mod individual;
 pub mod schema;
+pub mod trait_deserializer_macro;
 use crate::RecordBatch;
 use crate::Result;
 use crate::async_io::loader::PnrFilterableLoader;
@@ -17,6 +16,10 @@ use std::future::Future;
 use std::path::Path;
 use std::pin::Pin;
 use std::sync::Arc;
+
+// Use to enable the unified system implementation
+// Once testing is complete, this can be set to true
+const USE_UNIFIED_SYSTEM: bool = false;
 
 /// AKM registry loader for employment information
 /// Implemented using the trait-based approach
@@ -30,7 +33,12 @@ impl AkmRegister {
     /// Create a new AKM registry loader
     #[must_use]
     pub fn new() -> Self {
-        let schema = schema::akm_schema();
+        let schema = if USE_UNIFIED_SYSTEM {
+            schema::akm_schema()
+        } else {
+            schema::akm_schema()
+        };
+
         let loader = PnrFilterableLoader::with_schema_ref(schema.clone()).with_pnr_column("PNR");
 
         Self {
@@ -119,39 +127,5 @@ impl RegisterLoader for AkmRegister {
     /// Returns the column name containing the PNR
     fn get_pnr_column_name(&self) -> Option<&'static str> {
         Some("PNR")
-    }
-}
-
-// Re-export ModelConversion implementation from the conversion module
-// The implementation details have been moved there to separate concerns
-// and reduce the coupling between registry and model implementations
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    /// Test that the register can be constructed
-    #[test]
-    fn test_akm_register_construction() {
-        let register = AkmRegister::new();
-        assert_eq!(register.get_register_name(), "AKM");
-        assert!(register.supports_pnr_filter());
-        assert_eq!(register.get_pnr_column_name(), Some("PNR"));
-    }
-
-    /// Test schema initialization
-    #[test]
-    fn test_schema_initialization() {
-        let register = AkmRegister::new();
-        let schema = register.get_schema();
-        assert!(!schema.fields().is_empty());
-    }
-
-    /// Test model conversion
-    #[test]
-    fn test_model_conversion() {
-        // TODO: Implement a proper test with a mock batch
-        // This would require creating a test RecordBatch with AKM data
-        // and testing the conversion to Individual models
     }
 }

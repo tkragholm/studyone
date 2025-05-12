@@ -1,54 +1,176 @@
-//! BEF schema definitions
+//! Unified BEF schema definition
 //!
-//! The BEF (Befolkning) registry contains population demographic information.
+//! This module provides a unified schema definition for the BEF registry using
+//! the centralized field definition system.
 
-use arrow::datatypes::{DataType, Field, Schema};
-use std::collections::HashMap;
 use std::sync::Arc;
+use crate::schema::{RegistrySchema, create_registry_schema, FieldDefinition, FieldType};
+use crate::schema::field_def::{FieldMapping, ModelSetters, Extractors};
+use crate::registry::field_definitions::CommonMappings;
 
-/// Get the Arrow schema for BEF data
-#[must_use] pub fn bef_schema() -> Arc<Schema> {
-    Arc::new(Schema::new(vec![
-        Field::new("PNR", DataType::Utf8, false),
-        Field::new("FOED_DAG", DataType::Date32, true),
-        Field::new("FAR_ID", DataType::Utf8, true),
-        Field::new("MOR_ID", DataType::Utf8, true),
-        Field::new("FAMILIE_ID", DataType::Utf8, true),
-        // Optional fields that may be useful
-        Field::new("AEGTE_ID", DataType::Utf8, true),
-        Field::new("ALDER", DataType::Int8, true),
-        Field::new("ANTBOERNF", DataType::Int8, true),
-        Field::new("ANTBOERNH", DataType::Int8, true),
-        Field::new("ANTPERSF", DataType::Int8, true),
-        Field::new("ANTPERSH", DataType::Int8, true),
-        Field::new("BOP_VFRA", DataType::Date32, true),
-        Field::new("CIVST", DataType::Utf8, true),
-        Field::new("CPRTJEK", DataType::Int8, true),
-        Field::new("CPRTYPE", DataType::Int8, true),
-        Field::new("E_FAELLE_ID", DataType::Utf8, true),
-        Field::new("FAMILIE_TYPE", DataType::Int8, true),
-        Field::new("FM_MARK", DataType::Int8, true),
-        Field::new("HUSTYPE", DataType::Int8, true),
-        Field::new("IE_TYPE", DataType::Utf8, true),
-        Field::new("KOEN", DataType::Utf8, true),
-        Field::new("KOM", DataType::Int8, true),
-        Field::new("OPR_LAND", DataType::Utf8, true),
-        Field::new("PLADS", DataType::Int8, true),
-        Field::new("REG", DataType::Int8, true),
-        Field::new("STATSB", DataType::Int8, true),
-        Field::new("VERSION", DataType::Utf8, true),
-    ]))
+/// Create a BEF-specific field definition
+fn bef_field(name: &str, description: &str, field_type: FieldType, nullable: bool) -> FieldDefinition {
+    FieldDefinition::new(name, description, field_type, nullable)
 }
 
-/// Field mapping from BEF registry to `SerdeIndividual`
+/// Create the unified BEF registry schema
 ///
-/// This function provides a mapping between BEF registry field names and
-/// the corresponding field names in the `SerdeIndividual` struct.
-#[must_use] pub fn field_mapping() -> HashMap<String, String> {
-    let mut mapping = HashMap::new();
-    // No need for mapping most fields since SerdeIndividual uses aliases
-    // We only need to map fields that have different names in the registry
-    // compared to their aliases in SerdeIndividual
-    mapping.insert("OPR_LAND".to_string(), "origin_code".to_string());
-    mapping
+/// This function creates a schema for the BEF registry using the unified field definition system.
+#[must_use]
+pub fn create_bef_schema() -> RegistrySchema {
+    // Create field mappings using common definitions where possible
+    let field_mappings = vec![
+        // Core identification fields
+        CommonMappings::pnr(),
+        CommonMappings::birth_date(),
+        CommonMappings::gender(),
+        
+        // Family and relationship fields
+        CommonMappings::mother_pnr(),
+        CommonMappings::father_pnr(),
+        CommonMappings::family_id(),
+        
+        // Demographic and status fields
+        CommonMappings::origin(),
+        CommonMappings::municipality_code(),
+        CommonMappings::marital_status(),
+        CommonMappings::citizenship_status(),
+        CommonMappings::housing_type(),
+        
+        // BEF-specific fields
+        FieldMapping::new(
+            bef_field("AEGTE_ID", "Spouse's personal identification number", FieldType::PNR, true),
+            Extractors::string("AEGTE_ID"),
+            ModelSetters::string_setter(|individual, value| {
+                individual.spouse_pnr = Some(value);
+            }),
+        ),
+        FieldMapping::new(
+            bef_field("ALDER", "Age in years", FieldType::Integer, true),
+            Extractors::integer("ALDER"),
+            ModelSetters::i32_setter(|individual, value| {
+                individual.age = Some(value);
+            }),
+        ),
+        FieldMapping::new(
+            bef_field("ANTBOERNF", "Number of children in family", FieldType::Integer, true),
+            Extractors::integer("ANTBOERNF"),
+            ModelSetters::i32_setter(|_individual, _value| {
+                // This field is currently not mapped to the Individual model
+                // It's included for completeness in the schema
+            }),
+        ),
+        FieldMapping::new(
+            bef_field("ANTBOERNH", "Number of children in household", FieldType::Integer, true),
+            Extractors::integer("ANTBOERNH"),
+            ModelSetters::i32_setter(|_individual, _value| {
+                // This field is currently not mapped to the Individual model
+                // It's included for completeness in the schema
+            }),
+        ),
+        FieldMapping::new(
+            bef_field("ANTPERSF", "Number of persons in family", FieldType::Integer, true),
+            Extractors::integer("ANTPERSF"),
+            ModelSetters::i32_setter(|individual, value| {
+                individual.family_size = Some(value);
+            }),
+        ),
+        FieldMapping::new(
+            bef_field("ANTPERSH", "Number of persons in household", FieldType::Integer, true),
+            Extractors::integer("ANTPERSH"),
+            ModelSetters::i32_setter(|individual, value| {
+                individual.household_size = Some(value);
+            }),
+        ),
+        FieldMapping::new(
+            bef_field("BOP_VFRA", "Date of residence from", FieldType::Date, true),
+            Extractors::date("BOP_VFRA"),
+            ModelSetters::date_setter(|individual, value| {
+                individual.residence_from = Some(value);
+            }),
+        ),
+        FieldMapping::new(
+            bef_field("CPRTJEK", "CPR check", FieldType::Integer, true),
+            Extractors::integer("CPRTJEK"),
+            ModelSetters::i32_setter(|_individual, _value| {
+                // This field is currently not mapped to the Individual model
+                // It's included for completeness in the schema
+            }),
+        ),
+        FieldMapping::new(
+            bef_field("CPRTYPE", "CPR type", FieldType::Integer, true),
+            Extractors::integer("CPRTYPE"),
+            ModelSetters::i32_setter(|_individual, _value| {
+                // This field is currently not mapped to the Individual model
+                // It's included for completeness in the schema
+            }),
+        ),
+        FieldMapping::new(
+            bef_field("E_FAELLE_ID", "Registered partner PNR", FieldType::PNR, true),
+            Extractors::string("E_FAELLE_ID"),
+            ModelSetters::string_setter(|_individual, _value| {
+                // This field is currently not mapped to the Individual model
+                // It's included for completeness in the schema
+            }),
+        ),
+        FieldMapping::new(
+            bef_field("FAMILIE_TYPE", "Family type", FieldType::Integer, true),
+            Extractors::integer("FAMILIE_TYPE"),
+            ModelSetters::i32_setter(|individual, value| {
+                individual.family_type = Some(value);
+            }),
+        ),
+        FieldMapping::new(
+            bef_field("FM_MARK", "Family marker", FieldType::Integer, true),
+            Extractors::integer("FM_MARK"),
+            ModelSetters::i32_setter(|_individual, _value| {
+                // This field is currently not mapped to the Individual model
+                // It's included for completeness in the schema
+            }),
+        ),
+        FieldMapping::new(
+            bef_field("IE_TYPE", "Immigration/emigration type", FieldType::String, true),
+            Extractors::string("IE_TYPE"),
+            ModelSetters::string_setter(|individual, value| {
+                individual.migration_type = Some(value);
+            }),
+        ),
+        FieldMapping::new(
+            bef_field("PLADS", "Position in family", FieldType::Integer, true),
+            Extractors::integer("PLADS"),
+            ModelSetters::i32_setter(|individual, value| {
+                individual.position_in_family = Some(value);
+            }),
+        ),
+        FieldMapping::new(
+            bef_field("REG", "Registration type", FieldType::Integer, true),
+            Extractors::integer("REG"),
+            ModelSetters::i32_setter(|_individual, _value| {
+                // This field is currently not mapped to the Individual model
+                // It's included for completeness in the schema
+            }),
+        ),
+        FieldMapping::new(
+            bef_field("VERSION", "Version", FieldType::String, true),
+            Extractors::string("VERSION"),
+            ModelSetters::string_setter(|_individual, _value| {
+                // This field is currently not mapped to the Individual model
+                // It's included for completeness in the schema
+            }),
+        ),
+    ];
+    
+    create_registry_schema(
+        "BEF",
+        "Befolkning registry containing population demographic information",
+        field_mappings,
+    )
+}
+
+/// Get the Arrow schema for BEF data
+///
+/// This function is provided for backward compatibility with the existing code.
+#[must_use]
+pub fn bef_schema() -> Arc<arrow::datatypes::Schema> {
+    create_bef_schema().arrow_schema()
 }

@@ -5,10 +5,9 @@
 //! direct model conversion capabilities.
 
 // Import submodules
-pub mod conversion;
-pub mod deserializer;
 pub mod discovery;
 pub mod individual;
+pub mod trait_deserializer;
 pub mod v2;
 pub mod v3;
 

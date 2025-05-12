@@ -897,10 +897,12 @@ fn create_pnr_filter_expr(pnrs: &HashSet<String>) -> Expr {
 ///
 /// # Returns
 /// The number of processed individuals
-pub async fn run_sequential_registry_example(base_dir: &Path) -> Result<usize> {
-    // Define date range
-    let start_date = "1995-01-01";
-    let end_date = "2018-12-31";
+pub async fn run_sequential_registry_example(
+    base_dir: &Path,
+    start_date: &str,
+    end_date: &str,
+) -> Result<usize> {
+    // Use the provided date range
 
     info!("Starting sequential registry processing");
     info!("Base directory: {}", base_dir.display());

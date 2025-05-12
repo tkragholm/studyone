@@ -8,7 +8,6 @@ use crate::common::traits::RegistryAware;
 use crate::error::Result;
 use crate::models::core::Individual;
 use crate::models::derived::Child;
-use crate::registry::deserializer;
 use std::sync::Arc;
 
 // Implement RegistryAware for Individual

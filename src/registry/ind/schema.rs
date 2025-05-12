@@ -1,39 +1,104 @@
-//! IND schema definitions
+//! Unified IND schema definition
+//!
+//! This module provides a unified schema definition for the IND registry using
+//! the centralized field definition system.
 
-use arrow::datatypes::{DataType, Field, Schema};
-use std::collections::HashMap;
+use crate::models::core::registry_traits::IndFields;
+use crate::registry::field_definitions::CommonMappings;
+use crate::schema::field_def::{Extractors, FieldMapping, ModelSetters};
+use crate::schema::{FieldDefinition, FieldType, RegistrySchema, create_registry_schema};
 use std::sync::Arc;
+
+/// Create a IND-specific field definition
+fn ind_field(
+    name: &str,
+    description: &str,
+    field_type: FieldType,
+    nullable: bool,
+) -> FieldDefinition {
+    FieldDefinition::new(name, description, field_type, nullable)
+}
+
+/// Create the unified IND registry schema
+///
+/// This function creates a schema for the IND registry using the unified field definition system.
+#[must_use]
+pub fn create_ind_schema() -> RegistrySchema {
+    // Create field mappings using common definitions where possible
+    let field_mappings = vec![
+        // Core identification field
+        CommonMappings::pnr(),
+        // IND-specific fields
+        FieldMapping::new(
+            ind_field("PERINDKIALT_13", "Annual income", FieldType::Decimal, true),
+            Extractors::decimal("PERINDKIALT_13"),
+            ModelSetters::f64_setter(|individual, value| {
+                let ind_fields: &mut dyn IndFields = individual;
+                ind_fields.set_annual_income(Some(value));
+            }),
+        ),
+        FieldMapping::new(
+            ind_field("LOENMV_13", "Employment income", FieldType::Decimal, true),
+            Extractors::decimal("LOENMV_13"),
+            ModelSetters::f64_setter(|individual, value| {
+                let ind_fields: &mut dyn IndFields = individual;
+                ind_fields.set_employment_income(Some(value));
+            }),
+        ),
+        FieldMapping::new(
+            ind_field("AAR", "Income year", FieldType::Integer, true),
+            Extractors::integer("AAR"),
+            ModelSetters::i32_setter(|individual, value| {
+                let ind_fields: &mut dyn IndFields = individual;
+                ind_fields.set_income_year(Some(value));
+            }),
+        ),
+        FieldMapping::new(
+            ind_field("CPRTJEK", "CPR check", FieldType::String, true),
+            Extractors::string("CPRTJEK"),
+            ModelSetters::string_setter(|_individual, _value| {
+                // This field is not mapped to the Individual model
+            }),
+        ),
+        FieldMapping::new(
+            ind_field("CPRTYPE", "CPR type", FieldType::String, true),
+            Extractors::string("CPRTYPE"),
+            ModelSetters::string_setter(|_individual, _value| {
+                // This field is not mapped to the Individual model
+            }),
+        ),
+        FieldMapping::new(
+            ind_field(
+                "PRE_SOCIO",
+                "Socioeconomic status code",
+                FieldType::Integer,
+                true,
+            ),
+            Extractors::integer("PRE_SOCIO"),
+            ModelSetters::i32_setter(|individual, value| {
+                //individual.socioeconomic_status_code = Some(value);
+            }),
+        ),
+        FieldMapping::new(
+            ind_field("VERSION", "Version", FieldType::String, true),
+            Extractors::string("VERSION"),
+            ModelSetters::string_setter(|_individual, _value| {
+                // This field is not mapped to the Individual model
+            }),
+        ),
+    ];
+
+    create_registry_schema(
+        "IND",
+        "Indkomst registry containing income and tax information",
+        field_mappings,
+    )
+}
 
 /// Get the Arrow schema for IND data
 ///
-/// The IND (Indkomst) registry contains income and tax information.
-#[must_use] pub fn ind_schema() -> Arc<Schema> {
-    Arc::new(Schema::new(vec![
-        Field::new("BESKST13", DataType::Int8, true),
-        Field::new("CPRTJEK", DataType::Utf8, true),
-        Field::new("CPRTYPE", DataType::Utf8, true),
-        Field::new("LOENMV_13", DataType::Float64, true),
-        Field::new("PERINDKIALT_13", DataType::Float64, true),
-        Field::new("PNR", DataType::Utf8, false),
-        Field::new("PRE_SOCIO", DataType::Int8, true),
-        Field::new("VERSION", DataType::Utf8, true),
-    ]))
-}
-
-/// Field mapping from IND registry to `SerdeIndividual`
-///
-/// This function provides a mapping between IND registry field names and
-/// the corresponding field names in the `SerdeIndividual` struct.
-#[must_use] pub fn field_mapping() -> HashMap<String, String> {
-    let mut mapping = HashMap::new();
-    mapping.insert("PNR".to_string(), "pnr".to_string());
-    mapping.insert("PERINDKIALT_13".to_string(), "annual_income".to_string());
-    mapping.insert("DISPON_NY".to_string(), "disposable_income".to_string());
-    mapping.insert("LOENMV_13".to_string(), "employment_income".to_string());
-    mapping.insert("NETOVSKUD".to_string(), "self_employment_income".to_string());
-    mapping.insert("KPITALIND".to_string(), "capital_income".to_string());
-    mapping.insert("OFFHJ".to_string(), "transfer_income".to_string());
-    mapping.insert("AAR".to_string(), "income_year".to_string());
-    mapping.insert("PRE_SOCIO".to_string(), "socioeconomic_status_code".to_string());
-    mapping
+/// This function is provided for backward compatibility with the existing code.
+#[must_use]
+pub fn ind_schema() -> Arc<arrow::datatypes::Schema> {
+    create_ind_schema().arrow_schema()
 }

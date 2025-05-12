@@ -3,10 +3,9 @@
 //! The MFR (Medical Birth Registry) registry contains birth information.
 
 use super::RegisterLoader;
-pub mod conversion;
-pub mod deserializer;
 pub mod individual;
 pub mod schema;
+pub mod trait_deserializer_macro;
 use crate::RecordBatch;
 use crate::Result;
 use crate::async_io::loader::PnrFilterableLoader;

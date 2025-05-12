@@ -6,11 +6,18 @@ use parquet::schema::types::Type;
 //pub mod adapters;
 // New modular design
 pub mod adapt;
+// New field definition system
+pub mod field_def;
 
 // Re-export the main adaptation types and functions for easier access
 pub use adapt::{
     AdaptationStrategy, AdapterError, DateFormatConfig, TypeCompatibility, adapt_record_batch,
     check_schema_with_adaptation, convert_array,
+};
+
+// Re-export the field definition system for easier access
+pub use field_def::{
+    FieldDefinition, FieldType, FieldMapping, ModelSetter, RegistrySchema, create_registry_schema,
 };
 
 /// A struct that represents the compatibility between parquet file schemas
