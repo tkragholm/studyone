@@ -17,9 +17,9 @@ fn lpr3_field(
     FieldDefinition::new(name, description, field_type, nullable)
 }
 
-/// Create the unified LPR3_DIAGNOSER registry schema
+/// Create the unified `LPR3_DIAGNOSER` registry schema
 ///
-/// This function creates a schema for the LPR3_DIAGNOSER registry using the unified field definition system.
+/// This function creates a schema for the `LPR3_DIAGNOSER` registry using the unified field definition system.
 #[must_use]
 pub fn create_lpr3_diagnoser_schema() -> RegistrySchema {
     // Create field mappings using common definitions where possible
@@ -117,9 +117,9 @@ pub fn create_lpr3_diagnoser_schema() -> RegistrySchema {
     )
 }
 
-/// Create the unified LPR3_KONTAKTER registry schema
+/// Create the unified `LPR3_KONTAKTER` registry schema
 ///
-/// This function creates a schema for the LPR3_KONTAKTER registry using the unified field definition system.
+/// This function creates a schema for the `LPR3_KONTAKTER` registry using the unified field definition system.
 #[must_use]
 pub fn create_lpr3_kontakter_schema() -> RegistrySchema {
     // Create field mappings using common definitions where possible
@@ -359,7 +359,7 @@ pub fn create_lpr3_kontakter_schema() -> RegistrySchema {
     )
 }
 
-/// Get the Arrow schema for LPR3_DIAGNOSER data
+/// Get the Arrow schema for `LPR3_DIAGNOSER` data
 ///
 /// This function is provided for backward compatibility with the existing code.
 #[must_use]
@@ -367,7 +367,7 @@ pub fn lpr3_diagnoser_schema() -> Arc<arrow::datatypes::Schema> {
     create_lpr3_diagnoser_schema().arrow_schema()
 }
 
-/// Get the Arrow schema for LPR3_KONTAKTER data
+/// Get the Arrow schema for `LPR3_KONTAKTER` data
 ///
 /// This function is provided for backward compatibility with the existing code.
 #[must_use]

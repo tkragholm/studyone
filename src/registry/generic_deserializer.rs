@@ -26,7 +26,7 @@ pub struct GenericDeserializer {
 
 impl GenericDeserializer {
     /// Create a new generic deserializer
-    pub fn new(registry_schema: RegistrySchema) -> Self {
+    #[must_use] pub fn new(registry_schema: RegistrySchema) -> Self {
         // Create field mapping
         let mut field_mapping = HashMap::new();
         for mapping in &registry_schema.field_mappings {
@@ -52,18 +52,18 @@ impl GenericDeserializer {
     }
     
     /// Set a custom date format configuration
-    pub fn with_date_config(mut self, date_config: DateFormatConfig) -> Self {
+    #[must_use] pub fn with_date_config(mut self, date_config: DateFormatConfig) -> Self {
         self.date_config = date_config;
         self
     }
     
     /// Get the registry schema
-    pub fn registry_schema(&self) -> &RegistrySchema {
+    #[must_use] pub fn registry_schema(&self) -> &RegistrySchema {
         &self.registry_schema
     }
     
     /// Get the Arrow schema for this registry
-    pub fn arrow_schema(&self) -> Arc<Schema> {
+    #[must_use] pub fn arrow_schema(&self) -> Arc<Schema> {
         self.registry_schema.arrow_schema()
     }
     

@@ -39,7 +39,7 @@ pub trait ArrowSchema: Sized {
     fn to_record_batch(models: &[Self]) -> Result<RecordBatch>;
     
     /// Get the schema as Arc<Schema>
-    fn schema_ref() -> std::sync::Arc<Schema> {
+    #[must_use] fn schema_ref() -> std::sync::Arc<Schema> {
         std::sync::Arc::new(Self::schema())
     }
 }

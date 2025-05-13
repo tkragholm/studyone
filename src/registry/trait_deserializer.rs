@@ -50,7 +50,7 @@ pub trait RegistryDeserializer: Send + Sync {
 
     /// Get field name mapping
     ///
-    /// This provides a mapping from registry field names to SerdeIndividual
+    /// This provides a mapping from registry field names to `SerdeIndividual`
     /// field names for backward compatibility.
     fn field_mapping(&self) -> HashMap<String, String>;
 
@@ -98,10 +98,10 @@ pub trait RegistryDeserializer: Send + Sync {
         }
 
         // Return the deserialized Individual if it has a valid PNR
-        if !individual.pnr.is_empty() {
-            Ok(Some(individual))
-        } else {
+        if individual.pnr.is_empty() {
             Ok(None)
+        } else {
+            Ok(Some(individual))
         }
     }
 }

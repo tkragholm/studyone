@@ -45,12 +45,12 @@ impl RegistrySchema {
     }
 
     /// Get the Arrow schema for this registry
-    pub fn arrow_schema(&self) -> Arc<Schema> {
+    #[must_use] pub fn arrow_schema(&self) -> Arc<Schema> {
         self.arrow_schema.clone()
     }
 
     /// Deserialize a record batch row into an Individual
-    pub fn deserialize_row(&self, batch: &RecordBatch, row: usize) -> Individual {
+    #[must_use] pub fn deserialize_row(&self, batch: &RecordBatch, row: usize) -> Individual {
         // Create a new Individual with minimal required information
         let pnr = self
             .extract_pnr(batch, row)
@@ -88,21 +88,21 @@ impl RegistrySchema {
     }
 
     /// Deserialize a batch of records into Individuals
-    pub fn deserialize_batch(&self, batch: &RecordBatch) -> Vec<Individual> {
+    #[must_use] pub fn deserialize_batch(&self, batch: &RecordBatch) -> Vec<Individual> {
         (0..batch.num_rows())
             .map(|row| self.deserialize_row(batch, row))
             .collect()
     }
 
     /// Get a field mapping by name
-    pub fn get_field_mapping(&self, name: &str) -> Option<&FieldMapping> {
+    #[must_use] pub fn get_field_mapping(&self, name: &str) -> Option<&FieldMapping> {
         self.field_mappings
             .iter()
             .find(|mapping| mapping.field_def.matches_name(name))
     }
 
     /// Check if this schema contains a field with the given name
-    pub fn has_field(&self, name: &str) -> bool {
+    #[must_use] pub fn has_field(&self, name: &str) -> bool {
         self.field_mappings
             .iter()
             .any(|mapping| mapping.field_def.matches_name(name))

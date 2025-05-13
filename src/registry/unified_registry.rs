@@ -20,7 +20,7 @@ pub trait UnifiedRegistrySupport {
 ///
 /// This function creates a new PNR filterable loader for a registry,
 /// using either the unified schema system or the original schema system.
-pub fn create_loader(
+#[must_use] pub fn create_loader(
     unified_schema: SchemaRef,
     original_schema: SchemaRef,
     use_unified: bool,

@@ -46,7 +46,7 @@ impl RegistryFieldExtractor for StringExtractor {
                     Some(string_array.value(row).to_string())
                 } else {
                     // Try to convert any other type to string
-                    Some(format!("{:?}", array))
+                    Some(format!("{array:?}"))
                 };
 
                 // Set the value using the provided setter
@@ -104,13 +104,13 @@ impl RegistryFieldExtractor for IntegerExtractor {
                             let array = arrow::array::cast::as_primitive_array::<
                                 arrow::datatypes::Int8Type,
                             >(array);
-                            Some(array.value(row) as i32)
+                            Some(i32::from(array.value(row)))
                         }
                         arrow::datatypes::DataType::Int16 => {
                             let array = arrow::array::cast::as_primitive_array::<
                                 arrow::datatypes::Int16Type,
                             >(array);
-                            Some(array.value(row) as i32)
+                            Some(i32::from(array.value(row)))
                         }
                         arrow::datatypes::DataType::Int32 => {
                             let array = arrow::array::cast::as_primitive_array::<
@@ -128,13 +128,13 @@ impl RegistryFieldExtractor for IntegerExtractor {
                             let array = arrow::array::cast::as_primitive_array::<
                                 arrow::datatypes::UInt8Type,
                             >(array);
-                            Some(array.value(row) as i32)
+                            Some(i32::from(array.value(row)))
                         }
                         arrow::datatypes::DataType::UInt16 => {
                             let array = arrow::array::cast::as_primitive_array::<
                                 arrow::datatypes::UInt16Type,
                             >(array);
-                            Some(array.value(row) as i32)
+                            Some(i32::from(array.value(row)))
                         }
                         arrow::datatypes::DataType::UInt32 => {
                             let array = arrow::array::cast::as_primitive_array::<
@@ -203,25 +203,25 @@ impl RegistryFieldExtractor for FloatExtractor {
                             let array = arrow::array::cast::as_primitive_array::<
                                 arrow::datatypes::Float32Type,
                             >(array);
-                            Some(array.value(row) as f64)
+                            Some(f64::from(array.value(row)))
                         }
                         arrow::datatypes::DataType::Int8 => {
                             let array = arrow::array::cast::as_primitive_array::<
                                 arrow::datatypes::Int8Type,
                             >(array);
-                            Some(array.value(row) as f64)
+                            Some(f64::from(array.value(row)))
                         }
                         arrow::datatypes::DataType::Int16 => {
                             let array = arrow::array::cast::as_primitive_array::<
                                 arrow::datatypes::Int16Type,
                             >(array);
-                            Some(array.value(row) as f64)
+                            Some(f64::from(array.value(row)))
                         }
                         arrow::datatypes::DataType::Int32 => {
                             let array = arrow::array::cast::as_primitive_array::<
                                 arrow::datatypes::Int32Type,
                             >(array);
-                            Some(array.value(row) as f64)
+                            Some(f64::from(array.value(row)))
                         }
                         arrow::datatypes::DataType::Int64 => {
                             let array = arrow::array::cast::as_primitive_array::<
@@ -297,7 +297,7 @@ impl RegistryFieldExtractor for DateExtractor {
                     let days_since_epoch = date_array.value(row);
                     // Convert from days since UNIX epoch to NaiveDate
                     let epoch = chrono::NaiveDate::from_ymd_opt(1970, 1, 1).unwrap();
-                    Some(epoch + chrono::Duration::days(days_since_epoch as i64))
+                    Some(epoch + chrono::Duration::days(i64::from(days_since_epoch)))
                 } else if let Some(string_array) = array.as_any().downcast_ref::<StringArray>() {
                     // Try to parse date from string (often used in string dates)
                     if row < string_array.len() && !string_array.is_null(row) {

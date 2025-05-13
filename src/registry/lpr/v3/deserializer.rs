@@ -55,9 +55,9 @@ pub fn deserialize_diagnoser_row(batch: &RecordBatch, row: usize) -> Result<Opti
     deserializer.deserialize_row(batch, row)
 }
 
-/// Enhance individuals with diagnosis information from an LPR3_DIAGNOSER batch
+/// Enhance individuals with diagnosis information from an `LPR3_DIAGNOSER` batch
 ///
-/// This function takes a slice of Individual models and an LPR3_DIAGNOSER record batch,
+/// This function takes a slice of Individual models and an `LPR3_DIAGNOSER` record batch,
 /// and adds diagnosis codes to individuals where available.
 pub fn enhance_individuals_with_diagnoses(
     individuals: &mut [Individual],
@@ -98,9 +98,9 @@ pub fn enhance_individuals_with_diagnoses(
     Ok(count)
 }
 
-/// Enhance individuals with contact information from an LPR3_KONTAKTER batch
+/// Enhance individuals with contact information from an `LPR3_KONTAKTER` batch
 ///
-/// This function takes a slice of Individual models and an LPR3_KONTAKTER record batch,
+/// This function takes a slice of Individual models and an `LPR3_KONTAKTER` record batch,
 /// and adds hospital admission dates and other contact information to individuals.
 pub fn enhance_individuals_with_contacts(
     individuals: &mut [Individual],

@@ -802,7 +802,7 @@ impl ArrowSchema for Individual {
         Schema::new(fields)
     }
     
-    /// Convert a RecordBatch to a vector of Individual models
+    /// Convert a `RecordBatch` to a vector of Individual models
     fn from_record_batch(batch: &RecordBatch) -> Result<Vec<Self>> {
         // This is a placeholder implementation - a full implementation would
         // extract all individual fields from the batch
@@ -824,7 +824,7 @@ impl ArrowSchema for Individual {
         Ok(individuals)
     }
     
-    /// Convert a vector of Individual models to a RecordBatch
+    /// Convert a vector of Individual models to a `RecordBatch`
     fn to_record_batch(_models: &[Self]) -> Result<RecordBatch> {
         // This is a placeholder - a full implementation would convert
         // all fields to Arrow arrays

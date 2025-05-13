@@ -63,7 +63,7 @@ impl BefRegister {
     }
 
     /// Check if the unified schema system is enabled
-    pub fn is_unified_system_enabled(&self) -> bool {
+    #[must_use] pub fn is_unified_system_enabled(&self) -> bool {
         self.unified_system
     }
 }

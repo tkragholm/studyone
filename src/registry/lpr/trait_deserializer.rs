@@ -51,7 +51,7 @@ impl RegistryFieldExtractor for LprStringExtractor {
             } else {
                 // Try to convert any other type to string
                 // Generic conversion without specific array type - just make a string representation
-                Some(format!("{:?}", array))
+                Some(format!("{array:?}"))
             };
 
             // Set the value using the provided setter
@@ -106,7 +106,7 @@ impl RegistryFieldExtractor for LprDateExtractor {
                 let days_since_epoch = date_array.value(row);
                 // Convert from days since UNIX epoch to NaiveDate
                 let epoch = chrono::NaiveDate::from_ymd_opt(1970, 1, 1).unwrap();
-                Some(epoch + chrono::Duration::days(days_since_epoch as i64))
+                Some(epoch + chrono::Duration::days(i64::from(days_since_epoch)))
             } else {
                 None
             };
@@ -166,13 +166,13 @@ impl RegistryFieldExtractor for LprIntExtractor {
                         let array = arrow::array::cast::as_primitive_array::<
                             arrow::datatypes::Int8Type,
                         >(array);
-                        Some(array.value(row) as i32)
+                        Some(i32::from(array.value(row)))
                     }
                     arrow::datatypes::DataType::Int16 => {
                         let array = arrow::array::cast::as_primitive_array::<
                             arrow::datatypes::Int16Type,
                         >(array);
-                        Some(array.value(row) as i32)
+                        Some(i32::from(array.value(row)))
                     }
                     arrow::datatypes::DataType::Int32 => {
                         let array = arrow::array::cast::as_primitive_array::<
@@ -190,13 +190,13 @@ impl RegistryFieldExtractor for LprIntExtractor {
                         let array = arrow::array::cast::as_primitive_array::<
                             arrow::datatypes::UInt8Type,
                         >(array);
-                        Some(array.value(row) as i32)
+                        Some(i32::from(array.value(row)))
                     }
                     arrow::datatypes::DataType::UInt16 => {
                         let array = arrow::array::cast::as_primitive_array::<
                             arrow::datatypes::UInt16Type,
                         >(array);
-                        Some(array.value(row) as i32)
+                        Some(i32::from(array.value(row)))
                     }
                     arrow::datatypes::DataType::UInt32 => {
                         let array = arrow::array::cast::as_primitive_array::<
@@ -228,7 +228,7 @@ impl RegistryFieldExtractor for LprIntExtractor {
 
 /// LPR field extractor for diagnosis fields
 ///
-/// This special extractor handles adding diagnosis codes to the LprFields trait
+/// This special extractor handles adding diagnosis codes to the `LprFields` trait
 struct LprDiagnosisExtractor {
     source_field: String,
 }
@@ -272,7 +272,7 @@ impl RegistryFieldExtractor for LprDiagnosisExtractor {
         &self.source_field
     }
 
-    fn target_field_name(&self) -> &str {
+    fn target_field_name(&self) -> &'static str {
         "diagnoses"
     }
 }
@@ -291,7 +291,7 @@ impl Default for LprAdmTraitDeserializer {
 
 impl LprAdmTraitDeserializer {
     /// Create a new LPR ADM trait deserializer
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         let mut field_extractors: Vec<Box<dyn RegistryFieldExtractor>> = Vec::new();
 
         // Add string field extractors
@@ -370,7 +370,7 @@ impl LprAdmTraitDeserializer {
 }
 
 impl RegistryDeserializer for LprAdmTraitDeserializer {
-    fn registry_type(&self) -> &str {
+    fn registry_type(&self) -> &'static str {
         "LPR_ADM"
     }
 
@@ -398,7 +398,7 @@ impl Default for LprDiagTraitDeserializer {
 
 impl LprDiagTraitDeserializer {
     /// Create a new LPR DIAG trait deserializer
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         let mut field_extractors: Vec<Box<dyn RegistryFieldExtractor>> = Vec::new();
 
         // Add diagnosis extractors
@@ -422,7 +422,7 @@ impl LprDiagTraitDeserializer {
     }
 
     /// Set PNR lookup table for this deserializer
-    pub fn with_pnr_lookup(mut self, lookup: HashMap<String, String>) -> Self {
+    #[must_use] pub fn with_pnr_lookup(mut self, lookup: HashMap<String, String>) -> Self {
         self.pnr_lookup = Some(lookup);
         self
     }
@@ -477,7 +477,7 @@ impl LprDiagTraitDeserializer {
 }
 
 impl RegistryDeserializer for LprDiagTraitDeserializer {
-    fn registry_type(&self) -> &str {
+    fn registry_type(&self) -> &'static str {
         "LPR_DIAG"
     }
 

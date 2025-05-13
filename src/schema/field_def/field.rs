@@ -33,10 +33,10 @@ pub enum FieldType {
 }
 
 impl FieldType {
-    /// Convert to Arrow DataType
+    /// Convert to Arrow `DataType`
     ///
-    /// Returns the most appropriate Arrow DataType for this field type
-    pub fn to_arrow_type(&self, _nullable: bool) -> DataType {
+    /// Returns the most appropriate Arrow `DataType` for this field type
+    #[must_use] pub fn to_arrow_type(&self, _nullable: bool) -> DataType {
         match self {
             FieldType::PNR => DataType::Utf8,
             FieldType::String => DataType::Utf8,
@@ -109,13 +109,13 @@ impl FieldDefinition {
     }
 
     /// Add multiple aliases for this field
-    pub fn with_aliases(mut self, aliases: Vec<impl Into<String>>) -> Self {
-        self.aliases.extend(aliases.into_iter().map(|a| a.into()));
+    #[must_use] pub fn with_aliases(mut self, aliases: Vec<impl Into<String>>) -> Self {
+        self.aliases.extend(aliases.into_iter().map(std::convert::Into::into));
         self
     }
 
     /// Convert to an Arrow Field
-    pub fn to_arrow_field(&self) -> Field {
+    #[must_use] pub fn to_arrow_field(&self) -> Field {
         Field::new(
             &self.name,
             self.field_type.to_arrow_type(self.nullable),
@@ -124,7 +124,7 @@ impl FieldDefinition {
     }
 
     /// Check if the given name matches this field or any of its aliases
-    pub fn matches_name(&self, name: &str) -> bool {
+    #[must_use] pub fn matches_name(&self, name: &str) -> bool {
         if self.name == name {
             return true;
         }

@@ -20,7 +20,7 @@ macro_rules! generate_trait_deserializer {
         }
 
         impl $registry {
-            pub fn new() -> Self {
+            #[must_use] pub fn new() -> Self {
                 // Get the unified schema
                 let schema = $schema_fn();
 
@@ -38,7 +38,7 @@ macro_rules! generate_trait_deserializer {
 
                     // Create appropriate field extractor based on field type
                     match &mapping.field_def.field_type {
-                        crate::schema::FieldType::String
+                        $crate::schema::FieldType::String
                         | crate::schema::FieldType::PNR
                         | crate::schema::FieldType::Category => {
                             // Create string extractor

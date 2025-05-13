@@ -1,7 +1,7 @@
 //! Common deserializer functions for registry trait deserializers
 //!
-//! This module provides implementations for the deserialize_row and 
-//! deserialize_batch functions that are used in the trait deserializer macros.
+//! This module provides implementations for the `deserialize_row` and 
+//! `deserialize_batch` functions that are used in the trait deserializer macros.
 
 use crate::error::Result;
 use crate::models::core::Individual;
@@ -11,7 +11,7 @@ use arrow::record_batch::RecordBatch;
 ///
 /// # Arguments
 /// * `deserializer` - The trait deserializer instance
-/// * `batch` - The Arrow RecordBatch to extract from
+/// * `batch` - The Arrow `RecordBatch` to extract from
 /// * `row` - The row index
 ///
 /// # Returns
@@ -42,7 +42,7 @@ where
 ///
 /// # Arguments
 /// * `deserializer` - The trait deserializer instance
-/// * `batch` - The Arrow RecordBatch to deserialize
+/// * `batch` - The Arrow `RecordBatch` to deserialize
 ///
 /// # Returns
 /// * `Result<Vec<Individual>>` - The deserialized individuals

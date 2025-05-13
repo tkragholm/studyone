@@ -20,12 +20,12 @@ pub struct SchemaAdapter {
 
 impl SchemaAdapter {
     /// Create a new schema adapter
-    pub fn new(date_config: DateFormatConfig) -> Self {
+    #[must_use] pub fn new(date_config: DateFormatConfig) -> Self {
         Self { date_config }
     }
     
     /// Check if a batch is compatible with a registry schema
-    pub fn check_compatibility(
+    #[must_use] pub fn check_compatibility(
         &self,
         batch: &RecordBatch,
         registry_schema: &RegistrySchema,
@@ -46,7 +46,7 @@ impl SchemaAdapter {
     }
     
     /// Analyze a batch and create a compatible registry schema
-    pub fn analyze_batch(
+    #[must_use] pub fn analyze_batch(
         &self,
         batch: &RecordBatch,
         original_schema: &RegistrySchema,

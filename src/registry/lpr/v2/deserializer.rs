@@ -83,18 +83,18 @@ pub fn deserialize_bes_row(batch: &RecordBatch, row: usize) -> Result<Option<Ind
     deserializer.deserialize_row(batch, row)
 }
 
-/// LprDiagTraitDeserializer with PNR lookup support
+/// `LprDiagTraitDeserializer` with PNR lookup support
 ///
 /// This extension of the auto-generated trait deserializer adds support for
-/// PNR lookups when deserializing LPR_DIAG records.
+/// PNR lookups when deserializing `LPR_DIAG` records.
 pub struct LprDiagWithPnrDeserializer {
     inner: LprDiagTraitDeserializer,
     pnr_lookup: HashMap<String, String>,
 }
 
 impl LprDiagWithPnrDeserializer {
-    /// Create a new LPR_DIAG trait deserializer with PNR lookup
-    pub fn new(pnr_lookup: HashMap<String, String>) -> Self {
+    /// Create a new `LPR_DIAG` trait deserializer with PNR lookup
+    #[must_use] pub fn new(pnr_lookup: HashMap<String, String>) -> Self {
         Self {
             inner: LprDiagTraitDeserializer::new(),
             pnr_lookup,
@@ -149,7 +149,7 @@ impl LprDiagWithPnrDeserializer {
 }
 
 impl RegistryDeserializer for LprDiagWithPnrDeserializer {
-    fn registry_type(&self) -> &str {
+    fn registry_type(&self) -> &'static str {
         "LPR_DIAG"
     }
 
@@ -180,9 +180,9 @@ impl RegistryDeserializer for LprDiagWithPnrDeserializer {
     }
 }
 
-/// Enhance individuals with diagnosis information from an LPR_DIAG batch
+/// Enhance individuals with diagnosis information from an `LPR_DIAG` batch
 ///
-/// This function takes a slice of Individual models and an LPR_DIAG record batch,
+/// This function takes a slice of Individual models and an `LPR_DIAG` record batch,
 /// and adds diagnosis codes to individuals using a PNR lookup.
 pub fn enhance_individuals_with_diagnoses(
     individuals: &mut [Individual],
@@ -224,9 +224,9 @@ pub fn enhance_individuals_with_diagnoses(
     Ok(count)
 }
 
-/// Enhance individuals with admission information from an LPR_ADM batch
+/// Enhance individuals with admission information from an `LPR_ADM` batch
 ///
-/// This function takes a slice of Individual models and an LPR_ADM record batch,
+/// This function takes a slice of Individual models and an `LPR_ADM` record batch,
 /// and adds hospital admission dates and diagnosis information to individuals.
 pub fn enhance_individuals_with_admissions(
     individuals: &mut [Individual],

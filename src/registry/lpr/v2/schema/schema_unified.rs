@@ -17,9 +17,9 @@ fn lpr_field(
     FieldDefinition::new(name, description, field_type, nullable)
 }
 
-/// Create the unified LPR_ADM registry schema
+/// Create the unified `LPR_ADM` registry schema
 ///
-/// This function creates a schema for the LPR_ADM registry using the unified field definition system.
+/// This function creates a schema for the `LPR_ADM` registry using the unified field definition system.
 #[must_use]
 pub fn create_lpr_adm_schema() -> RegistrySchema {
     // Create field mappings using common definitions where possible
@@ -245,9 +245,9 @@ pub fn create_lpr_adm_schema() -> RegistrySchema {
     )
 }
 
-/// Create the unified LPR_DIAG registry schema
+/// Create the unified `LPR_DIAG` registry schema
 ///
-/// This function creates a schema for the LPR_DIAG registry using the unified field definition system.
+/// This function creates a schema for the `LPR_DIAG` registry using the unified field definition system.
 #[must_use]
 pub fn create_lpr_diag_schema() -> RegistrySchema {
     // Create field mappings using common definitions where possible
@@ -312,9 +312,9 @@ pub fn create_lpr_diag_schema() -> RegistrySchema {
     )
 }
 
-/// Create the unified LPR_BES registry schema
+/// Create the unified `LPR_BES` registry schema
 ///
-/// This function creates a schema for the LPR_BES registry using the unified field definition system.
+/// This function creates a schema for the `LPR_BES` registry using the unified field definition system.
 #[must_use]
 pub fn create_lpr_bes_schema() -> RegistrySchema {
     // The LPR BES schema implementation would go here
@@ -322,7 +322,7 @@ pub fn create_lpr_bes_schema() -> RegistrySchema {
     create_registry_schema("LPR_BES", "Landspatientregistret treatment records", vec![])
 }
 
-/// Get the Arrow schema for LPR_ADM data
+/// Get the Arrow schema for `LPR_ADM` data
 ///
 /// This function is provided for backward compatibility with the existing code.
 #[must_use]
@@ -330,7 +330,7 @@ pub fn lpr_adm_schema() -> Arc<arrow::datatypes::Schema> {
     create_lpr_adm_schema().arrow_schema()
 }
 
-/// Get the Arrow schema for LPR_DIAG data
+/// Get the Arrow schema for `LPR_DIAG` data
 ///
 /// This function is provided for backward compatibility with the existing code.
 #[must_use]
@@ -338,7 +338,7 @@ pub fn lpr_diag_schema() -> Arc<arrow::datatypes::Schema> {
     create_lpr_diag_schema().arrow_schema()
 }
 
-/// Get the Arrow schema for LPR_BES data
+/// Get the Arrow schema for `LPR_BES` data
 ///
 /// This function is provided for backward compatibility with the existing code.
 #[must_use]

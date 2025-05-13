@@ -90,7 +90,7 @@ impl ModelSetters {
 
     /// Create a time setter function
     /// 
-    /// This function creates a setter that handles NaiveTime values
+    /// This function creates a setter that handles `NaiveTime` values
     /// for fields that need to store time-of-day information.
     pub fn time_setter<F>(setter_fn: F) -> Arc<dyn ModelSetter>
     where
@@ -144,7 +144,7 @@ pub struct Extractors;
 
 impl Extractors {
     /// Create a string extractor for a field
-    pub fn string(field_name: &str) -> Arc<dyn Fn(&RecordBatch, usize) -> Option<Box<dyn std::any::Any>> + Send + Sync> {
+    #[must_use] pub fn string(field_name: &str) -> Arc<dyn Fn(&RecordBatch, usize) -> Option<Box<dyn std::any::Any>> + Send + Sync> {
         let field_name = field_name.to_string();
         Arc::new(move |batch, row| {
             batch
@@ -161,7 +161,7 @@ impl Extractors {
     }
 
     /// Create an integer extractor for a field
-    pub fn integer(field_name: &str) -> Arc<dyn Fn(&RecordBatch, usize) -> Option<Box<dyn std::any::Any>> + Send + Sync> {
+    #[must_use] pub fn integer(field_name: &str) -> Arc<dyn Fn(&RecordBatch, usize) -> Option<Box<dyn std::any::Any>> + Send + Sync> {
         let field_name = field_name.to_string();
         Arc::new(move |batch, row| {
             batch
@@ -178,7 +178,7 @@ impl Extractors {
     }
 
     /// Create a float extractor for a field
-    pub fn decimal(field_name: &str) -> Arc<dyn Fn(&RecordBatch, usize) -> Option<Box<dyn std::any::Any>> + Send + Sync> {
+    #[must_use] pub fn decimal(field_name: &str) -> Arc<dyn Fn(&RecordBatch, usize) -> Option<Box<dyn std::any::Any>> + Send + Sync> {
         let field_name = field_name.to_string();
         Arc::new(move |batch, row| {
             batch
@@ -195,7 +195,7 @@ impl Extractors {
     }
 
     /// Create a boolean extractor for a field
-    pub fn boolean(field_name: &str) -> Arc<dyn Fn(&RecordBatch, usize) -> Option<Box<dyn std::any::Any>> + Send + Sync> {
+    #[must_use] pub fn boolean(field_name: &str) -> Arc<dyn Fn(&RecordBatch, usize) -> Option<Box<dyn std::any::Any>> + Send + Sync> {
         let field_name = field_name.to_string();
         Arc::new(move |batch, row| {
             batch
@@ -212,7 +212,7 @@ impl Extractors {
     }
 
     /// Create a date extractor for a field
-    pub fn date(field_name: &str) -> Arc<dyn Fn(&RecordBatch, usize) -> Option<Box<dyn std::any::Any>> + Send + Sync> {
+    #[must_use] pub fn date(field_name: &str) -> Arc<dyn Fn(&RecordBatch, usize) -> Option<Box<dyn std::any::Any>> + Send + Sync> {
         let field_name = field_name.to_string();
         Arc::new(move |batch, row| {
             batch
@@ -235,8 +235,8 @@ impl Extractors {
 
     /// Create a time extractor for a field
     /// 
-    /// Extracts a NaiveTime value from a Time32SecondArray or other time array types
-    pub fn time(field_name: &str) -> Arc<dyn Fn(&RecordBatch, usize) -> Option<Box<dyn std::any::Any>> + Send + Sync> {
+    /// Extracts a `NaiveTime` value from a `Time32SecondArray` or other time array types
+    #[must_use] pub fn time(field_name: &str) -> Arc<dyn Fn(&RecordBatch, usize) -> Option<Box<dyn std::any::Any>> + Send + Sync> {
         let field_name = field_name.to_string();
         Arc::new(move |batch, row| {
             // Try different time array types, starting with the most common
@@ -310,7 +310,7 @@ impl Extractors {
     }
 
     /// Create a generic extractor based on field type
-    pub fn for_field(field_def: &FieldDefinition) -> Arc<dyn Fn(&RecordBatch, usize) -> Option<Box<dyn std::any::Any>> + Send + Sync> {
+    #[must_use] pub fn for_field(field_def: &FieldDefinition) -> Arc<dyn Fn(&RecordBatch, usize) -> Option<Box<dyn std::any::Any>> + Send + Sync> {
         match field_def.field_type {
             FieldType::PNR | FieldType::String | FieldType::Other => Self::string(&field_def.name),
             FieldType::Integer | FieldType::Category => Self::integer(&field_def.name),

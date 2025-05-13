@@ -63,7 +63,7 @@ fn underlying_death_cause_setter() -> Arc<dyn Fn(&mut dyn Any, &dyn Any) + Send 
 }
 
 /// Get the unified schema for DOD registry
-pub fn create_dod_schema() -> RegistrySchema {
+#[must_use] pub fn create_dod_schema() -> RegistrySchema {
     // Create field mappings
     let field_mappings = vec![
         // PNR field
