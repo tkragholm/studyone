@@ -25,7 +25,7 @@ macro_rules! generate_trait_deserializer {
                 let schema = $schema_fn();
 
                 // Create field extractors from schema mappings
-                let mut field_extractors: Vec<Box<dyn crate::registry::trait_deserializer::RegistryFieldExtractor>> = Vec::new();
+                let mut field_extractors: Vec<Box<dyn $crate::registry::trait_deserializer::RegistryFieldExtractor>> = Vec::new();
                 let mut field_map = std::collections::HashMap::new();
 
                 // Convert schema mappings to field extractors
