@@ -260,7 +260,7 @@ pub struct Individual {
 impl Individual {
     /// Create a new Individual with minimal required information
     #[must_use]
-    pub fn new(pnr: String, birth_date: Option<NaiveDate>) -> Self {
+    pub const fn new(pnr: String, birth_date: Option<NaiveDate>) -> Self {
         Self {
             // Core identification
             pnr,
@@ -734,13 +734,13 @@ impl Default for Individual {
 impl Individual {
     /// Check if this Individual has a mother in the dataset
     #[must_use]
-    pub fn has_mother(&self) -> bool {
+    pub const fn has_mother(&self) -> bool {
         self.mother_pnr.is_some()
     }
 
     /// Check if this Individual has a father in the dataset
     #[must_use]
-    pub fn has_father(&self) -> bool {
+    pub const fn has_father(&self) -> bool {
         self.father_pnr.is_some()
     }
 
@@ -814,7 +814,7 @@ impl ArrowSchema for Individual {
                 for i in 0..batch.num_rows() {
                     if !pnr_array.is_null(i) {
                         let pnr = pnr_array.value(i).to_string();
-                        let individual = Individual::new(pnr, None);
+                        let individual = Self::new(pnr, None);
                         individuals.push(individual);
                     }
                 }

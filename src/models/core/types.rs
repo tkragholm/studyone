@@ -19,7 +19,7 @@ pub enum Gender {
 impl Gender {
     /// Default value for Gender when not specified
     #[must_use]
-    pub fn default() -> Self {
+    pub const fn default() -> Self {
         Self::Unknown
     }
 }
@@ -60,7 +60,7 @@ pub enum Origin {
 impl Origin {
     /// Default value for Origin when not specified
     #[must_use]
-    pub fn default() -> Self {
+    pub const fn default() -> Self {
         Self::Unknown
     }
 }
@@ -103,7 +103,7 @@ pub enum EducationLevel {
 impl EducationLevel {
     /// Default value for `EducationLevel` when not specified
     #[must_use]
-    pub fn default() -> Self {
+    pub const fn default() -> Self {
         Self::Unknown
     }
 }
@@ -338,7 +338,7 @@ pub enum MaritalStatus {
 impl MaritalStatus {
     /// Default value for `MaritalStatus` when not specified
     #[must_use]
-    pub fn default() -> Self {
+    pub const fn default() -> Self {
         Self::Unknown
     }
 }
@@ -393,7 +393,7 @@ pub enum CitizenshipStatus {
 impl CitizenshipStatus {
     /// Default value for `CitizenshipStatus` when not specified
     #[must_use]
-    pub fn default() -> Self {
+    pub const fn default() -> Self {
         Self::Unknown
     }
 }
@@ -433,7 +433,7 @@ pub enum HousingType {
 impl HousingType {
     /// Default value for `HousingType` when not specified
     #[must_use]
-    pub fn default() -> Self {
+    pub const fn default() -> Self {
         Self::Unknown
     }
 }
@@ -482,7 +482,7 @@ pub enum SocioeconomicStatus {
 impl SocioeconomicStatus {
     /// Default value for `SocioeconomicStatus` when not specified
     #[must_use]
-    pub fn default() -> Self {
+    pub const fn default() -> Self {
         Self::Unknown
     }
 }

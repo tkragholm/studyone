@@ -63,7 +63,7 @@ impl BefRegister {
     }
 
     /// Check if the unified schema system is enabled
-    #[must_use] pub fn is_unified_system_enabled(&self) -> bool {
+    #[must_use] pub const fn is_unified_system_enabled(&self) -> bool {
         self.unified_system
     }
 }
@@ -88,7 +88,7 @@ impl RegisterLoader for BefRegister {
     /// Enable or disable the unified schema system
     fn use_unified_system(&mut self, enable: bool) {
         // Call the struct's own method
-        BefRegister::use_unified_system(self, enable);
+        Self::use_unified_system(self, enable);
     }
 
     /// Check if the unified schema system is enabled

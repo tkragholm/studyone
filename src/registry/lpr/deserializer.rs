@@ -10,6 +10,7 @@ use std::collections::HashMap;
 // Note: Diagnosis struct has been removed. Use Individual with LprFields trait instead.
 
 /// This is a placeholder implementation that will be replaced by the trait-based deserializer.
+///
 /// Instead of using this function, use the `deserializer_functions.rs` module or
 /// the `LprFields` trait on Individual.
 pub fn deserialize_row(batch: &RecordBatch, row: usize) -> Result<Option<Individual>> {
@@ -19,6 +20,7 @@ pub fn deserialize_row(batch: &RecordBatch, row: usize) -> Result<Option<Individ
 }
 
 /// This is a placeholder implementation that will be replaced by the trait-based deserializer.
+///
 /// Instead of using this function, use the `deserializer_functions.rs` module or
 /// the `LprFields` trait on Individual.
 pub fn deserialize_batch(batch: &RecordBatch) -> Result<Vec<Individual>> {

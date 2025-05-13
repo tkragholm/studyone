@@ -39,7 +39,7 @@ macro_rules! generate_trait_deserializer {
                     // Create appropriate field extractor based on field type
                     match &mapping.field_def.field_type {
                         $crate::schema::FieldType::String
-                        | crate::schema::FieldType::PNR
+                        | $crate::schema::FieldType::PNR
                         | crate::schema::FieldType::Category => {
                             // Create string extractor
                             let extractor = crate::registry::extractors::StringExtractor::new(

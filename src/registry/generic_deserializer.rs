@@ -58,7 +58,7 @@ impl GenericDeserializer {
     }
     
     /// Get the registry schema
-    #[must_use] pub fn registry_schema(&self) -> &RegistrySchema {
+    #[must_use] pub const fn registry_schema(&self) -> &RegistrySchema {
         &self.registry_schema
     }
     

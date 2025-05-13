@@ -20,7 +20,7 @@ pub struct SchemaAdapter {
 
 impl SchemaAdapter {
     /// Create a new schema adapter
-    #[must_use] pub fn new(date_config: DateFormatConfig) -> Self {
+    #[must_use] pub const fn new(date_config: DateFormatConfig) -> Self {
         Self { date_config }
     }
     

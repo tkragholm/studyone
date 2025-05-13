@@ -36,17 +36,17 @@ impl FieldType {
     /// Convert to Arrow `DataType`
     ///
     /// Returns the most appropriate Arrow `DataType` for this field type
-    #[must_use] pub fn to_arrow_type(&self, _nullable: bool) -> DataType {
+    #[must_use] pub const fn to_arrow_type(&self, _nullable: bool) -> DataType {
         match self {
-            FieldType::PNR => DataType::Utf8,
-            FieldType::String => DataType::Utf8,
-            FieldType::Integer => DataType::Int32,
-            FieldType::Decimal => DataType::Float64,
-            FieldType::Date => DataType::Date32,
-            FieldType::Time => DataType::Time32(arrow::datatypes::TimeUnit::Second),
-            FieldType::Boolean => DataType::Boolean,
-            FieldType::Category => DataType::Int32,
-            FieldType::Other => DataType::Utf8,
+            Self::PNR => DataType::Utf8,
+            Self::String => DataType::Utf8,
+            Self::Integer => DataType::Int32,
+            Self::Decimal => DataType::Float64,
+            Self::Date => DataType::Date32,
+            Self::Time => DataType::Time32(arrow::datatypes::TimeUnit::Second),
+            Self::Boolean => DataType::Boolean,
+            Self::Category => DataType::Int32,
+            Self::Other => DataType::Utf8,
         }
     }
 }
@@ -54,15 +54,15 @@ impl FieldType {
 impl fmt::Display for FieldType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            FieldType::PNR => write!(f, "PNR"),
-            FieldType::String => write!(f, "String"),
-            FieldType::Integer => write!(f, "Integer"),
-            FieldType::Decimal => write!(f, "Decimal"),
-            FieldType::Date => write!(f, "Date"),
-            FieldType::Time => write!(f, "Time"),
-            FieldType::Boolean => write!(f, "Boolean"),
-            FieldType::Category => write!(f, "Category"),
-            FieldType::Other => write!(f, "Other"),
+            Self::PNR => write!(f, "PNR"),
+            Self::String => write!(f, "String"),
+            Self::Integer => write!(f, "Integer"),
+            Self::Decimal => write!(f, "Decimal"),
+            Self::Date => write!(f, "Date"),
+            Self::Time => write!(f, "Time"),
+            Self::Boolean => write!(f, "Boolean"),
+            Self::Category => write!(f, "Category"),
+            Self::Other => write!(f, "Other"),
         }
     }
 }
