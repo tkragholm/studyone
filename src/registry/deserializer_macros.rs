@@ -40,7 +40,7 @@ macro_rules! generate_trait_deserializer {
                     match &mapping.field_def.field_type {
                         $crate::schema::FieldType::String
                         | $crate::schema::FieldType::PNR
-                        | crate::schema::FieldType::Category => {
+                        | $crate::schema::FieldType::Category => {
                             // Create string extractor
                             let extractor = crate::registry::extractors::StringExtractor::new(
                                 &source_field,
