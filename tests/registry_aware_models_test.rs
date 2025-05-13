@@ -102,7 +102,7 @@ fn test_registry_aware_model_implementation() {
     // Verify first individual from BEF
     let ind1 = &individuals_from_bef[0];
     assert_eq!(ind1.pnr, "1234567890");
-    assert_eq!(ind1.gender, Gender::Female);
+    assert_eq!(ind1.gender, Some("F".to_string()));
 
     // Test registry name
     assert_eq!(

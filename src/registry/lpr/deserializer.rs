@@ -4,7 +4,6 @@
 
 use crate::error::Result;
 use crate::models::core::Individual;
-use arrow::array::Array;
 use arrow::record_batch::RecordBatch;
 use std::collections::HashMap;
 

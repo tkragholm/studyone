@@ -73,7 +73,7 @@ pub fn enhance_individuals_with_death_info(
     for individual in individuals.iter_mut() {
         if let Some(&row) = pnr_row_map.get(&individual.pnr) {
             // Create a temporary individual to extract death information
-            if let Some(mut death_individual) = deserializer.deserialize_row(batch, row)? {
+            if let Some(death_individual) = deserializer.deserialize_row(batch, row)? {
                 // Extract death date
                 let dod_fields: &dyn DodFields = &death_individual;
                 if let Some(death_date) = dod_fields.death_date() {

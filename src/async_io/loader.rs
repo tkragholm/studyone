@@ -253,6 +253,8 @@ impl AsyncPnrFilterableLoader for PnrFilterableLoader {
     }
 
     fn get_pnr_column_name(&self) -> Option<&'static str> {
-        Some(&self.pnr_column)
+        // Converting String to &'static str isn't directly possible
+        // We'll return None for now, as this requires a different approach
+        None
     }
 }

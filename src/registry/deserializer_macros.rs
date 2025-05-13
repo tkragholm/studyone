@@ -9,8 +9,14 @@ macro_rules! generate_trait_deserializer {
     ($registry:ident, $registry_type:expr, $schema_fn:expr) => {
         // Avoid importing items at the module level to prevent collisions
         pub struct $registry {
-            field_extractors: Vec<Box<dyn crate::registry::trait_deserializer::RegistryFieldExtractor>>,
+            field_extractors: Vec<Box<dyn $crate::registry::trait_deserializer::RegistryFieldExtractor>>,
             field_map: std::collections::HashMap<String, String>,
+        }
+
+        impl Default for $registry {
+            fn default() -> Self {
+                Self::new()
+            }
         }
 
         impl $registry {

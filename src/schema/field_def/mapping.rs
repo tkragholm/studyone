@@ -5,8 +5,7 @@
 use std::sync::Arc;
 use arrow::record_batch::RecordBatch;
 use arrow::array::{
-    StringArray, Int32Array, Float64Array, BooleanArray, Date32Array, Array,
-    TimestampMicrosecondArray, TimestampMillisecondArray, TimestampNanosecondArray, 
+    StringArray, Int32Array, Float64Array, BooleanArray, Date32Array, Array, 
     TimestampSecondArray, Time32SecondArray, Time32MillisecondArray, Time64MicrosecondArray, 
     Time64NanosecondArray,
 };

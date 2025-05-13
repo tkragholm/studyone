@@ -3,7 +3,7 @@
 //! This module provides utility functions and traits for implementing
 //! the unified schema system in registry loaders.
 
-use crate::common::traits::AsyncPnrFilterableLoader;
+// Removed unused import
 use arrow::datatypes::SchemaRef;
 use std::sync::Arc;
 
@@ -33,11 +33,10 @@ pub fn create_loader(
     };
 
     // Create the loader with specific implementation - we use concrete type instead of trait
-    // Clone the pnr_column string to avoid lifetime issues
-    let pnr_column_owned = pnr_column.clone();
+    // Pass pnr_column directly since with_pnr_column takes ownership through impl Into<String>
     let loader = Arc::new(
         crate::async_io::PnrFilterableLoader::with_schema_ref(schema.clone())
-            .with_pnr_column(&pnr_column_owned),
+            .with_pnr_column(pnr_column),
     );
 
     (schema, loader)

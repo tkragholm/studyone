@@ -11,18 +11,12 @@ use crate::schema::field_def::RegistrySchema;
 use crate::error::Result;
 
 /// Adapter for registry schemas to the existing type adaptation system
+#[derive(Default)]
 pub struct SchemaAdapter {
     /// Date format configuration
     date_config: DateFormatConfig,
 }
 
-impl Default for SchemaAdapter {
-    fn default() -> Self {
-        Self {
-            date_config: DateFormatConfig::default(),
-        }
-    }
-}
 
 impl SchemaAdapter {
     /// Create a new schema adapter

@@ -14,8 +14,6 @@ use log::debug;
 use crate::error::Result;
 use crate::models::core::Individual;
 use crate::models::core::registry_traits::LprFields;
-use crate::models::core::types::Gender;
-use crate::registry::lpr::deserializer;
 use crate::registry::trait_deserializer::{RegistryDeserializer, RegistryFieldExtractor};
 
 /// LPR field extractor for string fields
@@ -285,6 +283,12 @@ pub struct LprAdmTraitDeserializer {
     field_map: HashMap<String, String>,
 }
 
+impl Default for LprAdmTraitDeserializer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl LprAdmTraitDeserializer {
     /// Create a new LPR ADM trait deserializer
     pub fn new() -> Self {
@@ -384,6 +388,12 @@ pub struct LprDiagTraitDeserializer {
     field_extractors: Vec<Box<dyn RegistryFieldExtractor>>,
     field_map: HashMap<String, String>,
     pnr_lookup: Option<HashMap<String, String>>,
+}
+
+impl Default for LprDiagTraitDeserializer {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl LprDiagTraitDeserializer {
