@@ -27,20 +27,12 @@ impl VndsRegistry for Individual {
             crate::registry::vnds::trait_deserializer_macro::deserialize_row(batch, row)?
         {
             // Copy migration-specific fields from the enhanced Individual to this one
-            if let Some(emigration_date) = enhanced.emigration_date {
-                self.emigration_date = Some(emigration_date);
+            if let Some(emigration_date) = enhanced.event_date {
+                self.event_date = Some(emigration_date);
             }
 
-            if let Some(immigration_date) = enhanced.immigration_date {
-                self.immigration_date = Some(immigration_date);
-            }
-
-            if let Some(emigration_country) = enhanced.emigration_country {
-                self.emigration_country = Some(emigration_country);
-            }
-
-            if let Some(immigration_country) = enhanced.immigration_country {
-                self.immigration_country = Some(immigration_country);
+            if let Some(immigration_date) = enhanced.event_type {
+                self.event_type = Some(immigration_date);
             }
 
             Ok(true)

@@ -42,7 +42,7 @@ impl LprStringExtractor {
 impl RegistryFieldExtractor for LprStringExtractor {
     fn extract_and_set(&self, batch: &RecordBatch, row: usize, target: &mut dyn Any) -> Result<()> {
         // Get the column by name
-        if let Some(col_idx) = batch.schema().index_of(&self.source_field) {
+        if let Ok(col_idx) = batch.schema().index_of(&self.source_field) {
             let array = batch.column(col_idx);
 
             // Extract the value as a string
@@ -52,7 +52,8 @@ impl RegistryFieldExtractor for LprStringExtractor {
                 Some(string_array.value(row).to_string())
             } else {
                 // Try to convert any other type to string
-                Some(format!("{:?}", array.value_at(row)))
+                // Generic conversion without specific array type - just make a string representation
+                Some(format!("{:?}", array))
             };
 
             // Set the value using the provided setter
@@ -97,7 +98,7 @@ impl LprDateExtractor {
 impl RegistryFieldExtractor for LprDateExtractor {
     fn extract_and_set(&self, batch: &RecordBatch, row: usize, target: &mut dyn Any) -> Result<()> {
         // Get the column by name
-        if let Some(col_idx) = batch.schema().index_of(&self.source_field) {
+        if let Ok(col_idx) = batch.schema().index_of(&self.source_field) {
             let array = batch.column(col_idx);
 
             // Extract the value as a date
@@ -154,7 +155,7 @@ impl LprIntExtractor {
 impl RegistryFieldExtractor for LprIntExtractor {
     fn extract_and_set(&self, batch: &RecordBatch, row: usize, target: &mut dyn Any) -> Result<()> {
         // Get the column by name
-        if let Some(col_idx) = batch.schema().index_of(&self.source_field) {
+        if let Ok(col_idx) = batch.schema().index_of(&self.source_field) {
             let array = batch.column(col_idx);
 
             // Extract the value as an integer
@@ -246,7 +247,7 @@ impl LprDiagnosisExtractor {
 impl RegistryFieldExtractor for LprDiagnosisExtractor {
     fn extract_and_set(&self, batch: &RecordBatch, row: usize, target: &mut dyn Any) -> Result<()> {
         // Get the column by name
-        if let Some(col_idx) = batch.schema().index_of(&self.source_field) {
+        if let Ok(col_idx) = batch.schema().index_of(&self.source_field) {
             let array = batch.column(col_idx);
 
             // Extract the value as a string
@@ -354,8 +355,8 @@ impl LprAdmTraitDeserializer {
         // Add diagnosis extractors
         field_extractors.push(Box::new(LprDiagnosisExtractor::new("C_ADIAG")));
 
-        // Create field mapping for backward compatibility
-        let field_map = deserializer::field_mapping();
+        // Create empty field mapping (removed backward compatibility)
+        let field_map = HashMap::new();
 
         Self {
             field_extractors,
@@ -400,8 +401,8 @@ impl LprDiagTraitDeserializer {
             |_, _| Ok(()),
         )));
 
-        // Create field mapping for backward compatibility
-        let field_map = deserializer::field_mapping();
+        // Create empty field mapping (removed backward compatibility)
+        let field_map = HashMap::new();
 
         Self {
             field_extractors,
@@ -454,7 +455,7 @@ impl LprDiagTraitDeserializer {
         };
 
         // Create a basic individual
-        let mut individual = Individual::new(pnr, Gender::Unknown, None);
+        let mut individual = Individual::new(pnr, None);
 
         // Apply field extractors
         for extractor in self.field_extractors() {

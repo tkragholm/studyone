@@ -7,9 +7,9 @@
 // New hierarchical modules
 pub mod collections;
 pub mod core;
-pub mod derived;
-pub mod economic;
-pub mod health;
+// pub mod derived;
+// pub mod economic;
+// pub mod health;
 
 // Re-export commonly used traits for backward compatibility
 pub use core::traits::{ArrowSchema, EntityModel, Filterable, HealthStatus, TemporalValidity};
@@ -27,15 +27,15 @@ pub use core::types::{
 
 // Re-export commonly used entity models for backward compatibility
 pub use core::individual::Individual;
-pub use derived::Child;
-pub use derived::Family;
-pub use derived::Parent;
-pub use economic::Income;
-pub use health::Diagnosis;
+// pub use derived::Child;
+// pub use derived::Family;
+// pub use derived::Parent;
+// pub use economic::Income;
+// pub use health::Diagnosis;
 
-// Re-export model collections for backward compatibility
-pub use crate::collections::IndividualCollection;
-pub use derived::child::ChildCollection;
-pub use derived::family::FamilyCollection;
-pub use derived::parent::ParentCollection;
-pub use health::diagnosis::DiagnosisCollection;
+// // Re-export model collections for backward compatibility
+// pub use crate::collections::IndividualCollection;
+// pub use derived::child::ChildCollection;
+// pub use derived::family::FamilyCollection;
+// pub use derived::parent::ParentCollection;
+// pub use health::diagnosis::DiagnosisCollection;

@@ -5,16 +5,13 @@
 
 use arrow::record_batch::RecordBatch;
 use log::debug;
-use std::collections::HashMap;
 
 use crate::error::Result;
 use crate::models::core::Individual;
 use crate::models::core::registry_traits::LprFields;
 use crate::registry::lpr::v3::schema::schema_unified::{
-    create_lpr3_diagnoser_schema, create_lpr3_kontakter_schema
+    create_lpr3_diagnoser_schema, create_lpr3_kontakter_schema,
 };
-use crate::schema::RegistrySchema;
-use crate::registry::trait_deserializer::RegistryDeserializer;
 
 /// Generate trait deserializers for LPR v3 registries
 
@@ -70,7 +67,7 @@ pub fn enhance_individuals_with_diagnoses(
 
     // Create a deserializer
     let deserializer = Lpr3DiagnoserTraitDeserializer::new();
-    
+
     // Create a map of PNRs to individuals for fast lookup
     let mut pnr_map = std::collections::HashMap::new();
     for (idx, individual) in individuals.iter().enumerate() {
@@ -87,11 +84,11 @@ pub fn enhance_individuals_with_diagnoses(
                     // Add diagnoses to the corresponding individual
                     let target_individual = &mut individuals[idx];
                     let target_lpr_fields: &mut dyn LprFields = target_individual;
-                    
+
                     for diagnosis in diagnoses {
                         target_lpr_fields.add_diagnosis(diagnosis.to_string());
                     }
-                    
+
                     count += 1;
                 }
             }
@@ -113,7 +110,7 @@ pub fn enhance_individuals_with_contacts(
 
     // Create a deserializer
     let deserializer = Lpr3KontakterTraitDeserializer::new();
-    
+
     // Create a map of PNRs to individuals for fast lookup
     let mut pnr_map = std::collections::HashMap::new();
     for (idx, individual) in individuals.iter().enumerate() {
@@ -128,33 +125,33 @@ pub fn enhance_individuals_with_contacts(
                 let lpr_fields: &dyn LprFields = &contact_individual;
                 let target_individual = &mut individuals[idx];
                 let target_lpr_fields: &mut dyn LprFields = target_individual;
-                
+
                 // Copy hospital admissions
                 if let Some(admissions) = lpr_fields.hospital_admissions() {
                     for admission_date in admissions {
                         target_lpr_fields.add_hospital_admission(*admission_date);
                     }
                 }
-                
+
                 // Copy discharge dates
                 if let Some(discharges) = lpr_fields.discharge_dates() {
                     for discharge_date in discharges {
                         target_lpr_fields.add_discharge_date(*discharge_date);
                     }
                 }
-                
+
                 // Copy length of stay
                 if let Some(los) = lpr_fields.length_of_stay() {
                     target_lpr_fields.set_length_of_stay(Some(los));
                 }
-                
+
                 // Also copy diagnoses from action diagnosis
                 if let Some(diagnoses) = lpr_fields.diagnoses() {
                     for diagnosis in diagnoses {
                         target_lpr_fields.add_diagnosis(diagnosis.to_string());
                     }
                 }
-                
+
                 count += 1;
             }
         }

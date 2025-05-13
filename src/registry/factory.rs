@@ -1,6 +1,6 @@
-//! Factory functions for creating registry loaders
+//! Factory functions for creating unified registry loaders
 //!
-//! This module provides factory functions to create registry loaders from names or paths.
+//! This module provides factory functions to create registry loaders that use the unified schema system.
 
 use super::RegisterLoader;
 use crate::DodRegister;
@@ -11,27 +11,82 @@ use std::collections::HashSet;
 use std::path::Path;
 use std::sync::Arc;
 
-/// Create a registry loader from a registry name
+/// Create a registry loader from a registry name using the unified schema system
 pub fn registry_from_name(name: &str) -> Result<Arc<dyn RegisterLoader>> {
     match name.to_lowercase().as_str() {
-        "akm" => Ok(Arc::new(super::akm::AkmRegister::new())),
-        "bef" => Ok(Arc::new(super::bef::BefRegister::new())),
-        "dod" => Ok(Arc::new(DodRegister::new())),
-        "dodsaarsag" => Ok(Arc::new(DodsaarsagRegister::new())),
-        "ind" => Ok(Arc::new(super::ind::IndRegister::new())),
-        "mfr" => Ok(Arc::new(super::mfr::MfrRegister::new())),
-        "uddf" => Ok(Arc::new(super::uddf::UddfRegister::new())),
-        "vnds" => Ok(Arc::new(super::vnds::VndsRegister::new())),
-        "lpr_adm" => Ok(Arc::new(super::lpr::LprAdmRegister::new())),
-        "lpr_diag" => Ok(Arc::new(super::lpr::LprDiagRegister::new())),
-        "lpr_bes" => Ok(Arc::new(super::lpr::LprBesRegister::new())),
-        "lpr3_kontakter" => Ok(Arc::new(super::lpr::Lpr3KontakterRegister::new())),
-        "lpr3_diagnoser" => Ok(Arc::new(super::lpr::Lpr3DiagnoserRegister::new())),
+        "akm" => {
+            let mut register = super::akm::AkmRegister::new();
+            // Enable unified system for AKM
+            register.use_unified_system(true);
+            Ok(Arc::new(register))
+        },
+        "bef" => {
+            let mut register = super::bef::BefRegister::new();
+            // Enable unified system for BEF
+            register.use_unified_system(true);
+            Ok(Arc::new(register))
+        },
+        "dod" => Ok(Arc::new(DodRegister::new())), // TODO: Add unified system support
+        "dodsaarsag" => Ok(Arc::new(DodsaarsagRegister::new())), // TODO: Add unified system support
+        "ind" => {
+            let mut register = super::ind::IndRegister::new();
+            // Enable unified system for IND
+            register.use_unified_system(true);
+            Ok(Arc::new(register))
+        },
+        "mfr" => {
+            let mut register = super::mfr::MfrRegister::new();
+            // Enable unified system for MFR
+            register.use_unified_system(true);
+            Ok(Arc::new(register))
+        },
+        "uddf" => {
+            let mut register = super::uddf::UddfRegister::new();
+            // Enable unified system for UDDF
+            register.use_unified_system(true);
+            Ok(Arc::new(register))
+        },
+        "vnds" => {
+            let mut register = super::vnds::VndsRegister::new();
+            // Enable unified system for VNDS
+            register.use_unified_system(true);
+            Ok(Arc::new(register))
+        },
+        "lpr_adm" => {
+            let mut register = super::lpr::LprAdmRegister::new();
+            // Enable unified system for LPR_ADM
+            register.use_unified_system(true);
+            Ok(Arc::new(register))
+        },
+        "lpr_diag" => {
+            let mut register = super::lpr::LprDiagRegister::new();
+            // Enable unified system for LPR_DIAG
+            register.use_unified_system(true);
+            Ok(Arc::new(register))
+        },
+        "lpr_bes" => {
+            let mut register = super::lpr::LprBesRegister::new();
+            // Enable unified system for LPR_BES
+            register.use_unified_system(true);
+            Ok(Arc::new(register))
+        },
+        "lpr3_kontakter" => {
+            let mut register = super::lpr::Lpr3KontakterRegister::new();
+            // Enable unified system for LPR3_KONTAKTER
+            register.use_unified_system(true);
+            Ok(Arc::new(register))
+        },
+        "lpr3_diagnoser" => {
+            let mut register = super::lpr::Lpr3DiagnoserRegister::new();
+            // Enable unified system for LPR3_DIAGNOSER
+            register.use_unified_system(true);
+            Ok(Arc::new(register))
+        },
         _ => Err(ParquetReaderError::MetadataError(format!("Unknown registry: {name}")).into()),
     }
 }
 
-/// Create a registry loader based on a path (inferring the registry type from the path)
+/// Create a registry loader based on a path using the unified schema system
 pub fn registry_from_path(path: &Path) -> Result<Arc<dyn RegisterLoader>> {
     // Try to infer registry from directory name
     if let Some(dir_name) = path.file_name().and_then(|f| f.to_str()) {
@@ -39,31 +94,53 @@ pub fn registry_from_path(path: &Path) -> Result<Arc<dyn RegisterLoader>> {
 
         // Check for registry name patterns in the path
         if lower_name.contains("akm") {
-            return Ok(Arc::new(super::akm::AkmRegister::new()));
+            let mut register = super::akm::AkmRegister::new();
+            register.use_unified_system(true);
+            return Ok(Arc::new(register));
         } else if lower_name.contains("bef") {
-            return Ok(Arc::new(super::bef::BefRegister::new()));
+            let mut register = super::bef::BefRegister::new();
+            register.use_unified_system(true);
+            return Ok(Arc::new(register));
         } else if lower_name.contains("dod") && !lower_name.contains("dodsaarsag") {
-            return Ok(Arc::new(DodRegister::new()));
+            return Ok(Arc::new(DodRegister::new())); // TODO: Add unified system support
         } else if lower_name.contains("dodsaarsag") {
-            return Ok(Arc::new(DodsaarsagRegister::new()));
+            return Ok(Arc::new(DodsaarsagRegister::new())); // TODO: Add unified system support
         } else if lower_name.contains("ind") {
-            return Ok(Arc::new(super::ind::IndRegister::new()));
+            let mut register = super::ind::IndRegister::new();
+            register.use_unified_system(true);
+            return Ok(Arc::new(register));
         } else if lower_name.contains("mfr") || lower_name.contains("foedselsregister") {
-            return Ok(Arc::new(super::mfr::MfrRegister::new()));
+            let mut register = super::mfr::MfrRegister::new();
+            register.use_unified_system(true);
+            return Ok(Arc::new(register));
         } else if lower_name.contains("uddf") || lower_name.contains("uddannelse") {
-            return Ok(Arc::new(super::uddf::UddfRegister::new()));
+            let mut register = super::uddf::UddfRegister::new();
+            register.use_unified_system(true);
+            return Ok(Arc::new(register));
         } else if lower_name.contains("vnds") || lower_name.contains("migration") {
-            return Ok(Arc::new(super::vnds::VndsRegister::new()));
+            let mut register = super::vnds::VndsRegister::new();
+            register.use_unified_system(true);
+            return Ok(Arc::new(register));
         } else if lower_name.contains("lpr_adm") {
-            return Ok(Arc::new(super::lpr::LprAdmRegister::new()));
+            let mut register = super::lpr::LprAdmRegister::new();
+            register.use_unified_system(true);
+            return Ok(Arc::new(register));
         } else if lower_name.contains("lpr_diag") {
-            return Ok(Arc::new(super::lpr::LprDiagRegister::new()));
+            let mut register = super::lpr::LprDiagRegister::new();
+            register.use_unified_system(true);
+            return Ok(Arc::new(register));
         } else if lower_name.contains("lpr_bes") {
-            return Ok(Arc::new(super::lpr::LprBesRegister::new()));
+            let mut register = super::lpr::LprBesRegister::new();
+            register.use_unified_system(true);
+            return Ok(Arc::new(register));
         } else if lower_name.contains("lpr3_kontakter") {
-            return Ok(Arc::new(super::lpr::Lpr3KontakterRegister::new()));
+            let mut register = super::lpr::Lpr3KontakterRegister::new();
+            register.use_unified_system(true);
+            return Ok(Arc::new(register));
         } else if lower_name.contains("lpr3_diagnoser") {
-            return Ok(Arc::new(super::lpr::Lpr3DiagnoserRegister::new()));
+            let mut register = super::lpr::Lpr3DiagnoserRegister::new();
+            register.use_unified_system(true);
+            return Ok(Arc::new(register));
         }
     }
 
@@ -75,7 +152,7 @@ pub fn registry_from_path(path: &Path) -> Result<Arc<dyn RegisterLoader>> {
     .into())
 }
 
-/// Load data from multiple registries and combine them
+/// Load data from multiple registries and combine them using the unified schema system
 pub fn load_multiple_registries(
     base_paths: &[(&str, &Path)], // (registry_name, path)
     pnr_filter: Option<&HashSet<String>>,
@@ -103,7 +180,7 @@ pub fn load_multiple_registries(
     Ok(all_batches)
 }
 
-/// Load data from multiple registries asynchronously and combine them
+/// Load data from multiple registries asynchronously and combine them using the unified schema system
 pub async fn load_multiple_registries_async(
     base_paths: &[(&str, &Path)], // (registry_name, path)
     pnr_filter: Option<&HashSet<String>>,

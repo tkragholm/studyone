@@ -3,7 +3,6 @@
 //! This module provides a unified schema definition for the UDDF registry using
 //! the centralized field definition system.
 
-use crate::registry::field_definitions::CommonMappings;
 use crate::schema::field_def::{Extractors, FieldMapping, ModelSetters};
 use crate::schema::{FieldDefinition, FieldType, RegistrySchema, create_registry_schema};
 use std::sync::Arc;
@@ -26,7 +25,13 @@ pub fn create_uddf_schema() -> RegistrySchema {
     // Create field mappings using common definitions where possible
     let field_mappings = vec![
         // Core identification field
-        CommonMappings::pnr(),
+        FieldMapping::new(
+            uddf_field("PNR", "Unique identifier", FieldType::String, false),
+            Extractors::string("PNR"),
+            ModelSetters::string_setter(|individual, value| {
+                individual.pnr = value;
+            }),
+        ),
         // Education-specific fields
         FieldMapping::new(
             uddf_field("CPRTJEK", "CPR check", FieldType::String, true),
@@ -48,12 +53,12 @@ pub fn create_uddf_schema() -> RegistrySchema {
             uddf_field(
                 "HFAUDD",
                 "Highest completed education code",
-                FieldType::String,
+                FieldType::Integer,
                 true,
             ),
-            Extractors::string("HFAUDD"),
-            ModelSetters::string_setter(|individual, value| {
-                individual.education_code = Some(value);
+            Extractors::integer("HFAUDD"),
+            ModelSetters::i32_setter(|individual, value| {
+                individual.education_code = Some(value as u16);
             }),
         ),
         FieldMapping::new(
@@ -70,16 +75,16 @@ pub fn create_uddf_schema() -> RegistrySchema {
             }),
         ),
         FieldMapping::new(
-            uddf_field("HF_VFRA", "Valid from date", FieldType::String, true),
-            Extractors::string("HF_VFRA"),
-            ModelSetters::string_setter(|individual, value| {
+            uddf_field("HF_VFRA", "Valid from date", FieldType::Date, true),
+            Extractors::date("HF_VFRA"),
+            ModelSetters::date_setter(|individual, value| {
                 individual.education_valid_from = Some(value);
             }),
         ),
         FieldMapping::new(
-            uddf_field("HF_VTIL", "Valid to date", FieldType::String, true),
-            Extractors::string("HF_VTIL"),
-            ModelSetters::string_setter(|individual, value| {
+            uddf_field("HF_VTIL", "Valid to date", FieldType::Date, true),
+            Extractors::date("HF_VTIL"),
+            ModelSetters::date_setter(|individual, value| {
                 individual.education_valid_to = Some(value);
             }),
         ),

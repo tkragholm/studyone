@@ -39,12 +39,20 @@ pub use arrow::datatypes::SchemaRef;
 pub use arrow::record_batch::RecordBatch;
 
 // Domain models
-pub use models::{Child, Diagnosis, Family, Income, Individual, Parent};
+pub use models::core::individual::Individual;
+// These models are commented out in the source models/mod.rs file
+// When they're needed, they should be properly re-exported there first
+// pub use models::derived::Child;
+// pub use models::derived::Family;  
+// pub use models::derived::Parent;
+// pub use models::economic::Income;
+// pub use models::health::Diagnosis;
 
 // Model collections
 pub use collections::{
-    DiagnosisCollection,
-    FamilyCollection,
+    // These collections are not yet properly exported
+    // DiagnosisCollection,
+    // FamilyCollection,
     // Generic collections
     GenericCollection,
     // Specialized collections
@@ -127,14 +135,17 @@ pub use registry::{
     filter_by_date_range,
     filter_out_missing_values,
     find_lpr_files,
-    load_multiple_registries,
     map_categorical_values,
-    // Registry factories
-    registry_from_name,
-    registry_from_path,
     scale_numeric_values,
     // Transformation utilities
     transform_records,
+};
+
+// Registry factory functions
+pub use registry::factory::{
+    load_multiple_registries,
+    registry_from_name,
+    registry_from_path,
 };
 
 // PNR filtering utilities
@@ -145,8 +156,8 @@ pub use pnr_filter::{
 // Registry manager
 pub use registry_manager::RegistryManager;
 
-// Algorithm modules
-pub use algorithm::population::{
-    FilterCriteria, Population, PopulationBuilder, PopulationConfig, PopulationFilter,
-    RegistryIntegration,
-};
+// Algorithm modules - commented out because the module is commented out in algorithm/mod.rs
+// pub use algorithm::population::{
+//     FilterCriteria, Population, PopulationBuilder, PopulationConfig, PopulationFilter,
+//     RegistryIntegration,
+// };

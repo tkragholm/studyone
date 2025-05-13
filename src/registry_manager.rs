@@ -7,7 +7,8 @@ use crate::RecordBatch;
 use crate::SchemaRef;
 use crate::error::{Error, Result};
 use crate::pnr_filter::{apply_filter_plan, build_filter_plan};
-use crate::registry::{RegisterLoader, registry_from_name, registry_from_path};
+use crate::registry::{RegisterLoader};
+use crate::registry::factory::{registry_from_name, registry_from_path};
 
 use futures::future::join_all;
 use rayon::prelude::*;

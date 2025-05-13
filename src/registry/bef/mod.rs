@@ -5,10 +5,9 @@
 mod register;
 pub use register::BefCombinedRegister;
 
+pub mod deserializer;
 pub mod individual;
 pub mod schema;
-pub mod trait_deserializer;
-pub mod trait_deserializer_macro;
 
 use super::RegisterLoader;
 use crate::RecordBatch;

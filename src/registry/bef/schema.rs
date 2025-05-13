@@ -3,13 +3,17 @@
 //! This module provides a unified schema definition for the BEF registry using
 //! the centralized field definition system.
 
+use crate::schema::field_def::{Extractors, FieldMapping, ModelSetters};
+use crate::schema::{FieldDefinition, FieldType, RegistrySchema, create_registry_schema};
 use std::sync::Arc;
-use crate::schema::{RegistrySchema, create_registry_schema, FieldDefinition, FieldType};
-use crate::schema::field_def::{FieldMapping, ModelSetters, Extractors};
-use crate::registry::field_definitions::CommonMappings;
 
 /// Create a BEF-specific field definition
-fn bef_field(name: &str, description: &str, field_type: FieldType, nullable: bool) -> FieldDefinition {
+fn bef_field(
+    name: &str,
+    description: &str,
+    field_type: FieldType,
+    nullable: bool,
+) -> FieldDefinition {
     FieldDefinition::new(name, description, field_type, nullable)
 }
 
@@ -20,26 +24,22 @@ fn bef_field(name: &str, description: &str, field_type: FieldType, nullable: boo
 pub fn create_bef_schema() -> RegistrySchema {
     // Create field mappings using common definitions where possible
     let field_mappings = vec![
-        // Core identification fields
-        CommonMappings::pnr(),
-        CommonMappings::birth_date(),
-        CommonMappings::gender(),
-        
-        // Family and relationship fields
-        CommonMappings::mother_pnr(),
-        CommonMappings::father_pnr(),
-        CommonMappings::family_id(),
-        
-        // Demographic and status fields
-        CommonMappings::origin(),
-        CommonMappings::municipality_code(),
-        CommonMappings::marital_status(),
-        CommonMappings::citizenship_status(),
-        CommonMappings::housing_type(),
-        
+        // Core identification field
+        FieldMapping::new(
+            bef_field("PNR", "Unique identifier", FieldType::String, false),
+            Extractors::string("PNR"),
+            ModelSetters::string_setter(|individual, value| {
+                individual.pnr = value;
+            }),
+        ),
         // BEF-specific fields
         FieldMapping::new(
-            bef_field("AEGTE_ID", "Spouse's personal identification number", FieldType::PNR, true),
+            bef_field(
+                "AEGTE_ID",
+                "Spouse's personal identification number",
+                FieldType::PNR,
+                true,
+            ),
             Extractors::string("AEGTE_ID"),
             ModelSetters::string_setter(|individual, value| {
                 individual.spouse_pnr = Some(value);
@@ -53,7 +53,12 @@ pub fn create_bef_schema() -> RegistrySchema {
             }),
         ),
         FieldMapping::new(
-            bef_field("ANTBOERNF", "Number of children in family", FieldType::Integer, true),
+            bef_field(
+                "ANTBOERNF",
+                "Number of children in family",
+                FieldType::Integer,
+                true,
+            ),
             Extractors::integer("ANTBOERNF"),
             ModelSetters::i32_setter(|_individual, _value| {
                 // This field is currently not mapped to the Individual model
@@ -61,7 +66,12 @@ pub fn create_bef_schema() -> RegistrySchema {
             }),
         ),
         FieldMapping::new(
-            bef_field("ANTBOERNH", "Number of children in household", FieldType::Integer, true),
+            bef_field(
+                "ANTBOERNH",
+                "Number of children in household",
+                FieldType::Integer,
+                true,
+            ),
             Extractors::integer("ANTBOERNH"),
             ModelSetters::i32_setter(|_individual, _value| {
                 // This field is currently not mapped to the Individual model
@@ -69,14 +79,24 @@ pub fn create_bef_schema() -> RegistrySchema {
             }),
         ),
         FieldMapping::new(
-            bef_field("ANTPERSF", "Number of persons in family", FieldType::Integer, true),
+            bef_field(
+                "ANTPERSF",
+                "Number of persons in family",
+                FieldType::Integer,
+                true,
+            ),
             Extractors::integer("ANTPERSF"),
             ModelSetters::i32_setter(|individual, value| {
                 individual.family_size = Some(value);
             }),
         ),
         FieldMapping::new(
-            bef_field("ANTPERSH", "Number of persons in household", FieldType::Integer, true),
+            bef_field(
+                "ANTPERSH",
+                "Number of persons in household",
+                FieldType::Integer,
+                true,
+            ),
             Extractors::integer("ANTPERSH"),
             ModelSetters::i32_setter(|individual, value| {
                 individual.household_size = Some(value);
@@ -106,7 +126,12 @@ pub fn create_bef_schema() -> RegistrySchema {
             }),
         ),
         FieldMapping::new(
-            bef_field("E_FAELLE_ID", "Registered partner PNR", FieldType::PNR, true),
+            bef_field(
+                "E_FAELLE_ID",
+                "Registered partner PNR",
+                FieldType::PNR,
+                true,
+            ),
             Extractors::string("E_FAELLE_ID"),
             ModelSetters::string_setter(|_individual, _value| {
                 // This field is currently not mapped to the Individual model
@@ -129,10 +154,15 @@ pub fn create_bef_schema() -> RegistrySchema {
             }),
         ),
         FieldMapping::new(
-            bef_field("IE_TYPE", "Immigration/emigration type", FieldType::String, true),
+            bef_field(
+                "IE_TYPE",
+                "Immigration/emigration type",
+                FieldType::String,
+                true,
+            ),
             Extractors::string("IE_TYPE"),
             ModelSetters::string_setter(|individual, value| {
-                individual.migration_type = Some(value);
+                individual.immigration_type = Some(value);
             }),
         ),
         FieldMapping::new(
@@ -159,7 +189,7 @@ pub fn create_bef_schema() -> RegistrySchema {
             }),
         ),
     ];
-    
+
     create_registry_schema(
         "BEF",
         "Befolkning registry containing population demographic information",

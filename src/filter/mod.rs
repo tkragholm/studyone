@@ -5,19 +5,19 @@
 
 // Core modules
 pub mod core;
-pub mod expr;
-pub mod pnr;
 pub mod date;
 pub mod error;
+pub mod expr;
+pub mod pnr;
 
 // Generic filtering framework
-pub mod generic;
 pub mod adapter;
+pub mod generic;
 
 // Async filtering
 pub mod async_filtering {
     //! Async filtering functionality
-    //! 
+    //!
     //! This module re-exports the async filtering capabilities from the async module
     pub use super::async_rs::*;
 }
@@ -32,41 +32,35 @@ mod r#async;
 
 // Re-export the most commonly used types and functions
 pub use self::core::{
-    BatchFilter, filter_record_batch, read_parquet_with_filter,
-    AndFilter, OrFilter, NotFilter, IncludeAllFilter, ExcludeAllFilter,
+    AndFilter, BatchFilter, ExcludeAllFilter, IncludeAllFilter, NotFilter, OrFilter,
+    filter_record_batch, read_parquet_with_filter,
 };
 
 pub use self::expr::{
-    Expr, LiteralValue, ExpressionFilter,
-    eq_filter, in_filter, create_pnr_filter,
+    Expr, ExpressionFilter, LiteralValue, create_pnr_filter, eq_filter, in_filter,
 };
 
 pub use self::pnr::{
-    PnrFilter, FilterPlan, build_filter_plan, apply_filter_plan,
-    join_and_filter_by_pnr,
+    FilterPlan, PnrFilter, apply_filter_plan, build_filter_plan, join_and_filter_by_pnr,
 };
 
-pub use self::date::{
-    DateRangeFilter, filter_by_year, add_year_column,
-};
+pub use self::date::{DateRangeFilter, add_year_column, filter_by_year};
 
 // Re-export error handling utilities
 pub use self::error::{
-    FilterResultExt, filter_err, with_filter_context, filter_path_err,
-    column_not_found, column_type_error, invalid_expr,
+    FilterResultExt, column_not_found, column_type_error, filter_err, filter_path_err,
+    invalid_expr, with_filter_context,
 };
 
 // Re-export generic filtering framework
 pub use self::generic::{
-    Filter, IncludeAllFilter as GenericIncludeAllFilter, 
-    ExcludeAllFilter as GenericExcludeAllFilter,
-    AndFilter as GenericAndFilter, OrFilter as GenericOrFilter,
-    NotFilter as GenericNotFilter, FilterAdapter, FilterExpressionBuilder,
-    FilterBuilder, FilterExt, BoxedFilter,
+    AndFilter as GenericAndFilter, BoxedFilter, ExcludeAllFilter as GenericExcludeAllFilter,
+    Filter, FilterAdapter, FilterBuilder, FilterExpressionBuilder, FilterExt,
+    IncludeAllFilter as GenericIncludeAllFilter, NotFilter as GenericNotFilter,
+    OrFilter as GenericOrFilter,
 };
 
 // Re-export adapter implementations
 pub use self::adapter::{
-    BatchFilterAdapter, EntityFilterAdapter, EntityToBatchAdapter,
-    IndividualFilter, FamilyFilter,
+    BatchFilterAdapter, EntityFilterAdapter, EntityToBatchAdapter, IndividualFilter,
 };

@@ -11,12 +11,12 @@ use crate::models::core::Individual;
 impl AkmRegistry for Individual {
     fn from_akm_record(batch: &RecordBatch, row: usize) -> Result<Option<Self>> {
         // Use the trait-based deserializer from the unified schema
-        crate::registry::akm::trait_deserializer_macro::deserialize_row(batch, row)
+        crate::registry::akm::deserializer::deserialize_row(batch, row)
     }
 
     fn from_akm_batch(batch: &RecordBatch) -> Result<Vec<Self>> {
         // Use the trait-based deserializer from the unified schema
-        crate::registry::akm::trait_deserializer_macro::deserialize_batch(batch)
+        crate::registry::akm::deserializer::deserialize_batch(batch)
     }
 
     fn enhance_with_employment_data(&mut self, batch: &RecordBatch, row: usize) -> Result<bool> {
@@ -24,9 +24,7 @@ impl AkmRegistry for Individual {
         // The trait-based deserializer uses registry traits and field mappings from the unified schema
 
         // Create a temporary Individual using the deserializer
-        if let Some(enhanced) =
-            crate::registry::akm::trait_deserializer_macro::deserialize_row(batch, row)?
-        {
+        if let Some(_enhanced) = crate::registry::akm::deserializer::deserialize_row(batch, row)? {
             // // Copy employment-specific fields from the enhanced Individual to this one
             // if let Some(occupation_code) = enhanced.occupation_code {
             //     self.socioeconomic_status = Some(occupation_code);
@@ -35,10 +33,6 @@ impl AkmRegistry for Individual {
             // if let Some(industry_code) = enhanced.industry_code {
             //     self.industry_code = Some(industry_code);
             // }
-
-            if let Some(workplace_id) = enhanced.workplace_id {
-                self.workplace_id = Some(workplace_id);
-            }
 
             // if let Some(employment_start_date) = enhanced.employment_start_date {
             //     self.employment_start_date = Some(employment_start_date);

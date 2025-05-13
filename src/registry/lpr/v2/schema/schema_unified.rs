@@ -3,13 +3,17 @@
 //! This module provides unified schema definitions for LPR v2 registries using
 //! the centralized field definition system.
 
+use crate::schema::field_def::{Extractors, FieldMapping, ModelSetters};
+use crate::schema::{FieldDefinition, FieldType, RegistrySchema, create_registry_schema};
 use std::sync::Arc;
-use crate::schema::{RegistrySchema, create_registry_schema, FieldDefinition, FieldType};
-use crate::schema::field_def::{FieldMapping, ModelSetters, Extractors};
-use crate::registry::field_definitions::CommonMappings;
 
 /// Create an LPR-specific field definition
-fn lpr_field(name: &str, description: &str, field_type: FieldType, nullable: bool) -> FieldDefinition {
+fn lpr_field(
+    name: &str,
+    description: &str,
+    field_type: FieldType,
+    nullable: bool,
+) -> FieldDefinition {
     FieldDefinition::new(name, description, field_type, nullable)
 }
 
@@ -21,8 +25,7 @@ pub fn create_lpr_adm_schema() -> RegistrySchema {
     // Create field mappings using common definitions where possible
     let field_mappings = vec![
         // Core identification fields
-        CommonMappings::pnr(),
-        
+
         // Admission-related fields
         FieldMapping::new(
             lpr_field("C_ADIAG", "Action diagnosis", FieldType::String, true),
@@ -234,7 +237,7 @@ pub fn create_lpr_adm_schema() -> RegistrySchema {
             }),
         ),
     ];
-    
+
     create_registry_schema(
         "LPR_ADM",
         "Landspatientregistret admission records",
@@ -301,7 +304,7 @@ pub fn create_lpr_diag_schema() -> RegistrySchema {
             }),
         ),
     ];
-    
+
     create_registry_schema(
         "LPR_DIAG",
         "Landspatientregistret diagnosis records",
@@ -316,11 +319,7 @@ pub fn create_lpr_diag_schema() -> RegistrySchema {
 pub fn create_lpr_bes_schema() -> RegistrySchema {
     // The LPR BES schema implementation would go here
     // For now, we'll create a minimal schema to be expanded later
-    create_registry_schema(
-        "LPR_BES",
-        "Landspatientregistret treatment records",
-        vec![],
-    )
+    create_registry_schema("LPR_BES", "Landspatientregistret treatment records", vec![])
 }
 
 /// Get the Arrow schema for LPR_ADM data

@@ -40,12 +40,12 @@ impl BefCombinedRegister {
                 // Simplified role detection based on available data
                 // In a complete implementation, we would use proper role flags
                 // For now, use gender and age to infer roles
-                if member.gender == "F".into()
+                if member.gender == Some("F".to_string())
                     && member.birth_date.is_some_and(|bd| bd.year() < 1990)
                 {
                     // Assume adult females are mothers
                     mother_pnr = Some(member.pnr.clone());
-                } else if member.gender == "M".into()
+                } else if member.gender == Some("M".to_string())
                     && member.birth_date.is_some_and(|bd| bd.year() < 1990)
                 {
                     // Assume adult males are fathers

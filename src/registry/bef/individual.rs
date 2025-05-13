@@ -11,11 +11,11 @@ use crate::models::core::Individual;
 impl BefRegistry for Individual {
     fn from_bef_record(batch: &RecordBatch, row: usize) -> Result<Option<Self>> {
         // Use the trait-based deserializer from the unified schema
-        crate::registry::bef::trait_deserializer_macro::deserialize_row(batch, row)
+        crate::registry::bef::deserializer::deserialize_row(batch, row)
     }
 
     fn from_bef_batch(batch: &RecordBatch) -> Result<Vec<Self>> {
         // Use the trait-based deserializer from the unified schema
-        crate::registry::bef::trait_deserializer_macro::deserialize_batch(batch)
+        crate::registry::bef::deserializer::deserialize_batch(batch)
     }
 }

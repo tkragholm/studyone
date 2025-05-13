@@ -94,9 +94,6 @@ pub mod mfr;
 pub mod uddf;
 pub mod vnds;
 
-// Centralized field definitions for all registries
-pub mod field_definitions;
-
 // Generic deserializer for all registries
 pub mod generic_deserializer;
 
@@ -120,9 +117,6 @@ pub use uddf::UddfRegister;
 pub use vnds::VndsRegister;
 
 pub mod factory;
-pub mod factory_unified;
-pub use factory::{load_multiple_registries, registry_from_name, registry_from_path};
-pub use factory_unified as unified;
 
 mod transform;
 pub use transform::{
@@ -131,6 +125,7 @@ pub use transform::{
 };
 
 // Centralized registry deserialization and detection
+pub mod deserializer_functions;
 pub mod deserializer_macros;
 pub mod detect;
 pub mod extractors;

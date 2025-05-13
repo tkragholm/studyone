@@ -14,7 +14,7 @@ use crate::error::Result;
 use crate::registry::trait_deserializer::RegistryFieldExtractor;
 
 /// Type alias for field setter closures
-pub type Setter = Arc<dyn Fn(&mut dyn Any, &dyn Any) + Send + Sync>;
+pub type Setter = Arc<dyn Fn(&mut dyn Any, Box<dyn Any>) + Send + Sync>;
 
 /// Generic field extractor for string fields
 pub struct StringExtractor {
@@ -51,7 +51,7 @@ impl RegistryFieldExtractor for StringExtractor {
 
                 // Set the value using the provided setter
                 if let Some(string_value) = value {
-                    (self.setter)(target, &string_value);
+                    (self.setter)(target, Box::new(string_value));
                 }
                 Ok(())
             }
@@ -148,7 +148,7 @@ impl RegistryFieldExtractor for IntegerExtractor {
 
                 // Set the value using the provided setter
                 if let Some(int_value) = value {
-                    (self.setter)(target, &int_value);
+                    (self.setter)(target, Box::new(int_value));
                 }
                 Ok(())
             }
@@ -235,7 +235,7 @@ impl RegistryFieldExtractor for FloatExtractor {
 
                 // Set the value using the provided setter
                 if let Some(float_value) = value {
-                    (self.setter)(target, &float_value);
+                    (self.setter)(target, Box::new(float_value));
                 }
                 Ok(())
             }
@@ -311,7 +311,7 @@ impl RegistryFieldExtractor for DateExtractor {
 
                 // Set the value using the provided setter
                 if let Some(date_value) = value {
-                    (self.setter)(target, &date_value);
+                    (self.setter)(target, Box::new(date_value));
                 }
                 Ok(())
             }

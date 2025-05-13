@@ -4,9 +4,9 @@
 //! This implementation uses the new async trait-based system.
 
 use super::RegisterLoader;
+pub mod deserializer;
 pub mod individual;
 pub mod schema;
-pub mod trait_deserializer_macro;
 use crate::RecordBatch;
 use crate::Result;
 use crate::async_io::loader::PnrFilterableLoader;

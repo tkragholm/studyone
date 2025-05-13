@@ -9,12 +9,12 @@ use crate::models::core::Individual;
 
 impl LprRegistry for Individual {
     fn from_lpr_record(batch: &RecordBatch, row: usize) -> Result<Option<Self>> {
-        // Delegate to the LPR deserializer
-        crate::registry::lpr::deserializer::deserialize_row(batch, row)
+        // Using trait-based deserializer instead
+        crate::registry::lpr::trait_deserializer::deserialize_adm_row(batch, row)
     }
 
     fn from_lpr_batch(batch: &RecordBatch) -> Result<Vec<Self>> {
-        // Delegate to the LPR deserializer
-        crate::registry::lpr::deserializer::deserialize_batch(batch)
+        // Using trait-based deserializer instead
+        crate::registry::lpr::trait_deserializer::deserialize_adm_batch(batch)
     }
 }

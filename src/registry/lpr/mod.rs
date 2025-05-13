@@ -5,18 +5,35 @@
 //! direct model conversion capabilities.
 
 // Import submodules
+pub mod deserializer;
 pub mod discovery;
 pub mod individual;
 pub mod trait_deserializer;
 pub mod v2;
 pub mod v3;
 
+// Create conversion module
+pub mod conversion {
+    //! Conversion utilities for LPR registry data
+
+    /// PNR lookup trait for LPR registries
+    pub trait PnrLookupRegistry {
+        /// Get the PNR lookup map
+        fn get_pnr_lookup(&self) -> Option<std::collections::HashMap<String, String>>;
+
+        /// Set the PNR lookup map
+        fn set_pnr_lookup(&mut self, lookup: std::collections::HashMap<String, String>);
+    }
+}
+
 // Re-export trait deserializers
-pub use self::v2::trait_deserializer as v2_trait;
-pub use self::v3::trait_deserializer as v3_trait;
+pub use self::v2::deserializer as v2_trait;
+pub use self::v3::deserializer as v3_trait;
+
+// Re-export PNR lookup trait
+pub use self::conversion::PnrLookupRegistry;
 
 // Re-export specific loaders
-pub use self::conversion::PnrLookupRegistry;
 pub use self::discovery::{LprPaths, find_lpr_files};
 pub use self::v2::{LprAdmRegister, LprBesRegister, LprDiagRegister};
 pub use self::v3::{Lpr3DiagnoserRegister, Lpr3KontakterRegister};

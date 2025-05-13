@@ -1,13 +1,13 @@
 //! Field definition for the unified schema system
-//! 
+//!
 //! This module defines the core field definition structures that will be used
 //! to centralize registry field definitions.
 
-use std::fmt;
 use arrow::datatypes::{DataType, Field};
+use std::fmt;
 
 /// Represents the semantic type of a field
-/// 
+///
 /// This enum standardizes the types across different registries, allowing
 /// easier mapping and conversion between different representations.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -22,6 +22,8 @@ pub enum FieldType {
     Decimal,
     /// Date value
     Date,
+    /// Time value (time of day)
+    Time,
     /// Boolean value
     Boolean,
     /// Categorical value (like gender, socioeconomic status)
@@ -32,15 +34,16 @@ pub enum FieldType {
 
 impl FieldType {
     /// Convert to Arrow DataType
-    /// 
+    ///
     /// Returns the most appropriate Arrow DataType for this field type
-    pub fn to_arrow_type(&self, nullable: bool) -> DataType {
+    pub fn to_arrow_type(&self, _nullable: bool) -> DataType {
         match self {
             FieldType::PNR => DataType::Utf8,
             FieldType::String => DataType::Utf8,
             FieldType::Integer => DataType::Int32,
             FieldType::Decimal => DataType::Float64,
             FieldType::Date => DataType::Date32,
+            FieldType::Time => DataType::Time32(arrow::datatypes::TimeUnit::Second),
             FieldType::Boolean => DataType::Boolean,
             FieldType::Category => DataType::Int32,
             FieldType::Other => DataType::Utf8,
@@ -56,6 +59,7 @@ impl fmt::Display for FieldType {
             FieldType::Integer => write!(f, "Integer"),
             FieldType::Decimal => write!(f, "Decimal"),
             FieldType::Date => write!(f, "Date"),
+            FieldType::Time => write!(f, "Time"),
             FieldType::Boolean => write!(f, "Boolean"),
             FieldType::Category => write!(f, "Category"),
             FieldType::Other => write!(f, "Other"),
@@ -64,7 +68,7 @@ impl fmt::Display for FieldType {
 }
 
 /// A unified field definition for registry schemas
-/// 
+///
 /// This structure provides a single source of truth for field definitions
 /// across different registries.
 #[derive(Debug, Clone)]

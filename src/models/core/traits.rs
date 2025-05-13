@@ -37,6 +37,11 @@ pub trait ArrowSchema: Sized {
 
     /// Convert a vector of this model to a `RecordBatch`
     fn to_record_batch(models: &[Self]) -> Result<RecordBatch>;
+    
+    /// Get the schema as Arc<Schema>
+    fn schema_ref() -> std::sync::Arc<Schema> {
+        std::sync::Arc::new(Self::schema())
+    }
 }
 
 /// A trait for entities that have temporal validity.

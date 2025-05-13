@@ -3,9 +3,9 @@
 //! The AKM (Arbejdsklassifikationsmodulet) registry contains employment information.
 
 use super::RegisterLoader;
+pub mod deserializer;
 pub mod individual;
 pub mod schema;
-pub mod trait_deserializer_macro;
 use crate::RecordBatch;
 use crate::Result;
 use crate::async_io::loader::PnrFilterableLoader;

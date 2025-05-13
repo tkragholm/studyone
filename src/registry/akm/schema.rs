@@ -3,7 +3,6 @@
 //! This module provides a unified schema definition for the AKM registry using
 //! the centralized field definition system.
 
-use crate::registry::field_definitions::CommonMappings;
 use crate::schema::field_def::{Extractors, FieldMapping, ModelSetters};
 use crate::schema::{FieldDefinition, FieldType, RegistrySchema, create_registry_schema};
 use std::sync::Arc;
@@ -25,10 +24,14 @@ fn akm_field(
 pub fn create_akm_schema() -> RegistrySchema {
     // Create field mappings using common definitions where possible
     let field_mappings = vec![
-        // Core identification fields
-        CommonMappings::pnr(),
-        // Employment and socioeconomic fields
-        CommonMappings::socioeconomic_status(),
+        // Core identification field
+        FieldMapping::new(
+            akm_field("PNR", "Unique identifier", FieldType::String, false),
+            Extractors::string("PNR"),
+            ModelSetters::string_setter(|individual, value| {
+                individual.pnr = value;
+            }),
+        ),
         // AKM-specific fields
         FieldMapping::new(
             akm_field(

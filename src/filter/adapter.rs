@@ -13,8 +13,9 @@ use arrow::record_batch::RecordBatch;
 
 use crate::error::{ParquetReaderError, Result};
 use crate::filter::core::{BatchFilter, filter_record_batch};
-use crate::filter::generic::{Filter, BoxedFilter, AndFilter as GenericAndFilter};
-use crate::models::{Family, Individual};
+use crate::filter::generic::{AndFilter as GenericAndFilter, BoxedFilter, Filter};
+use crate::models::Individual;
+//use crate::models::Family;
 
 /// Adapter for converting entity filters to record batch filters
 pub struct EntityToBatchAdapter<T> {
@@ -191,9 +192,10 @@ impl BatchFilter for BatchFilterAdapter<BoxedFilter<RecordBatch>> {
 }
 
 // Implementation of BatchFilter for GenericAndFilter with RecordBatch
-impl<F: Filter<RecordBatch> + Send + Sync + Clone + 'static> BatchFilter for GenericAndFilter<RecordBatch, F>
-where 
-    RecordBatch: Clone + Debug + Send + Sync
+impl<F: Filter<RecordBatch> + Send + Sync + Clone + 'static> BatchFilter
+    for GenericAndFilter<RecordBatch, F>
+where
+    RecordBatch: Clone + Debug + Send + Sync,
 {
     fn filter(&self, batch: &RecordBatch) -> Result<RecordBatch> {
         self.apply(batch)
@@ -205,9 +207,10 @@ where
 }
 
 // Implementation of BatchFilter for BatchFilterAdapter<GenericAndFilter<RecordBatch, F>>
-impl<F: Filter<RecordBatch> + Send + Sync + Clone + 'static> BatchFilter for BatchFilterAdapter<GenericAndFilter<RecordBatch, F>> 
-where 
-    RecordBatch: Clone + Debug + Send + Sync
+impl<F: Filter<RecordBatch> + Send + Sync + Clone + 'static> BatchFilter
+    for BatchFilterAdapter<GenericAndFilter<RecordBatch, F>>
+where
+    RecordBatch: Clone + Debug + Send + Sync,
 {
     fn filter(&self, batch: &RecordBatch) -> Result<RecordBatch> {
         self.batch_filter.filter(batch)
@@ -268,52 +271,52 @@ where
     }
 }
 
-/// Implementation for Family filters
-pub struct FamilyFilter<P> {
-    predicate: P,
-    required_fields: HashSet<String>,
-}
+// /// Implementation for Family filters
+// pub struct FamilyFilter<P> {
+//     predicate: P,
+//     required_fields: HashSet<String>,
+// }
 
-impl<P> FamilyFilter<P>
-where
-    P: Fn(&Family) -> bool + Send + Sync + 'static,
-{
-    /// Create a new family filter with a predicate
-    pub fn new<I: IntoIterator<Item = String>>(predicate: P, required_fields: I) -> Self {
-        Self {
-            predicate,
-            required_fields: required_fields.into_iter().collect(),
-        }
-    }
-}
+// impl<P> FamilyFilter<P>
+// where
+//     P: Fn(&Family) -> bool + Send + Sync + 'static,
+// {
+//     /// Create a new family filter with a predicate
+//     pub fn new<I: IntoIterator<Item = String>>(predicate: P, required_fields: I) -> Self {
+//         Self {
+//             predicate,
+//             required_fields: required_fields.into_iter().collect(),
+//         }
+//     }
+// }
 
-impl<P> Filter<Family> for FamilyFilter<P>
-where
-    P: Fn(&Family) -> bool + Send + Sync,
-{
-    fn apply(&self, input: &Family) -> Result<Family> {
-        if (self.predicate)(input) {
-            Ok(input.clone())
-        } else {
-            Err(ParquetReaderError::FilterExcluded {
-                message: "Family excluded by filter".to_string(),
-            }
-            .into())
-        }
-    }
+// impl<P> Filter<Family> for FamilyFilter<P>
+// where
+//     P: Fn(&Family) -> bool + Send + Sync,
+// {
+//     fn apply(&self, input: &Family) -> Result<Family> {
+//         if (self.predicate)(input) {
+//             Ok(input.clone())
+//         } else {
+//             Err(ParquetReaderError::FilterExcluded {
+//                 message: "Family excluded by filter".to_string(),
+//             }
+//             .into())
+//         }
+//     }
 
-    fn required_resources(&self) -> HashSet<String> {
-        self.required_fields.clone()
-    }
-}
+//     fn required_resources(&self) -> HashSet<String> {
+//         self.required_fields.clone()
+//     }
+// }
 
-impl<P> Debug for FamilyFilter<P>
-where
-    P: Fn(&Family) -> bool + Send + Sync,
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("FamilyFilter")
-            .field("required_fields", &self.required_fields)
-            .finish()
-    }
-}
+// impl<P> Debug for FamilyFilter<P>
+// where
+//     P: Fn(&Family) -> bool + Send + Sync,
+// {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         f.debug_struct("FamilyFilter")
+//             .field("required_fields", &self.required_fields)
+//             .finish()
+//     }
+// }

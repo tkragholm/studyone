@@ -20,7 +20,7 @@ use crate::models::{
 use crate::common::traits::adapter::StatefulAdapter;
 use crate::registry::BefCombinedRegister;
 use crate::registry::{
-    Lpr3DiagnoserRegister, LprDiagRegister, MfrChildRegister, YearConfiguredIndRegister,
+    Lpr3DiagnoserRegister, LprDiagRegister, MfrRegister,
 };
 
 use crate::registry::factory;
@@ -161,7 +161,7 @@ impl RegistryIntegration {
             .collect();
 
         // Create MFR adapter with individual lookup
-        let adapter = MfrChildRegister::new_with_lookup(individual_lookup);
+        let adapter = MfrRegister::new();
 
         // Process and match children data
         for batch in batches {
@@ -213,7 +213,7 @@ impl RegistryIntegration {
             let pnr_lookup: HashMap<String, String> = HashMap::new();
 
             // Create the adapter with lookup
-            use crate::registry::lpr::conversion::PnrLookupRegistry;
+            use crate::registry::lpr::PnrLookupRegistry;
             let mut adapter = Lpr3DiagnoserRegister::new();
             adapter.set_pnr_lookup(pnr_lookup);
 

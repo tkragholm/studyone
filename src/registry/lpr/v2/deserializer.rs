@@ -3,6 +3,7 @@
 //! This module provides functionality for deserializing LPR v2 registry data
 //! using the trait-based field access system.
 
+use arrow::array::Array;
 use arrow::record_batch::RecordBatch;
 use log::debug;
 use std::collections::HashMap;
@@ -11,33 +12,20 @@ use crate::error::Result;
 use crate::models::core::Individual;
 use crate::models::core::registry_traits::LprFields;
 use crate::registry::lpr::v2::schema::schema_unified::{
-    create_lpr_adm_schema, create_lpr_diag_schema, create_lpr_bes_schema
+    create_lpr_adm_schema, create_lpr_bes_schema, create_lpr_diag_schema,
 };
-use crate::schema::RegistrySchema;
 use crate::registry::trait_deserializer::RegistryDeserializer;
 
 /// Generate trait deserializers for LPR v2 registries
 
 // Generate trait deserializer for LPR_ADM
-crate::generate_trait_deserializer!(
-    LprAdmTraitDeserializer,
-    "LPR_ADM",
-    create_lpr_adm_schema
-);
+crate::generate_trait_deserializer!(LprAdmTraitDeserializer, "LPR_ADM", create_lpr_adm_schema);
 
 // Generate trait deserializer for LPR_DIAG
-crate::generate_trait_deserializer!(
-    LprDiagTraitDeserializer,
-    "LPR_DIAG",
-    create_lpr_diag_schema
-);
+crate::generate_trait_deserializer!(LprDiagTraitDeserializer, "LPR_DIAG", create_lpr_diag_schema);
 
 // Generate trait deserializer for LPR_BES
-crate::generate_trait_deserializer!(
-    LprBesTraitDeserializer,
-    "LPR_BES",
-    create_lpr_bes_schema
-);
+crate::generate_trait_deserializer!(LprBesTraitDeserializer, "LPR_BES", create_lpr_bes_schema);
 
 /// Deserialize an LPR ADM record batch using the trait-based deserializer
 pub fn deserialize_adm_batch(batch: &RecordBatch) -> Result<Vec<Individual>> {
@@ -149,7 +137,7 @@ impl LprDiagWithPnrDeserializer {
         };
 
         // Create a basic individual with the looked-up PNR
-        let mut individual = Individual::new(pnr, crate::models::core::types::Gender::Unknown, None);
+        let mut individual = Individual::new(pnr, None);
 
         // Apply field extractors
         for extractor in self.inner.field_extractors() {
@@ -165,7 +153,9 @@ impl RegistryDeserializer for LprDiagWithPnrDeserializer {
         "LPR_DIAG"
     }
 
-    fn field_extractors(&self) -> &[Box<dyn crate::registry::trait_deserializer::RegistryFieldExtractor>] {
+    fn field_extractors(
+        &self,
+    ) -> &[Box<dyn crate::registry::trait_deserializer::RegistryFieldExtractor>] {
         self.inner.field_extractors()
     }
 
@@ -203,7 +193,7 @@ pub fn enhance_individuals_with_diagnoses(
 
     // Create a deserializer with PNR lookup
     let deserializer = LprDiagWithPnrDeserializer::new(pnr_lookup.clone());
-    
+
     // Create a map of PNRs to individuals for fast lookup
     let mut pnr_map = std::collections::HashMap::new();
     for (idx, individual) in individuals.iter().enumerate() {
@@ -220,11 +210,11 @@ pub fn enhance_individuals_with_diagnoses(
                     // Add diagnoses to the corresponding individual
                     let target_individual = &mut individuals[idx];
                     let target_lpr_fields: &mut dyn LprFields = target_individual;
-                    
+
                     for diagnosis in diagnoses {
                         target_lpr_fields.add_diagnosis(diagnosis.to_string());
                     }
-                    
+
                     count += 1;
                 }
             }
@@ -246,7 +236,7 @@ pub fn enhance_individuals_with_admissions(
 
     // Create a deserializer
     let deserializer = LprAdmTraitDeserializer::new();
-    
+
     // Create a map of PNRs to individuals for fast lookup
     let mut pnr_map = std::collections::HashMap::new();
     for (idx, individual) in individuals.iter().enumerate() {
@@ -269,33 +259,33 @@ pub fn enhance_individuals_with_admissions(
                 let lpr_fields: &dyn LprFields = &adm_individual;
                 let target_individual = &mut individuals[idx];
                 let target_lpr_fields: &mut dyn LprFields = target_individual;
-                
+
                 // Copy hospital admissions
                 if let Some(admissions) = lpr_fields.hospital_admissions() {
                     for admission_date in admissions {
                         target_lpr_fields.add_hospital_admission(*admission_date);
                     }
                 }
-                
+
                 // Copy discharge dates
                 if let Some(discharges) = lpr_fields.discharge_dates() {
                     for discharge_date in discharges {
                         target_lpr_fields.add_discharge_date(*discharge_date);
                     }
                 }
-                
+
                 // Copy length of stay
                 if let Some(los) = lpr_fields.length_of_stay() {
                     target_lpr_fields.set_length_of_stay(Some(los));
                 }
-                
+
                 // Also copy diagnoses from action diagnosis
                 if let Some(diagnoses) = lpr_fields.diagnoses() {
                     for diagnosis in diagnoses {
                         target_lpr_fields.add_diagnosis(diagnosis.to_string());
                     }
                 }
-                
+
                 count += 1;
             }
         }

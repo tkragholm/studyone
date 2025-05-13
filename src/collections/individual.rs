@@ -5,15 +5,14 @@
 
 use crate::collections::GenericCollection;
 use crate::common::traits::{
-    ModelCollection, TemporalCollection, LookupCollection, BatchCollection
+    BatchCollection, LookupCollection, ModelCollection, TemporalCollection,
 };
+use crate::error::Result;
 use crate::models::core::Individual;
-use crate::models::core::traits::HealthStatus;
-use crate::models::core::types::Gender;
+use crate::models::core::traits::{ArrowSchema, HealthStatus};
+use arrow::record_batch::RecordBatch;
 use chrono::NaiveDate;
 use std::sync::Arc;
-use arrow::record_batch::RecordBatch;
-use crate::error::Result;
 
 /// Specialized collection for Individual models
 #[derive(Debug, Default)]
@@ -48,13 +47,15 @@ impl IndividualCollection {
     /// Find individuals that were alive at a specific date
     #[must_use]
     pub fn alive_at(&self, date: &NaiveDate) -> Vec<Arc<Individual>> {
-        self.inner.filter(|individual| individual.was_alive_at(date))
+        self.inner
+            .filter(|individual| individual.was_alive_at(date))
     }
 
     /// Find individuals that were resident at a specific date
     #[must_use]
     pub fn resident_at(&self, date: &NaiveDate) -> Vec<Arc<Individual>> {
-        self.inner.filter(|individual| individual.was_resident_at(date))
+        self.inner
+            .filter(|individual| individual.was_resident_at(date))
     }
 
     /// Find individuals within a specific age range at a date
@@ -76,15 +77,8 @@ impl IndividualCollection {
 
     /// Get individuals by gender
     #[must_use]
-    pub fn by_gender(&self, gender: Gender) -> Vec<Arc<Individual>> {
+    pub fn by_gender(&self, gender: Option<String>) -> Vec<Arc<Individual>> {
         self.inner.filter(|individual| individual.gender == gender)
-    }
-
-    /// Get individuals by gender string
-    #[must_use]
-    pub fn by_gender_str(&self, gender: &str) -> Vec<Arc<Individual>> {
-        let gender_enum: Gender = gender.into();
-        self.by_gender(gender_enum)
     }
 
     /// Get individuals by municipality
@@ -177,20 +171,48 @@ impl LookupCollection<Individual> for IndividualCollection {
     // Use the default implementations from the trait
 }
 
-// Implement BatchCollection if GenericCollection implements it
-impl BatchCollection<Individual> for IndividualCollection
-where
-    GenericCollection<Individual>: BatchCollection<Individual>,
-{
+// Implement BatchCollection for IndividualCollection
+impl BatchCollection<Individual> for IndividualCollection {
     fn load_from_batch(&mut self, batch: &RecordBatch) -> Result<()> {
-        self.inner.load_from_batch(batch)
+        // Convert batch to individuals using ArrowSchema trait
+        let individuals = Individual::from_batch(batch)?;
+
+        // Add all individuals to the collection
+        self.add_all(individuals);
+
+        Ok(())
     }
 
     fn update_from_batch(&mut self, batch: &RecordBatch) -> Result<()> {
-        self.inner.update_from_batch(batch)
+        // Convert batch to individuals
+        let individuals = Individual::from_batch(batch)?;
+
+        // Update existing individuals or add new ones
+        for individual in individuals {
+            let pnr = individual.pnr.clone();
+
+            // If individual already exists, update it
+            if self.contains(&pnr) {
+                // Remove the old individual
+                self.inner.remove(&pnr);
+            }
+
+            // Add the new/updated individual
+            self.add(individual);
+        }
+
+        Ok(())
     }
 
     fn export_to_batch(&self) -> Result<RecordBatch> {
-        self.inner.export_to_batch()
+        // Get all individuals
+        let individuals: Vec<Individual> = self
+            .all()
+            .iter()
+            .map(|arc_ind| (**arc_ind).clone())
+            .collect();
+
+        // Convert to RecordBatch using ArrowSchema trait
+        Individual::to_record_batch(&individuals)
     }
 }

@@ -7,7 +7,7 @@ use super::RegisterLoader;
 pub mod individual;
 pub mod schema;
 
-pub mod trait_deserializer_macro;
+pub mod deserializer;
 use crate::RecordBatch;
 use crate::Result;
 use crate::async_io::loader::PnrFilterableLoader;

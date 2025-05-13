@@ -29,10 +29,10 @@ pub trait RegistryFieldExtractor: Send + Sync {
     /// This method extracts a value and sets it on the target object
     /// using the appropriate trait setter method.
     fn extract_and_set(&self, batch: &RecordBatch, row: usize, target: &mut dyn Any) -> Result<()>;
-    
+
     /// Get the source field name in the registry data
     fn source_field_name(&self) -> &str;
-    
+
     /// Get the target field name in the Individual model
     fn target_field_name(&self) -> &str;
 }
@@ -44,16 +44,16 @@ pub trait RegistryFieldExtractor: Send + Sync {
 pub trait RegistryDeserializer: Send + Sync {
     /// Get the registry type name
     fn registry_type(&self) -> &str;
-    
+
     /// Get field extractors for this registry
     fn field_extractors(&self) -> &[Box<dyn RegistryFieldExtractor>];
-    
+
     /// Get field name mapping
     ///
     /// This provides a mapping from registry field names to SerdeIndividual
     /// field names for backward compatibility.
     fn field_mapping(&self) -> HashMap<String, String>;
-    
+
     /// Deserialize a record batch into a vec of Individuals
     ///
     /// # Arguments
@@ -65,16 +65,16 @@ pub trait RegistryDeserializer: Send + Sync {
     /// A Result containing a Vec of deserialized Individuals
     fn deserialize_batch(&self, batch: &RecordBatch) -> Result<Vec<Individual>> {
         let mut individuals = Vec::with_capacity(batch.num_rows());
-        
+
         for row in 0..batch.num_rows() {
             if let Some(individual) = self.deserialize_row(batch, row)? {
                 individuals.push(individual);
             }
         }
-        
+
         Ok(individuals)
     }
-    
+
     /// Deserialize a single row from a record batch
     ///
     /// # Arguments
@@ -88,9 +88,8 @@ pub trait RegistryDeserializer: Send + Sync {
     fn deserialize_row(&self, batch: &RecordBatch, row: usize) -> Result<Option<Individual>> {
         // Create a new Individual with empty values
         let mut individual = Individual::new(
-            String::new(),  // Empty PNR to be filled by extractors
-            crate::models::core::types::Gender::Unknown, // Unknown gender to be filled
-            None, // No birth date yet
+            String::new(), // Empty PNR to be filled by extractors
+            None,          // No birth date yet
         );
 
         // Apply all field extractors

@@ -5,8 +5,8 @@
 use crate::RecordBatch;
 use crate::Result;
 use crate::registry::RegisterLoader;
+pub mod deserializer;
 pub mod schema;
-pub mod trait_deserializer;
 use schema::{lpr3_diagnoser_schema, lpr3_kontakter_schema};
 
 use crate::async_io::parallel_ops::load_parquet_files_parallel_with_pnr_filter_async;
@@ -117,14 +117,8 @@ pub struct Lpr3DiagnoserRegister {
     pub pnr_lookup: Option<std::collections::HashMap<String, String>>,
 }
 
-// Implement StatefulAdapter for Lpr3DiagnoserRegister
-impl crate::common::traits::adapter::StatefulAdapter<crate::models::Diagnosis> for Lpr3DiagnoserRegister {
-    fn convert_batch(&self, batch: &RecordBatch) -> Result<Vec<crate::models::Diagnosis>> {
-        // Delegate to LPR registry for diagnosis conversion
-        use crate::common::traits::LprRegistry;
-        crate::models::Diagnosis::from_lpr_batch(batch)
-    }
-}
+// StatefulAdapter implementation for Diagnosis has been removed since Diagnosis is not defined
+// If you need to work with diagnoses, use the Individual struct with LprFields trait
 
 impl Lpr3DiagnoserRegister {
     /// Create a new `LPR3_DIAGNOSER` registry loader

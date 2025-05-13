@@ -2,11 +2,11 @@
 //!
 //! This module provides a centralized registry schema definition system.
 
-use std::sync::Arc;
+use super::mapping::FieldMapping;
+use crate::models::core::Individual;
 use arrow::datatypes::Schema;
 use arrow::record_batch::RecordBatch;
-use crate::models::core::Individual;
-use super::mapping::FieldMapping;
+use std::sync::Arc;
 
 /// A unified schema definition for a registry
 #[derive(Clone)]
@@ -33,9 +33,9 @@ impl RegistrySchema {
             .iter()
             .map(|mapping| mapping.field_def.to_arrow_field())
             .collect();
-        
+
         let arrow_schema = Arc::new(Schema::new(fields));
-        
+
         Self {
             name: name.into(),
             description: description.into(),
@@ -43,20 +43,22 @@ impl RegistrySchema {
             arrow_schema,
         }
     }
-    
+
     /// Get the Arrow schema for this registry
     pub fn arrow_schema(&self) -> Arc<Schema> {
         self.arrow_schema.clone()
     }
-    
+
     /// Deserialize a record batch row into an Individual
     pub fn deserialize_row(&self, batch: &RecordBatch, row: usize) -> Individual {
         // Create a new Individual with minimal required information
-        let pnr = self.extract_pnr(batch, row).unwrap_or_else(|| "UNKNOWN".to_string());
-        let gender = crate::models::core::types::Gender::Unknown;
+        let pnr = self
+            .extract_pnr(batch, row)
+            .unwrap_or_else(|| "UNKNOWN".to_string());
+        let _gender = crate::models::core::types::Gender::Unknown;
         let birth_date = None;
 
-        let mut individual = Individual::new(pnr, gender, birth_date);
+        let mut individual = Individual::new(pnr, birth_date);
 
         // Apply each field mapping
         for mapping in &self.field_mappings {
@@ -84,21 +86,21 @@ impl RegistrySchema {
         }
         None
     }
-    
+
     /// Deserialize a batch of records into Individuals
     pub fn deserialize_batch(&self, batch: &RecordBatch) -> Vec<Individual> {
         (0..batch.num_rows())
             .map(|row| self.deserialize_row(batch, row))
             .collect()
     }
-    
+
     /// Get a field mapping by name
     pub fn get_field_mapping(&self, name: &str) -> Option<&FieldMapping> {
         self.field_mappings
             .iter()
             .find(|mapping| mapping.field_def.matches_name(name))
     }
-    
+
     /// Check if this schema contains a field with the given name
     pub fn has_field(&self, name: &str) -> bool {
         self.field_mappings

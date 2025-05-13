@@ -2,11 +2,9 @@
 //!
 //! The DOD registry contains death records.
 
-pub mod schema;
-pub mod schema_unified;
-pub mod conversion;
 pub mod deserializer;
-pub mod trait_deserializer;
+pub mod schema;
+
 pub mod individual;
 use crate::RecordBatch;
 use crate::RegisterLoader;
@@ -30,7 +28,7 @@ impl DodRegister {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            schema: schema::dod_schema(),
+            schema: schema::create_dod_schema().arrow_schema(),
         }
     }
 }

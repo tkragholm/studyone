@@ -24,16 +24,20 @@ pub fn create_loader(
     unified_schema: SchemaRef,
     original_schema: SchemaRef,
     use_unified: bool,
-    pnr_column: &str,
-) -> (SchemaRef, Arc<AsyncPnrFilterableLoader>) {
+    pnr_column: String, // Use owned String to avoid lifetime issues
+) -> (SchemaRef, Arc<crate::async_io::PnrFilterableLoader>) {
     let schema = if use_unified {
         unified_schema
     } else {
         original_schema
     };
 
+    // Create the loader with specific implementation - we use concrete type instead of trait
+    // Clone the pnr_column string to avoid lifetime issues
+    let pnr_column_owned = pnr_column.clone();
     let loader = Arc::new(
-        AsyncPnrFilterableLoader::with_schema_ref(schema.clone()).with_pnr_column(pnr_column),
+        crate::async_io::PnrFilterableLoader::with_schema_ref(schema.clone())
+            .with_pnr_column(&pnr_column_owned),
     );
 
     (schema, loader)

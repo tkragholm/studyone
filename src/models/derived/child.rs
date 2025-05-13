@@ -23,11 +23,7 @@ use std::sync::Arc;
 /// Representation of a child with health-related attributes
 /// Function for creating a default Individual Arc for deserialization
 fn default_individual() -> Arc<Individual> {
-    Arc::new(Individual::new(
-        "placeholder".to_string(),
-        crate::models::core::types::Gender::Unknown,
-        None,
-    ))
+    Arc::new(Individual::new("placeholder".to_string(), None))
 }
 
 /// Representation of a child with health-related attributes
@@ -325,11 +321,8 @@ impl HealthStatus for Child {
 impl ArrowSchema for Child {
     /// Get the Arrow schema for Child records using `serde_arrow`
     fn schema() -> Schema {
-        let sample = Self::from_individual(Arc::new(Individual::new(
-            "1234567890".to_string(),
-            crate::models::core::types::Gender::Unknown,
-            None,
-        )));
+        let sample =
+            Self::from_individual(Arc::new(Individual::new("1234567890".to_string(), None)));
 
         // Use serde_arrow to generate schema from sample
         let fields = Vec::<arrow::datatypes::FieldRef>::from_samples(

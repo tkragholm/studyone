@@ -16,6 +16,7 @@ use arrow::record_batch::RecordBatch;
 use chrono::NaiveDate;
 
 use crate::error::{ParquetReaderError, Result};
+use crate::models::core::Individual;
 use crate::utils::arrow_utils;
 
 /// Trait defining a registry interface for consistent data integration
@@ -401,18 +402,18 @@ impl DateConversionExt for NaiveDate {
     }
 }
 
-/// Collect birth dates from a population
+/// Collect birth dates from individuals
 ///
-/// Creates a map from PNR to birth date for all individuals in the population
+/// Creates a map from PNR to birth date for all individuals
 /// which can be used for faster lookups in algorithms that need birth dates.
 #[must_use]
-pub fn collect_birth_dates(
-    population: &crate::algorithm::population::Population,
+pub fn collect_birth_dates_from_individuals(
+    individuals: &[Individual],
 ) -> HashMap<String, NaiveDate> {
     let mut birth_dates = HashMap::new();
 
-    // Extract individuals from the family collection
-    for individual in population.collection.get_individuals() {
+    // Extract birth dates from individuals
+    for individual in individuals {
         if let Some(birthdate) = individual.birth_date {
             birth_dates.insert(individual.pnr.clone(), birthdate);
         }

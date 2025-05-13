@@ -34,6 +34,7 @@ pub fn deserialize_batch(batch: &RecordBatch) -> Result<Vec<Individual>> {
     match registry_type {
         RegistryType::BEF => bef::deserializer::deserialize_batch(batch),
         RegistryType::IND => ind::deserializer::deserialize_batch(batch),
+        RegistryType::AKM => akm::deserializer::deserialize_batch(batch),
         // For other registry types, we'll implement them gradually
         // For now, we can use a simple implementation that just extracts PNR
         _ => deserialize_minimal(batch),

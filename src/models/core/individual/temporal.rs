@@ -3,8 +3,8 @@
 //! This module contains implementations for time-dependent operations on Individuals,
 //! such as age calculation, validity checking, and temporal snapshots.
 
-use crate::models::core::traits::{HealthStatus, TemporalValidity};
 use crate::models::core::individual::Individual;
+use crate::models::core::traits::{HealthStatus, TemporalValidity};
 use chrono::{Datelike, NaiveDate};
 
 // Implement TemporalValidity trait
@@ -107,16 +107,18 @@ impl HealthStatus for Individual {
 // Additional temporal methods for Individual
 impl Individual {
     /// Determine if this individual is a child based on age at reference date
-    #[must_use] pub fn is_child(&self, reference_date: &NaiveDate) -> bool {
+    #[must_use]
+    pub fn is_child(&self, reference_date: &NaiveDate) -> bool {
         if let Some(age) = self.age_at(reference_date) {
             age < 18
         } else {
             false
         }
     }
-    
+
     /// Get the role of this individual at a reference date
-    #[must_use] pub fn role_at(&self, reference_date: &NaiveDate, all_individuals: &[Self]) -> super::Role {
+    #[must_use]
+    pub fn role_at(&self, reference_date: &NaiveDate, all_individuals: &[Self]) -> super::Role {
         let is_child = self.is_child(reference_date);
         let is_parent = self.is_parent_in_dataset(all_individuals);
 

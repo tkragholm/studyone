@@ -4,7 +4,6 @@
 //! the centralized field definition system.
 
 use crate::models::core::registry_traits::IndFields;
-use crate::registry::field_definitions::CommonMappings;
 use crate::schema::field_def::{Extractors, FieldMapping, ModelSetters};
 use crate::schema::{FieldDefinition, FieldType, RegistrySchema, create_registry_schema};
 use std::sync::Arc;
@@ -27,56 +26,28 @@ pub fn create_ind_schema() -> RegistrySchema {
     // Create field mappings using common definitions where possible
     let field_mappings = vec![
         // Core identification field
-        CommonMappings::pnr(),
+        FieldMapping::new(ind_field(
+            "PNR",
+            "Unique identifier",
+            FieldType::String,
+            false,
+        ), Extractors::string("PNR"),
+        ModelSetters::string_setter(|individual, value| {
+            individual.pnr = value;
+        })),
         // IND-specific fields
         FieldMapping::new(
             ind_field("PERINDKIALT_13", "Annual income", FieldType::Decimal, true),
             Extractors::decimal("PERINDKIALT_13"),
             ModelSetters::f64_setter(|individual, value| {
-                let ind_fields: &mut dyn IndFields = individual;
-                ind_fields.set_annual_income(Some(value));
+                individual.set_annual_income(Some(value));
             }),
         ),
         FieldMapping::new(
             ind_field("LOENMV_13", "Employment income", FieldType::Decimal, true),
             Extractors::decimal("LOENMV_13"),
             ModelSetters::f64_setter(|individual, value| {
-                let ind_fields: &mut dyn IndFields = individual;
-                ind_fields.set_employment_income(Some(value));
-            }),
-        ),
-        FieldMapping::new(
-            ind_field("AAR", "Income year", FieldType::Integer, true),
-            Extractors::integer("AAR"),
-            ModelSetters::i32_setter(|individual, value| {
-                let ind_fields: &mut dyn IndFields = individual;
-                ind_fields.set_income_year(Some(value));
-            }),
-        ),
-        FieldMapping::new(
-            ind_field("CPRTJEK", "CPR check", FieldType::String, true),
-            Extractors::string("CPRTJEK"),
-            ModelSetters::string_setter(|_individual, _value| {
-                // This field is not mapped to the Individual model
-            }),
-        ),
-        FieldMapping::new(
-            ind_field("CPRTYPE", "CPR type", FieldType::String, true),
-            Extractors::string("CPRTYPE"),
-            ModelSetters::string_setter(|_individual, _value| {
-                // This field is not mapped to the Individual model
-            }),
-        ),
-        FieldMapping::new(
-            ind_field(
-                "PRE_SOCIO",
-                "Socioeconomic status code",
-                FieldType::Integer,
-                true,
-            ),
-            Extractors::integer("PRE_SOCIO"),
-            ModelSetters::i32_setter(|individual, value| {
-                //individual.socioeconomic_status_code = Some(value);
+                individual.set_employment_income(Some(value));
             }),
         ),
         FieldMapping::new(
