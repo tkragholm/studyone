@@ -1,6 +1,0 @@
-Error: Error processing file /Users/tobiaskragholm/generated_data/parquet/akm/2005.parquet
-
-Caused by:
-    0: Failed to filter parquet file: /Users/tobiaskragholm/generated_data/parquet/akm/2005.parquet
-    1: Error filtering parquet file: /Users/tobiaskragholm/generated_data/parquet/akm/2005.parquet
-    2: Schema error: Unable to get field named "DISCO". Valid fields: ["CPRTJEK", "CPRTYPE", "PNR", "SENR", "SOCIO", "SOCIO02", "SOCIO13", "VERSION"]

@@ -1,3 +1,3 @@
 1. Generating the registry traits directly from schema definitions
-  2. Using Rust attributes/derive macros to tie field definitions to struct fields
-  3. Automating the creation of registry-specific methods through code generation
+2. Using Rust attributes/derive macros to tie field definitions to struct fields
+3. Automating the creation of registry-specific methods through code generation
