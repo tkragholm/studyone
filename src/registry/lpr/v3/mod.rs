@@ -6,6 +6,7 @@ use crate::RecordBatch;
 use crate::Result;
 use crate::registry::RegisterLoader;
 pub mod schema;
+pub mod trait_deserializer;
 use schema::{lpr3_diagnoser_schema, lpr3_kontakter_schema};
 
 use crate::async_io::parallel_ops::load_parquet_files_parallel_with_pnr_filter_async;

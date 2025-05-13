@@ -7,17 +7,10 @@
 #[macro_export]
 macro_rules! generate_trait_deserializer {
     ($registry:ident, $registry_type:expr, $schema_fn:expr) => {
-        use arrow::record_batch::RecordBatch;
-        use log::debug;
-        use std::collections::HashMap;
-
-        use crate::error::Result;
-        use crate::models::core::Individual;
-        use crate::registry::trait_deserializer::{RegistryDeserializer, RegistryFieldExtractor};
-
+        // Avoid importing items at the module level to prevent collisions
         pub struct $registry {
-            field_extractors: Vec<Box<dyn RegistryFieldExtractor>>,
-            field_map: HashMap<String, String>,
+            field_extractors: Vec<Box<dyn crate::registry::trait_deserializer::RegistryFieldExtractor>>,
+            field_map: std::collections::HashMap<String, String>,
         }
 
         impl $registry {
@@ -26,8 +19,8 @@ macro_rules! generate_trait_deserializer {
                 let schema = $schema_fn();
 
                 // Create field extractors from schema mappings
-                let mut field_extractors: Vec<Box<dyn RegistryFieldExtractor>> = Vec::new();
-                let mut field_map = HashMap::new();
+                let mut field_extractors: Vec<Box<dyn crate::registry::trait_deserializer::RegistryFieldExtractor>> = Vec::new();
+                let mut field_map = std::collections::HashMap::new();
 
                 // Convert schema mappings to field extractors
                 for mapping in &schema.field_mappings {
@@ -88,37 +81,44 @@ macro_rules! generate_trait_deserializer {
                     field_map,
                 }
             }
+
+            /// Deserialize a record batch using this deserializer
+            pub fn deserialize_batch(&self, batch: &arrow::record_batch::RecordBatch) -> crate::error::Result<Vec<crate::models::core::Individual>> {
+                log::debug!(
+                    "Deserializing {} batch with trait-based deserializer",
+                    $registry_type
+                );
+
+                self.deserialize_batch_impl(batch)
+            }
+
+            /// Deserialize a single row from a record batch using this deserializer
+            pub fn deserialize_row(&self, batch: &arrow::record_batch::RecordBatch, row: usize) -> crate::error::Result<Option<crate::models::core::Individual>> {
+                self.deserialize_row_impl(batch, row)
+            }
+
+            // Implementation methods that delegate to the trait
+            fn deserialize_batch_impl(&self, batch: &arrow::record_batch::RecordBatch) -> crate::error::Result<Vec<crate::models::core::Individual>> {
+                <Self as crate::registry::trait_deserializer::RegistryDeserializer>::deserialize_batch(self, batch)
+            }
+
+            fn deserialize_row_impl(&self, batch: &arrow::record_batch::RecordBatch, row: usize) -> crate::error::Result<Option<crate::models::core::Individual>> {
+                <Self as crate::registry::trait_deserializer::RegistryDeserializer>::deserialize_row(self, batch, row)
+            }
         }
 
-        impl RegistryDeserializer for $registry {
+        impl crate::registry::trait_deserializer::RegistryDeserializer for $registry {
             fn registry_type(&self) -> &str {
                 $registry_type
             }
 
-            fn field_extractors(&self) -> &[Box<dyn RegistryFieldExtractor>] {
+            fn field_extractors(&self) -> &[Box<dyn crate::registry::trait_deserializer::RegistryFieldExtractor>] {
                 &self.field_extractors
             }
 
-            fn field_mapping(&self) -> HashMap<String, String> {
+            fn field_mapping(&self) -> std::collections::HashMap<String, String> {
                 self.field_map.clone()
             }
-        }
-
-        /// Deserialize a record batch using the trait-based deserializer
-        pub fn deserialize_batch(batch: &RecordBatch) -> Result<Vec<Individual>> {
-            debug!(
-                "Deserializing {} batch with trait-based deserializer",
-                $registry_type
-            );
-
-            let deserializer = $registry::new();
-            deserializer.deserialize_batch(batch)
-        }
-
-        /// Deserialize a single row from a record batch
-        pub fn deserialize_row(batch: &RecordBatch, row: usize) -> Result<Option<Individual>> {
-            let deserializer = $registry::new();
-            deserializer.deserialize_row(batch, row)
         }
     };
 }

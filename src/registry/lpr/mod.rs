@@ -11,6 +11,10 @@ pub mod trait_deserializer;
 pub mod v2;
 pub mod v3;
 
+// Re-export trait deserializers
+pub use self::v2::trait_deserializer as v2_trait;
+pub use self::v3::trait_deserializer as v3_trait;
+
 // Re-export specific loaders
 pub use self::conversion::PnrLookupRegistry;
 pub use self::discovery::{LprPaths, find_lpr_files};

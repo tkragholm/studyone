@@ -3,13 +3,17 @@
 //! This module provides a unified schema definition for the MFR registry using
 //! the centralized field definition system.
 
+use crate::schema::field_def::{Extractors, FieldMapping, ModelSetters};
+use crate::schema::{FieldDefinition, FieldType, RegistrySchema, create_registry_schema};
 use std::sync::Arc;
-use crate::schema::{RegistrySchema, create_registry_schema, FieldDefinition, FieldType};
-use crate::schema::field_def::{FieldMapping, ModelSetters, Extractors};
-use crate::registry::field_definitions::CommonMappings;
 
 /// Create an MFR-specific field definition
-fn mfr_field(name: &str, description: &str, field_type: FieldType, nullable: bool) -> FieldDefinition {
+fn mfr_field(
+    name: &str,
+    description: &str,
+    field_type: FieldType,
+    nullable: bool,
+) -> FieldDefinition {
     FieldDefinition::new(name, description, field_type, nullable)
 }
 
@@ -22,13 +26,17 @@ pub fn create_mfr_schema() -> RegistrySchema {
     let field_mappings = vec![
         // Child's CPR number (maps to PNR)
         FieldMapping::new(
-            mfr_field("CPR_BARN", "Child's personal identification number", FieldType::PNR, false),
+            mfr_field(
+                "CPR_BARN",
+                "Child's personal identification number",
+                FieldType::PNR,
+                false,
+            ),
             Extractors::string("CPR_BARN"),
             ModelSetters::string_setter(|individual, value| {
                 individual.pnr = value;
             }),
         ),
-        
         // Birth date (maps to FOED_DAG)
         FieldMapping::new(
             mfr_field("FOEDSELSDATO", "Birth date", FieldType::Date, true),
@@ -37,26 +45,34 @@ pub fn create_mfr_schema() -> RegistrySchema {
                 individual.birth_date = Some(value);
             }),
         ),
-        
         // Mother's CPR number (maps to MOR_ID)
         FieldMapping::new(
-            mfr_field("CPR_MODER", "Mother's personal identification number", FieldType::PNR, true),
+            mfr_field(
+                "CPR_MODER",
+                "Mother's personal identification number",
+                FieldType::PNR,
+                true,
+            ),
             Extractors::string("CPR_MODER"),
             ModelSetters::string_setter(|individual, value| {
                 individual.mother_pnr = Some(value);
             }),
         ),
-        
         // Father's CPR number (maps to FAR_ID)
         FieldMapping::new(
-            mfr_field("CPR_FADER", "Father's personal identification number", FieldType::PNR, true),
+            mfr_field(
+                "CPR_FADER",
+                "Father's personal identification number",
+                FieldType::PNR,
+                true,
+            ),
             Extractors::string("CPR_FADER"),
             ModelSetters::string_setter(|individual, value| {
                 individual.father_pnr = Some(value);
             }),
         ),
     ];
-    
+
     create_registry_schema(
         "MFR",
         "Medical Birth Registry containing birth information",

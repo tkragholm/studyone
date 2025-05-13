@@ -6,7 +6,6 @@ use crate::RecordBatch;
 use crate::common::traits::VndsRegistry;
 use crate::error::Result;
 use crate::models::core::Individual;
-use crate::utils::field_extractors::extract_date32;
 
 impl VndsRegistry for Individual {
     fn from_vnds_record(batch: &RecordBatch, row: usize) -> Result<Option<Self>> {
@@ -24,7 +23,9 @@ impl VndsRegistry for Individual {
         // The trait-based deserializer uses registry traits and field mappings from the unified schema
 
         // Create a temporary Individual using the deserializer
-        if let Some(enhanced) = crate::registry::vnds::trait_deserializer_macro::deserialize_row(batch, row)? {
+        if let Some(enhanced) =
+            crate::registry::vnds::trait_deserializer_macro::deserialize_row(batch, row)?
+        {
             // Copy migration-specific fields from the enhanced Individual to this one
             if let Some(emigration_date) = enhanced.emigration_date {
                 self.emigration_date = Some(emigration_date);

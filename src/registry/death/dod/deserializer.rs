@@ -1,6 +1,7 @@
 //! DOD Registry deserializer
 //!
 //! This module provides serde_arrow-based deserialization for the DOD registry.
+//! For trait-based deserialization, see the `trait_deserializer` module.
 
 use crate::error::Result;
 use crate::models::core::individual::serde::SerdeIndividual;

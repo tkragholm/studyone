@@ -6,6 +6,7 @@ use crate::RecordBatch;
 use crate::Result;
 use crate::registry::RegisterLoader;
 pub mod schema;
+pub mod trait_deserializer;
 
 use crate::async_io::loader::ParquetLoader;
 use crate::common::traits::{AsyncDirectoryLoader, AsyncLoader};

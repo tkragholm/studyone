@@ -7,7 +7,6 @@ use crate::RecordBatch;
 use crate::common::traits::UddfRegistry;
 use crate::error::Result;
 use crate::models::core::Individual;
-use crate::models::core::types::EducationLevel;
 
 impl UddfRegistry for Individual {
     fn from_uddf_record(batch: &RecordBatch, row: usize) -> Result<Option<Self>> {
@@ -27,7 +26,9 @@ impl UddfRegistry for Individual {
         // The trait-based deserializer uses registry traits and field mappings from the unified schema
 
         // Create a temporary Individual using the deserializer
-        if let Some(enhanced) = crate::registry::uddf::trait_deserializer_macro::deserialize_row(batch, row)? {
+        if let Some(enhanced) =
+            crate::registry::uddf::trait_deserializer_macro::deserialize_row(batch, row)?
+        {
             // Copy education-specific fields from the enhanced Individual to this one
             if let Some(institution) = enhanced.education_institution {
                 self.education_institution = Some(institution);
