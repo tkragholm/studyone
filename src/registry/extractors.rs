@@ -388,7 +388,11 @@ impl RegistryFieldExtractor for DateExtractor {
                             }
                         }
                         
-                        self.parse_date(string_array.value(row))
+                        let date = self.parse_date(string_array.value(row));
+                        if date.is_some() {
+                            println!("Successfully parsed date: {:?}", date);
+                        }
+                        date
                     } else {
                         None
                     }
@@ -399,8 +403,17 @@ impl RegistryFieldExtractor for DateExtractor {
                 // Set the value using the provided setter
                 // For date fields, we need to box it as an Option<NaiveDate> since
                 // that's what the Individual struct expects
-                let boxed_value: Box<dyn std::any::Any> = Box::new(value);
-                self.setter.call(target, boxed_value);
+                match value {
+                    Some(date) => {
+                        // We need to convert Option<NaiveDate> to NaiveDate then box it to send to setter
+                        // The setter will handle wrapping it back in an Option before storing
+                        self.setter.call(target, Box::new(date));
+                    }
+                    None => {
+                        // For None values, pass a special marker
+                        self.setter.call(target, Box::new("__DATE_NONE__"));
+                    }
+                }
                 Ok(())
             }
             None => {
