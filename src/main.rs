@@ -1,5 +1,4 @@
 use par_reader::Result;
-//use par_reader::examples::sequential_registry_loader::{run_sequential_registry_example, run_unified_registry_example};
 use par_reader::examples::schema_macros_example::run_schema_macros_example;
 use std::env;
 use std::path::Path;

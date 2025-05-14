@@ -303,16 +303,62 @@ impl DateExtractor {
         }
     }
 
-    /// Parse date from string in YYYYMMDD format
+    /// Parse date from string in various formats
     fn parse_date(&self, date_str: &str) -> Option<NaiveDate> {
-        if date_str.len() == 8 {
-            let year = date_str[0..4].parse::<i32>().ok()?;
-            let month = date_str[4..6].parse::<u32>().ok()?;
-            let day = date_str[6..8].parse::<u32>().ok()?;
-            chrono::NaiveDate::from_ymd_opt(year, month, day)
-        } else {
-            None
+        // Try various date formats
+        
+        // 1. ISO format (YYYY-MM-DD)
+        if let Ok(date) = chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
+            return Some(date);
         }
+        
+        // 2. DD/MM/YYYY format
+        if let Ok(date) = chrono::NaiveDate::parse_from_str(date_str, "%d/%m/%Y") {
+            return Some(date);
+        }
+        
+        // 3. YYYYMMDD format
+        if date_str.len() == 8 && date_str.chars().all(|c| c.is_ascii_digit()) {
+            if let (Ok(year), Ok(month), Ok(day)) = (
+                date_str[0..4].parse::<i32>(),
+                date_str[4..6].parse::<u32>(),
+                date_str[6..8].parse::<u32>(),
+            ) {
+                return chrono::NaiveDate::from_ymd_opt(year, month, day);
+            }
+        }
+        
+        // 4. %d%b%Y format (e.g., "01Jan2020")
+        if let Ok(date) = chrono::NaiveDate::parse_from_str(date_str, "%d%b%Y") {
+            return Some(date);
+        }
+        
+        // 5. Try case insensitive month names
+        let date_str_lower = date_str.to_lowercase();
+        let months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+        
+        if date_str_lower.len() >= 5 {
+            // Look for a month name in the string
+            for (i, &month) in months.iter().enumerate() {
+                if date_str_lower.contains(month) {
+                    // Try to extract day and year around the month
+                    let parts: Vec<&str> = date_str_lower.split(month).collect();
+                    if parts.len() == 2 {
+                        let day_part = parts[0].trim();
+                        let year_part = parts[1].trim();
+                        
+                        if let (Ok(day), Ok(year)) = (day_part.parse::<u32>(), year_part.parse::<i32>()) {
+                            let month_num = i as u32 + 1;
+                            return chrono::NaiveDate::from_ymd_opt(year, month_num, day);
+                        }
+                    }
+                }
+            }
+        }
+        
+        // For debugging
+        println!("Failed to parse date string: '{}'", date_str);
+        None
     }
 }
 
@@ -332,6 +378,16 @@ impl RegistryFieldExtractor for DateExtractor {
                 } else if let Some(string_array) = array.as_any().downcast_ref::<StringArray>() {
                     // Try to parse date from string (often used in string dates)
                     if row < string_array.len() && !string_array.is_null(row) {
+                        // Add debug logging for the first few date values
+                        static mut DEBUG_COUNT: usize = 0;
+                        unsafe {
+                            if DEBUG_COUNT < 5 {
+                                println!("Parsing date string: '{}' for field '{}'", 
+                                         string_array.value(row), self.source_field);
+                                DEBUG_COUNT += 1;
+                            }
+                        }
+                        
                         self.parse_date(string_array.value(row))
                     } else {
                         None
@@ -341,9 +397,10 @@ impl RegistryFieldExtractor for DateExtractor {
                 };
 
                 // Set the value using the provided setter
-                if let Some(date_value) = value {
-                    self.setter.call(target, Box::new(date_value));
-                }
+                // For date fields, we need to box it as an Option<NaiveDate> since
+                // that's what the Individual struct expects
+                let boxed_value: Box<dyn std::any::Any> = Box::new(value);
+                self.setter.call(target, boxed_value);
                 Ok(())
             }
             None => {

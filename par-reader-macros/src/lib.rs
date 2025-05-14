@@ -124,12 +124,84 @@ fn generate_registry_impl(
 
         // Generate setter code
         // We'll use the set_property method in Individual to store values by field name
-        let setter_code = quote! {
-            |individual, value| {
-                // Check that we're getting an Individual as expected
-                if let Some(individual_obj) = individual.downcast_mut::<crate::models::core::Individual>() {
-                    // Store the value in the Individual using the field name as key
-                    individual_obj.set_property(stringify!(#field_name), value);
+        let is_option_field = is_option_type(field_type);
+        
+        // Generate setter code based on the field type
+        let field_name_str = field_name.to_string();
+        let setter_code = match field_name_str.as_str() {
+            // Special handling for date fields
+            "event_date" => {
+                quote! {
+                    |individual, value| {
+                        use chrono::NaiveDate;
+                        use std::any::Any;
+                        
+                        // Debug logging
+                        static mut SETTER_COUNT: usize = 0;
+                        unsafe {
+                            if SETTER_COUNT < 5 {
+                                println!("Setting event_date value to Individual: value={:?}", value);
+                                SETTER_COUNT += 1;
+                            }
+                        }
+                        
+                        // Cast to Individual
+                        let individual_obj = individual as &mut crate::models::core::Individual;
+                        
+                        // Convert the value to Option<NaiveDate> and box it
+                        let boxed_value: Box<dyn Any> = Box::new(Some(value as NaiveDate));
+                        individual_obj.set_property("event_date", boxed_value);
+                    }
+                }
+            },
+            // Generic handling for other Option<T> fields
+            _ if is_option_field => {
+                quote! {
+                    |individual, value| {
+                        // Add debug logging for the first few calls
+                        static mut SETTER_COUNT: usize = 0;
+                        unsafe {
+                            if SETTER_COUNT < 5 {
+                                println!("Setting Optional {} value to Individual: field={}, value={:?}", 
+                                        stringify!(#field_name), stringify!(#field_name), value);
+                                SETTER_COUNT += 1;
+                            }
+                        }
+                        
+                        // Since Individual is the concrete type we're working with in our trait implementation,
+                        // we can simply cast it directly. The individual parameter is a &mut dyn Any, which we
+                        // know is really a &mut Individual.
+                        let individual_obj = individual as &mut crate::models::core::Individual;
+                        
+                        // For Option<T> fields, we need to wrap the value in Some
+                        // Box::new can't directly box None, so we need to create an Option first
+                        let boxed_value: Box<dyn std::any::Any> = Box::new(Some(value));
+                        individual_obj.set_property(stringify!(#field_name), boxed_value);
+                    }
+                }
+            },
+            // Generic handling for non-Option fields
+            _ => {
+                quote! {
+                    |individual, value| {
+                        // Add debug logging for the first few calls
+                        static mut SETTER_COUNT: usize = 0;
+                        unsafe {
+                            if SETTER_COUNT < 5 {
+                                println!("Setting {} value to Individual: field={}, value={:?}", 
+                                        stringify!(#field_name), stringify!(#field_name), value);
+                                SETTER_COUNT += 1;
+                            }
+                        }
+                        
+                        // Since Individual is the concrete type we're working with in our trait implementation,
+                        // we can simply cast it directly. The individual parameter is a &mut dyn Any, which we
+                        // know is really a &mut Individual.
+                        let individual_obj = individual as &mut crate::models::core::Individual;
+                        
+                        // Box the value directly for non-Option fields
+                        individual_obj.set_property(stringify!(#field_name), Box::new(value));
+                    }
                 }
             }
         };
@@ -222,9 +294,23 @@ fn generate_registry_impl(
 
         // The example will need to be updated to use the Individual directly
         impl From<crate::models::core::Individual> for #struct_name {
-            fn from(_individual: crate::models::core::Individual) -> Self {
-                // Just return default for now
-                Self::default()
+            fn from(individual: crate::models::core::Individual) -> Self {
+                // Only print for the first few records to avoid flooding the console
+                static mut PRINT_COUNT: usize = 0;
+                unsafe {
+                    if PRINT_COUNT < 3 {
+                        println!("Converting Individual: PNR='{}', event_type={:?}, event_date={:?}", 
+                            individual.pnr, individual.event_type, individual.event_date);
+                        PRINT_COUNT += 1;
+                    }
+                }
+                
+                // Create our struct with values from the Individual
+                Self {
+                    pnr: individual.pnr,
+                    event_type: individual.event_type.clone(),
+                    event_date: individual.event_date,
+                }
             }
         }
 
