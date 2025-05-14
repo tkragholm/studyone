@@ -130,4 +130,5 @@ pub mod deserializer_macros;
 pub mod detect;
 pub mod extractors;
 pub mod models;
+pub mod registry_macros;
 pub mod trait_deserializer;
