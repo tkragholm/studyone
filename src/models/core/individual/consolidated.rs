@@ -256,15 +256,34 @@ pub struct Individual {
     pub plurality: Option<i32>,
 }
 
+// Implement Default for Individual
+impl Default for Individual {
+    fn default() -> Self {
+        Self::default_impl()
+    }
+}
+
 // Core Individual methods
 impl Individual {
     /// Create a new Individual with minimal required information
     #[must_use]
-    pub const fn new(pnr: String, birth_date: Option<NaiveDate>) -> Self {
+    pub fn new(pnr: String, birth_date: Option<NaiveDate>) -> Self {
+        // Start with default values for all fields
+        let mut individual = Self::default();
+        
+        // Set the required fields
+        individual.pnr = pnr;
+        individual.birth_date = birth_date;
+        
+        individual
+    }
+    
+    /// Create a default Individual instance
+    fn default_impl() -> Self {
         Self {
             // Core identification
-            pnr,
-            birth_date,
+            pnr: String::new(),
+            birth_date: None,
             gender: None,
             death_date: None,
             origin: None,
@@ -381,6 +400,85 @@ impl Individual {
             "event_date" => {
                 if let Some(v) = value.downcast_ref::<Option<NaiveDate>>() {
                     self.event_date = *v;
+                }
+            }
+            // LPR specific fields
+            "action_diagnosis" => {
+                if let Some(v) = value.downcast_ref::<Option<String>>() {
+                    if let Some(ref mut diagnoses) = self.diagnoses {
+                        if let Some(diagnosis) = v {
+                            diagnoses.push(diagnosis.clone());
+                        }
+                    } else if let Some(diagnosis) = v {
+                        self.diagnoses = Some(vec![diagnosis.clone()]);
+                    }
+                }
+            }
+            "diagnosis_code" => {
+                if let Some(v) = value.downcast_ref::<Option<String>>() {
+                    if let Some(ref mut diagnoses) = self.diagnoses {
+                        if let Some(diagnosis) = v {
+                            diagnoses.push(diagnosis.clone());
+                        }
+                    } else if let Some(diagnosis) = v {
+                        self.diagnoses = Some(vec![diagnosis.clone()]);
+                    }
+                }
+            }
+            "diagnosis_type" => {
+                // Store as a property if needed in the future
+                // Currently we don't have a dedicated field for this in Individual
+            }
+            "record_number" => {
+                // Store as a property if needed in the future
+                // Currently we don't have a dedicated field for this in Individual
+            }
+            "department_code" => {
+                // Store as a property if needed in the future
+            }
+            "municipality_code" => {
+                if let Some(v) = value.downcast_ref::<Option<String>>() {
+                    self.municipality_code = v.clone();
+                }
+            }
+            "admission_date" => {
+                if let Some(v) = value.downcast_ref::<Option<NaiveDate>>() {
+                    if let Some(date) = *v {
+                        if let Some(ref mut admissions) = self.hospital_admissions {
+                            admissions.push(date);
+                        } else {
+                            self.hospital_admissions = Some(vec![date]);
+                        }
+                        // Also update last admission date if newer
+                        if let Some(last_date) = self.last_hospital_admission_date {
+                            if date > last_date {
+                                self.last_hospital_admission_date = Some(date);
+                            }
+                        } else {
+                            self.last_hospital_admission_date = Some(date);
+                        }
+                    }
+                }
+            }
+            "discharge_date" => {
+                if let Some(v) = value.downcast_ref::<Option<NaiveDate>>() {
+                    if let Some(date) = *v {
+                        if let Some(ref mut discharges) = self.discharge_dates {
+                            discharges.push(date);
+                        } else {
+                            self.discharge_dates = Some(vec![date]);
+                        }
+                    }
+                }
+            }
+            "age" => {
+                if let Some(v) = value.downcast_ref::<Option<i32>>() {
+                    self.age = *v;
+                }
+            }
+            "length_of_stay" => {
+                if let Some(v) = value.downcast_ref::<Option<i32>>() {
+                    self.length_of_stay = *v;
                 }
             }
             // Add more field mappings as needed
@@ -707,84 +805,8 @@ impl EntityModel for Individual {
     }
 }
 
-// Implement the Default trait for Individual
-impl Default for Individual {
-    fn default() -> Self {
-        Self {
-            // Core identification
-            pnr: String::new(), // Empty string as default
-            birth_date: None,
-            gender: None,
-            death_date: None,
-            origin: None,
-            age: None,
-
-            // Basic demographic information
-            municipality_code: None,
-            is_rural: false,
-            mother_pnr: None,
-            father_pnr: None,
-            family_id: None,
-            marital_status: None,
-            marital_date: None,
-            citizenship_status: None,
-            regional_code: None,
-            household_size: None,
-            household_type: None,
-            immigration_type: None,
-
-            // Education information
-            education_level: -1, // Unknown
-            education_institution: None,
-            education_code: None,
-            education_source: None,
-            education_valid_to: None,
-            education_valid_from: None,
-
-            // Employment and socioeconomic status
-            socioeconomic_status: None,
-
-            // Income information
-            annual_income: None,
-            employment_income: None,
-            income_year: None,
-
-            // Healthcare usage
-            hospital_admissions_count: None,
-            emergency_visits_count: None,
-            outpatient_visits_count: None,
-            gp_visits_count: None,
-            last_hospital_admission_date: None,
-            hospitalization_days: None,
-            length_of_stay: None,
-            diagnoses: None,
-            procedures: None,
-            hospital_admissions: None,
-            discharge_dates: None,
-            death_cause: None,
-            underlying_death_cause: None,
-
-            // Migration information
-            event_date: None,
-            event_type: None,
-
-            // BEF registry specific fields
-            spouse_pnr: None,
-            family_size: None,
-            residence_from: None,
-            position_in_family: None,
-            family_type: None,
-
-            // MFR registry specific fields
-            birth_weight: None,
-            birth_length: None,
-            gestational_age: None,
-            apgar_score: None,
-            birth_order: None,
-            plurality: None,
-        }
-    }
-}
+// The Default trait is already implemented at the top of the file
+// using the default_impl() method.
 
 // Implement family relationship methods
 impl Individual {

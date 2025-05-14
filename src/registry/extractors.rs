@@ -356,8 +356,14 @@ impl DateExtractor {
             }
         }
         
-        // For debugging
-        println!("Failed to parse date string: '{date_str}'");
+        // For debugging, but limit output
+        static mut FAILURE_COUNT: usize = 0;
+        unsafe {
+            if FAILURE_COUNT < 3 {
+                println!("Failed to parse date string: '{date_str}'");
+                FAILURE_COUNT += 1;
+            }
+        }
         None
     }
 }
@@ -389,8 +395,15 @@ impl RegistryFieldExtractor for DateExtractor {
                         }
                         
                         let date = self.parse_date(string_array.value(row));
+                        // Add debug logging for the first few successful date parses
+                        static mut SUCCESS_COUNT: usize = 0;
                         if date.is_some() {
-                            println!("Successfully parsed date: {date:?}");
+                            unsafe {
+                                if SUCCESS_COUNT < 3 {
+                                    println!("Successfully parsed date: {date:?}");
+                                    SUCCESS_COUNT += 1;
+                                }
+                            }
                         }
                         date
                     } else {

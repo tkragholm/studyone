@@ -4,7 +4,6 @@
 //! Children have specific attributes related to health conditions, birth details,
 //! and can be associated with severe chronic diseases (SCD).
 
-use crate::common::traits::registry::RegistryAware;
 use crate::error::Result;
 use crate::models::collections::ModelCollection;
 use crate::models::core::Individual;
@@ -81,76 +80,76 @@ impl Child {
         }
     }
 
-    /// Create a Child directly from a registry record
-    pub fn from_registry_record(batch: &RecordBatch, row: usize) -> Result<Option<Self>> {
-        // First create an Individual from the registry record
-        if let Some(individual) = Individual::from_registry_record(batch, row)? {
-            let mut child = Self::from_individual(Arc::new(individual));
+    // /// Create a Child directly from a registry record
+    // pub fn from_registry_record(batch: &RecordBatch, row: usize) -> Result<Option<Self>> {
+    //     // First create an Individual from the registry record
+    //     if let Some(individual) = Individual::from_registry_record(batch, row)? {
+    //         let mut child = Self::from_individual(Arc::new(individual));
 
-            // Enhance with child-specific registry data
-            child.enhance_from_registry(batch, row)?;
+    //         // Enhance with child-specific registry data
+    //         child.enhance_from_registry(batch, row)?;
 
-            Ok(Some(child))
-        } else {
-            Ok(None)
-        }
-    }
+    //         Ok(Some(child))
+    //     } else {
+    //         Ok(None)
+    //     }
+    // }
 
-    /// Enhance this Child with data from a registry record
-    pub fn enhance_from_registry(&mut self, batch: &RecordBatch, row: usize) -> Result<bool> {
-        use crate::registry::detect::detect_registry_type;
-        use crate::utils::field_extractors::extract_int32;
+    // /// Enhance this Child with data from a registry record
+    // pub fn enhance_from_registry(&mut self, batch: &RecordBatch, row: usize) -> Result<bool> {
+    //     use crate::registry::detect::detect_registry_type;
+    //     use crate::utils::field_extractors::extract_int32;
 
-        let mut enhanced = false;
+    //     let mut enhanced = false;
 
-        // First enhance the underlying Individual
-        let mut individual = Individual::clone(&self.individual);
-        let individual_enhanced = individual.enhance_from_registry(batch, row)?;
+    //     // First enhance the underlying Individual
+    //     let mut individual = Individual::clone(&self.individual);
+    //     let individual_enhanced = individual.enhance_from_registry(batch, row)?;
 
-        if individual_enhanced {
-            // Update our Individual reference if it was enhanced
-            self.individual = Arc::new(individual);
-            enhanced = true;
-        }
+    //     if individual_enhanced {
+    //         // Update our Individual reference if it was enhanced
+    //         self.individual = Arc::new(individual);
+    //         enhanced = true;
+    //     }
 
-        // Detect registry type to add Child-specific fields
-        let registry_type = detect_registry_type(batch);
+    //     // Detect registry type to add Child-specific fields
+    //     let registry_type = detect_registry_type(batch);
 
-        // MFR registry contains birth-related information
-        if registry_type.as_str() == "MFR" {
-            // Extract birth-related fields if they're not already set
-            if self.birth_weight.is_none() {
-                if let Ok(Some(weight)) = extract_int32(batch, row, "VAEGT", false) {
-                    self.birth_weight = Some(weight);
-                    enhanced = true;
-                }
-            }
+    //     // MFR registry contains birth-related information
+    //     if registry_type.as_str() == "MFR" {
+    //         // Extract birth-related fields if they're not already set
+    //         if self.birth_weight.is_none() {
+    //             if let Ok(Some(weight)) = extract_int32(batch, row, "VAEGT", false) {
+    //                 self.birth_weight = Some(weight);
+    //                 enhanced = true;
+    //             }
+    //         }
 
-            if self.gestational_age.is_none() {
-                if let Ok(Some(ga)) = extract_int32(batch, row, "SVLENGTH", false) {
-                    self.gestational_age = Some(ga);
-                    enhanced = true;
-                }
-            }
+    //         if self.gestational_age.is_none() {
+    //             if let Ok(Some(ga)) = extract_int32(batch, row, "SVLENGTH", false) {
+    //                 self.gestational_age = Some(ga);
+    //                 enhanced = true;
+    //             }
+    //         }
 
-            if self.apgar_score.is_none() {
-                if let Ok(Some(apgar)) = extract_int32(batch, row, "APGAR5", false) {
-                    self.apgar_score = Some(apgar);
-                    enhanced = true;
-                }
-            }
-        }
+    //         if self.apgar_score.is_none() {
+    //             if let Ok(Some(apgar)) = extract_int32(batch, row, "APGAR5", false) {
+    //                 self.apgar_score = Some(apgar);
+    //                 enhanced = true;
+    //             }
+    //         }
+    //     }
 
-        // LPR registry contains diagnosis information that could affect SCD status
-        if registry_type.as_str() == "LPR" {
-            // Extract diagnoses if applicable
-            // This would be more complex and would require building Diagnosis objects
-            // and potentially updating SCD status
-            // For now, we'll just leave this as a placeholder
-        }
+    //     // LPR registry contains diagnosis information that could affect SCD status
+    //     if registry_type.as_str() == "LPR" {
+    //         // Extract diagnoses if applicable
+    //         // This would be more complex and would require building Diagnosis objects
+    //         // and potentially updating SCD status
+    //         // For now, we'll just leave this as a placeholder
+    //     }
 
-        Ok(enhanced)
-    }
+    //     Ok(enhanced)
+    // }
 
     /// Create Child models from a batch of registry records using `serde_arrow`
     pub fn from_registry_batch_with_serde_arrow(batch: &RecordBatch) -> Result<Vec<Self>> {

@@ -1,0 +1,7 @@
+Successfully parsed date: Some(2000-01-04)
+Successfully parsed date: Some(2000-01-03)
+Successfully parsed date: Some(2000-01-10)
+Successfully parsed date: Some(2000-01-03)
+Successfully parsed date: Some(2000-01-04)
+Successfully parsed date: Some(2000-01-03)
+Successfully parsed date: Some(2000-01-06)

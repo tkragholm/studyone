@@ -1,6 +1,4 @@
 use par_reader::Result;
-use par_reader::examples::schema_macros_example::run_schema_macros_example;
-use std::env;
 use std::path::Path;
 
 #[global_allocator]
@@ -17,40 +15,7 @@ async fn main() -> Result<()> {
         println!("Data directory not found: {}", base_dir.display());
         return Ok(());
     }
-
-    // Check for command-line arguments
-    let args: Vec<String> = env::args().collect();
-    let use_unified = args.len() > 1 && args[1] == "--unified";
-    let use_schema_macros = args.len() > 1 && args[1] == "--schema-macros";
-
-    // Filter parameters for the cohort
-    let _start_date = "20080101";
-    let _end_date = "20091231";
-
-    if use_schema_macros {
-        println!("Running schema macros example");
-        run_schema_macros_example();
-    } else if use_unified {
-        println!("Using unified system for registry processing");
-
-        // Run the unified registry processing example
-        //run_unified_registry_example(base_dir, start_date, end_date).await?;
-    } else {
-        println!("Using original system for registry processing");
-
-        // Run the sequential registry processing example
-        // This follows the logical data dependencies:
-        // 1. Identify children from BEF based on birth date
-        // 2. Get birth details from MFR and match with BEF
-        // 3. Add mortality/migration from DOD/VNDS
-        // 4. Add socioeconomic info from AKM/UDDF/IND
-        let individuals_count = 1;
-        //run_sequential_registry_example(base_dir, start_date, end_date).await?;
-
-        println!(
-            "Successfully processed {individuals_count} individuals following a sequential approach"
-        );
-    }
+    println!("Hello :))");
 
     Ok(())
 }

@@ -7,9 +7,9 @@
 // New hierarchical modules
 pub mod collections;
 pub mod core;
-// pub mod derived;
-// pub mod economic;
-// pub mod health;
+pub mod derived;
+pub mod economic;
+pub mod health;
 
 // Re-export commonly used traits for backward compatibility
 pub use core::traits::{ArrowSchema, EntityModel, Filterable, HealthStatus, TemporalValidity};
