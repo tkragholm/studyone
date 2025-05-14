@@ -186,7 +186,7 @@ fn generate_registry_impl(
     // Check if the struct has the specified ID field
     let has_id_field = fields.iter().any(|field| {
         field.ident.as_ref()
-            .map(|ident| ident.to_string() == id_field)
+            .map(|ident| *ident == id_field)
             .unwrap_or(false)
     });
     
@@ -196,65 +196,65 @@ fn generate_registry_impl(
     // Update the unused variable to avoid warnings
     let _has_id_field = has_id_field;
     
-    // Generate appropriate From implementation
-    let from_impl = if id_field == "pnr" {
-        if has_record_number {
-            // For structs using PNR as id_field and having a record_number field (e.g., LPR_ADM)
-            quote! {
-                impl From<crate::models::core::Individual> for #struct_name {
-                    fn from(individual: crate::models::core::Individual) -> Self {
-                        // Only print for the first few records to avoid flooding the console
-                        static mut PRINT_COUNT: usize = 0;
-                        unsafe {
-                            if PRINT_COUNT < 3 {
-                                println!("Converting Individual to {}", stringify!(#struct_name));
-                                PRINT_COUNT += 1;
-                            }
+    // Prepare field extraction for properties
+    let field_extraction_statements = fields.iter().filter_map(|field| {
+        let field_name = field.ident.as_ref().unwrap();
+        let field_name_str = field_name.to_string();
+        
+        // Skip ID field extraction as it's handled separately
+        if field_name_str == id_field {
+            None
+        } else {
+            // For non-ID fields, generate property extraction code
+            Some(quote! {
+                // Extract property by field name
+                if let Some(props) = individual.properties() {
+                    if let Some(value) = props.get(#field_name_str) {
+                        // Handle common types with downcast
+                        // First try Option<String>
+                        if let Some(string_val) = value.downcast_ref::<Option<String>>() {
+                            instance.#field_name = string_val.clone();
+                        } 
+                        // Then try Option<NaiveDate>
+                        else if let Some(date_val) = value.downcast_ref::<Option<chrono::NaiveDate>>() {
+                            instance.#field_name = *date_val;
                         }
-                        
-                        // Create a default instance of our struct
-                        let mut instance = Self::default();
-                        
-                        // Set the PNR field directly
-                        instance.pnr = individual.pnr.clone();
-                        
-                        // Check if the record_number property exists in the Individual
-                        if let Some(props) = individual.properties() {
-                            if let Some(record_num) = props.get("record_number") {
-                                if let Some(recnum) = record_num.downcast_ref::<Option<String>>() {
-                                    instance.record_number = recnum.clone();
-                                }
-                            }
+                        // Then try String (non-Option)
+                        else if let Some(string_val) = value.downcast_ref::<String>() {
+                            instance.#field_name = string_val.clone();
                         }
-                        
-                        // Return the populated instance
-                        instance
                     }
                 }
-            }
-        } else {
-            // For structs using PNR as id_field but having no record_number field
-            quote! {
-                impl From<crate::models::core::Individual> for #struct_name {
-                    fn from(individual: crate::models::core::Individual) -> Self {
-                        // Only print for the first few records to avoid flooding the console
-                        static mut PRINT_COUNT: usize = 0;
-                        unsafe {
-                            if PRINT_COUNT < 3 {
-                                println!("Converting Individual to {}", stringify!(#struct_name));
-                                PRINT_COUNT += 1;
-                            }
+            })
+        }
+    }).collect::<Vec<_>>();
+
+    // Generate appropriate From implementation
+    let from_impl = if id_field == "pnr" {
+        // For structs using PNR as id_field
+        quote! {
+            impl From<crate::models::core::Individual> for #struct_name {
+                fn from(individual: crate::models::core::Individual) -> Self {
+                    // Only print for the first few records to avoid flooding the console
+                    static mut PRINT_COUNT: usize = 0;
+                    unsafe {
+                        if PRINT_COUNT < 3 {
+                            println!("Converting Individual to {}", stringify!(#struct_name));
+                            PRINT_COUNT += 1;
                         }
-                        
-                        // Create a default instance of our struct
-                        let mut instance = Self::default();
-                        
-                        // Set the PNR field directly
-                        instance.pnr = individual.pnr.clone();
-                        
-                        // Return the populated instance
-                        instance
                     }
+                    
+                    // Create a default instance of our struct
+                    let mut instance = Self::default();
+                    
+                    // Set the PNR field directly
+                    instance.pnr = individual.pnr.clone();
+                    
+                    // Extract all other fields from properties
+                    #(#field_extraction_statements)*
+                    
+                    // Return the populated instance
+                    instance
                 }
             }
         }
@@ -273,12 +273,21 @@ fn generate_registry_impl(
                     }
                     
                     // Create a default instance of our struct
-                    let instance = Self::default();
+                    let mut instance = Self::default();
                     
-                    // We can't set record_number directly from Individual
-                    // It will be populated during processing
+                    // Extract record_number and all other fields from properties
+                    if let Some(props) = individual.properties() {
+                        if let Some(record_num) = props.get("record_number") {
+                            if let Some(recnum) = record_num.downcast_ref::<Option<String>>() {
+                                instance.record_number = recnum.clone();
+                            }
+                        }
+                    }
                     
-                    // Return the instance
+                    // Extract all other fields from properties
+                    #(#field_extraction_statements)*
+                    
+                    // Return the populated instance
                     instance
                 }
             }
@@ -298,12 +307,21 @@ fn generate_registry_impl(
                     }
                     
                     // Create a default instance of our struct
-                    let instance = Self::default();
+                    let mut instance = Self::default();
                     
-                    // We can't set dw_ek_kontakt directly from Individual
-                    // It will be populated during processing
+                    // Extract dw_ek_kontakt and all other fields from properties
+                    if let Some(props) = individual.properties() {
+                        if let Some(kontakt) = props.get("dw_ek_kontakt") {
+                            if let Some(dw_ek_kontakt) = kontakt.downcast_ref::<Option<String>>() {
+                                instance.dw_ek_kontakt = dw_ek_kontakt.clone();
+                            }
+                        }
+                    }
                     
-                    // Return the instance
+                    // Extract all other fields from properties
+                    #(#field_extraction_statements)*
+                    
+                    // Return the populated instance
                     instance
                 }
             }
@@ -323,9 +341,12 @@ fn generate_registry_impl(
                     }
                     
                     // Create a default instance of our struct
-                    let instance = Self::default();
+                    let mut instance = Self::default();
                     
-                    // Return the instance
+                    // Extract all fields from properties
+                    #(#field_extraction_statements)*
+                    
+                    // Return the populated instance
                     instance
                 }
             }
@@ -358,7 +379,8 @@ fn generate_registry_impl(
                     crate::registry::trait_deserializer_impl::RegistryDeserializerImpl::new(
                         #registry_name,
                         #registry_desc,
-                        schema
+                        schema,
+                        Some(#id_field)
                     )
                 );
 
@@ -424,7 +446,7 @@ fn generate_registry_impl(
 fn has_field_named(fields: &ast::Fields<RegistryFieldReceiver>, name: &str) -> bool {
     fields.iter().any(|field| {
         field.ident.as_ref()
-            .map(|ident| ident.to_string() == name)
+            .map(|ident| *ident == name)
             .unwrap_or(false)
     })
 }

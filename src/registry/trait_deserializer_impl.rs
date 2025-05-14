@@ -20,6 +20,9 @@ pub struct RegistryDeserializerImpl {
     registry_desc: String,
     field_extractors: Vec<Box<dyn RegistryFieldExtractor>>,
     field_map: HashMap<String, String>,
+    /// The type of field used as the primary identifier
+    /// Possible values: "pnr", "record_number", "dw_ek_kontakt"
+    id_field: String,
 }
 
 impl RegistryDeserializerImpl {
@@ -28,9 +31,11 @@ impl RegistryDeserializerImpl {
         registry_type: impl Into<String>,
         registry_desc: impl Into<String>,
         schema: RegistrySchema,
+        id_field: Option<impl Into<String>>,
     ) -> Self {
         let registry_type = registry_type.into();
         let registry_desc = registry_desc.into();
+        let id_field = id_field.map(|id| id.into()).unwrap_or_else(|| "pnr".to_string());
 
         // Create field extractors from schema mappings
         let mut field_extractors: Vec<Box<dyn RegistryFieldExtractor>> = Vec::new();
@@ -93,6 +98,7 @@ impl RegistryDeserializerImpl {
             registry_desc,
             field_extractors,
             field_map,
+            id_field,
         }
     }
 }
@@ -108,5 +114,9 @@ impl RegistryDeserializer for RegistryDeserializerImpl {
 
     fn field_mapping(&self) -> HashMap<String, String> {
         self.field_map.clone()
+    }
+    
+    fn id_field_type(&self) -> &str {
+        &self.id_field
     }
 }

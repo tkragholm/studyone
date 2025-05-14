@@ -13,9 +13,9 @@ use std::fs::{self};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use par_reader::error::Result;
-use par_reader::error::util::{safe_open_file, validate_directory};
-use par_reader::filter_expression::{Expr, read_and_filter_parquet};
+use crate::error::Result;
+use crate::error::util::{safe_open_file, validate_directory};
+use crate::filter_expression::{Expr, read_and_filter_parquet};
 
 /// Read a parquet file into Arrow record batches
 pub fn read_parquet(
@@ -320,8 +320,4 @@ pub fn load_parquet_files_parallel_with_filter(
     }
 
     Ok(combined_batches)
-}
-
-fn main() {
-    print!("Example");
 }

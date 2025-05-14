@@ -13,6 +13,7 @@ pub mod error;
 #[doc(inline)]
 pub use error::ResultExt;
 pub mod filter;
+pub mod loader;
 pub mod models;
 pub mod pnr_filter;
 pub mod reader;

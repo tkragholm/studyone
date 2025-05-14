@@ -62,6 +62,22 @@ pub trait RegistryDeserializer: Send + Sync + std::fmt::Debug {
     /// This provides a mapping from registry field names to `SerdeIndividual`
     /// field names for backward compatibility.
     fn field_mapping(&self) -> HashMap<String, String>;
+    
+    /// Get the ID field type used by this registry
+    ///
+    /// This returns the type of field used as the primary identifier
+    /// in this registry. Possible values are:
+    /// - "pnr" - Personal identification number (default)
+    /// - "record_number" - Record number (used in LPR_DIAG)
+    /// - "dw_ek_kontakt" - Kontakt ID (used in LPR3)
+    ///
+    /// # Returns
+    ///
+    /// A string indicating the ID field type
+    fn id_field_type(&self) -> &str {
+        // Default implementation returns "pnr" for backward compatibility
+        "pnr"
+    }
 
     /// Deserialize a record batch into a vec of Individuals
     ///
@@ -106,11 +122,26 @@ pub trait RegistryDeserializer: Send + Sync + std::fmt::Debug {
             extractor.extract_and_set(batch, row, &mut individual as &mut dyn Any)?;
         }
 
-        // Return the deserialized Individual if it has a valid PNR
-        if individual.pnr.is_empty() {
-            Ok(None)
-        } else {
+        // Check appropriate ID field based on registry type
+        let has_valid_id = match self.id_field_type() {
+            "pnr" => !individual.pnr.is_empty(),
+            "record_number" => individual.properties()
+                .and_then(|props| props.get("record_number"))
+                .and_then(|v| v.downcast_ref::<Option<String>>())
+                .and_then(|v| v.as_ref().map(|s| !s.is_empty()))
+                .unwrap_or(false),
+            "dw_ek_kontakt" => individual.properties()
+                .and_then(|props| props.get("dw_ek_kontakt"))
+                .and_then(|v| v.downcast_ref::<Option<String>>())
+                .and_then(|v| v.as_ref().map(|s| !s.is_empty()))
+                .unwrap_or(false),
+            _ => !individual.pnr.is_empty(), // Default to checking PNR for backward compatibility
+        };
+
+        if has_valid_id {
             Ok(Some(individual))
+        } else {
+            Ok(None)
         }
     }
 }

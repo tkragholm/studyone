@@ -1,8 +1,11 @@
+workspace = { members = ["macros"] }
+
 [package]
 name = "par-reader"
 version = "0.1.0"
 edition = "2024"
 description = "A Rust library for reading Parquet files with schema validation and advanced filtering"
+
 
 [dependencies]
 parquet = { version = "55.0.0", features = ["async", "arrow"] }
@@ -42,7 +45,12 @@ backtrace = []
 # Examples
 [[example]]
 name = "vnds"
-path = "examples/vnds_schema_macros.rs"
+path = "examples/vnds_test.rs"
+
+# Examples
+[[example]]
+name = "schema"
+path = "examples/schema.rs"
 
 [[example]]
 name = "lpr"
