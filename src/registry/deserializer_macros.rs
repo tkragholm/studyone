@@ -64,7 +64,7 @@ macro_rules! generate_trait_deserializer {
                         }
                         $crate::schema::FieldType::Integer => {
                             // Create integer extractor
-                            let extractor = crate::registry::extractors::IntegerExtractor::new(
+                            let extractor = $crate::registry::extractors::IntegerExtractor::new(
                                 &source_field,
                                 &target_field,
                                 crate::registry::extractors::Setter::new(mapping.setter.clone()),
