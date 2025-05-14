@@ -13,19 +13,44 @@ use chrono::NaiveDate;
 use crate::error::Result;
 use crate::registry::trait_deserializer::RegistryFieldExtractor;
 
-/// Type alias for field setter closures
-pub type Setter = Arc<dyn Fn(&mut dyn Any, Box<dyn Any>) + Send + Sync>;
+/// Re-export `ModelSetter` trait and the associated type
+pub use crate::schema::field_def::mapping::ModelSetter;
+
+/// Wrapper struct for setter functions to allow Debug implementation
+#[derive(Clone)]
+pub struct Setter(pub Arc<dyn ModelSetter>);
+
+impl Setter {
+    /// Create a new setter from a `ModelSetter`
+    pub fn new(setter: Arc<dyn ModelSetter>) -> Self {
+        Self(setter)
+    }
+
+    /// Call the underlying function
+    pub fn call(&self, target: &mut dyn Any, value: Box<dyn Any>) {
+        (self.0)(target, value);
+    }
+}
+
+/// Debug implementation for Setter
+impl std::fmt::Debug for Setter {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Setter{{...}}")
+    }
+}
 
 /// Generic field extractor for string fields
+#[derive(Debug)]
 pub struct StringExtractor {
     source_field: String,
     target_field: String,
+    #[allow(missing_debug_implementations)]
     setter: Setter,
 }
 
 impl StringExtractor {
     /// Create a new string field extractor
-    pub fn new(source_field: &str, target_field: &str, setter: Setter) -> Self {
+    #[must_use] pub fn new(source_field: &str, target_field: &str, setter: Setter) -> Self {
         Self {
             source_field: source_field.to_string(),
             target_field: target_field.to_string(),
@@ -51,7 +76,7 @@ impl RegistryFieldExtractor for StringExtractor {
 
                 // Set the value using the provided setter
                 if let Some(string_value) = value {
-                    (self.setter)(target, Box::new(string_value));
+                    self.setter.call(target, Box::new(string_value));
                 }
                 Ok(())
             }
@@ -72,15 +97,17 @@ impl RegistryFieldExtractor for StringExtractor {
 }
 
 /// Generic field extractor for integer fields
+#[derive(Debug)]
 pub struct IntegerExtractor {
     source_field: String,
     target_field: String,
+    #[allow(missing_debug_implementations)]
     setter: Setter,
 }
 
 impl IntegerExtractor {
     /// Create a new integer field extractor
-    pub fn new(source_field: &str, target_field: &str, setter: Setter) -> Self {
+    #[must_use] pub fn new(source_field: &str, target_field: &str, setter: Setter) -> Self {
         Self {
             source_field: source_field.to_string(),
             target_field: target_field.to_string(),
@@ -148,7 +175,7 @@ impl RegistryFieldExtractor for IntegerExtractor {
 
                 // Set the value using the provided setter
                 if let Some(int_value) = value {
-                    (self.setter)(target, Box::new(int_value));
+                    self.setter.call(target, Box::new(int_value));
                 }
                 Ok(())
             }
@@ -169,15 +196,17 @@ impl RegistryFieldExtractor for IntegerExtractor {
 }
 
 /// Generic field extractor for float fields
+#[derive(Debug)]
 pub struct FloatExtractor {
     source_field: String,
     target_field: String,
+    #[allow(missing_debug_implementations)]
     setter: Setter,
 }
 
 impl FloatExtractor {
     /// Create a new float field extractor
-    pub fn new(source_field: &str, target_field: &str, setter: Setter) -> Self {
+    #[must_use] pub fn new(source_field: &str, target_field: &str, setter: Setter) -> Self {
         Self {
             source_field: source_field.to_string(),
             target_field: target_field.to_string(),
@@ -235,7 +264,7 @@ impl RegistryFieldExtractor for FloatExtractor {
 
                 // Set the value using the provided setter
                 if let Some(float_value) = value {
-                    (self.setter)(target, Box::new(float_value));
+                    self.setter.call(target, Box::new(float_value));
                 }
                 Ok(())
             }
@@ -256,15 +285,17 @@ impl RegistryFieldExtractor for FloatExtractor {
 }
 
 /// Generic field extractor for date fields
+#[derive(Debug)]
 pub struct DateExtractor {
     source_field: String,
     target_field: String,
+    #[allow(missing_debug_implementations)]
     setter: Setter,
 }
 
 impl DateExtractor {
     /// Create a new date field extractor
-    pub fn new(source_field: &str, target_field: &str, setter: Setter) -> Self {
+    #[must_use] pub fn new(source_field: &str, target_field: &str, setter: Setter) -> Self {
         Self {
             source_field: source_field.to_string(),
             target_field: target_field.to_string(),
@@ -311,7 +342,7 @@ impl RegistryFieldExtractor for DateExtractor {
 
                 // Set the value using the provided setter
                 if let Some(date_value) = value {
-                    (self.setter)(target, Box::new(date_value));
+                    self.setter.call(target, Box::new(date_value));
                 }
                 Ok(())
             }

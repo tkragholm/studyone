@@ -13,8 +13,6 @@ use crate::registry::lpr::v3::schema::schema_unified::{
     create_lpr3_diagnoser_schema, create_lpr3_kontakter_schema,
 };
 
-/// Generate trait deserializers for LPR v3 registries
-
 // Generate trait deserializer for LPR3_KONTAKTER
 crate::generate_trait_deserializer!(
     Lpr3KontakterTraitDeserializer,

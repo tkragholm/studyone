@@ -4,10 +4,23 @@
 //! from unified schema definitions, eliminating repetitive code.
 
 /// Macro to generate a trait deserializer from a schema
+/// 
+/// Use this macro to quickly generate a registry trait deserializer from a schema.
+/// 
+/// # Arguments
+/// 
+/// * `$registry` - The name of the deserializer struct to generate
+/// * `$registry_type` - The registry type name (e.g., "BEF", "`LPR_ADM`")
+/// * `$schema_fn` - A function that returns the schema definition
+/// 
+/// # Returns
+/// 
+/// Creates a struct with the specified name that implements `RegistryDeserializer`.
 #[macro_export]
 macro_rules! generate_trait_deserializer {
     ($registry:ident, $registry_type:expr, $schema_fn:expr) => {
-        // Avoid importing items at the module level to prevent collisions
+        // Create the deserializer struct with debug implementation
+        #[derive(Debug)]
         pub struct $registry {
             field_extractors: Vec<Box<dyn $crate::registry::trait_deserializer::RegistryFieldExtractor>>,
             field_map: std::collections::HashMap<String, String>,
@@ -42,10 +55,10 @@ macro_rules! generate_trait_deserializer {
                         | $crate::schema::FieldType::PNR
                         | $crate::schema::FieldType::Category => {
                             // Create string extractor
-                            let extractor = crate::registry::extractors::StringExtractor::new(
+                            let extractor = $crate::registry::extractors::StringExtractor::new(
                                 &source_field,
                                 &target_field,
-                                mapping.setter.clone(),
+                                $crate::registry::extractors::Setter::new(mapping.setter.clone()),
                             );
                             field_extractors.push(Box::new(extractor));
                         }
@@ -54,7 +67,7 @@ macro_rules! generate_trait_deserializer {
                             let extractor = crate::registry::extractors::IntegerExtractor::new(
                                 &source_field,
                                 &target_field,
-                                mapping.setter.clone(),
+                                crate::registry::extractors::Setter::new(mapping.setter.clone()),
                             );
                             field_extractors.push(Box::new(extractor));
                         }
@@ -63,7 +76,7 @@ macro_rules! generate_trait_deserializer {
                             let extractor = crate::registry::extractors::FloatExtractor::new(
                                 &source_field,
                                 &target_field,
-                                mapping.setter.clone(),
+                                crate::registry::extractors::Setter::new(mapping.setter.clone()),
                             );
                             field_extractors.push(Box::new(extractor));
                         }
@@ -72,7 +85,7 @@ macro_rules! generate_trait_deserializer {
                             let extractor = crate::registry::extractors::DateExtractor::new(
                                 &source_field,
                                 &target_field,
-                                mapping.setter.clone(),
+                                crate::registry::extractors::Setter::new(mapping.setter.clone()),
                             );
                             field_extractors.push(Box::new(extractor));
                         }

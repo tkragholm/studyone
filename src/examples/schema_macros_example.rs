@@ -1,24 +1,36 @@
 //! Example demonstrating the use of schema macros
 //!
-//! This example shows how to use the new schema macros to define registries
+//! This example shows how to use the procedural macros to define registries
 //! with minimal boilerplate.
 
 use chrono::NaiveDate;
-use crate::define_registry;
 
-// Define the VNDS registry using our new macro
-define_registry! {
-    name: "VNDS",
-    description: "Migration registry containing migration information",
-    struct VndsRegistry {
-        #[field(name = "PNR", nullable = false)]
-        pnr: String,
+// Define a test struct that doesn't try to use the derive macro yet
+// until we fix the implementation
+struct VndsRegistryTest {
+    pnr: String,
+    event_type: Option<String>,
+    event_date: Option<NaiveDate>,
+}
 
-        #[field(name = "INDUD_KODE", nullable = true)]
-        event_type: Option<String>,
+// As a temporary workaround, we'll manually implement the deserializer
+// to test our progress
+struct VndsRegistryDeserializer {
+    inner: std::sync::Arc<dyn crate::registry::trait_deserializer::RegistryDeserializer>,
+}
 
-        #[field(name = "HAEND_DATO", nullable = true)]
-        event_date: Option<NaiveDate>,
+impl VndsRegistryDeserializer {
+    fn new() -> Self {
+        // This is just a stub
+        Self {
+            inner: std::sync::Arc::new(
+                crate::registry::trait_deserializer_impl::RegistryDeserializerImpl::new(
+                    "VNDS",
+                    "Migration registry",
+                    crate::schema::RegistrySchema::default(),
+                )
+            )
+        }
     }
 }
 
@@ -26,17 +38,17 @@ define_registry! {
 pub fn run_schema_macros_example() {
     println!("Running schema macros example");
 
-    // Create a deserializer using the macro-generated implementation
+    // Create a manual deserializer for testing
     let deserializer = VndsRegistryDeserializer::new();
 
     // Print deserializer info
-    println!("Created deserializer for VNDS registry");
-    println!("Deserializer: {:?}", deserializer);
+    println!("Created test deserializer for VNDS registry");
+    println!("Deserializer inner type: {:?}", deserializer.inner);
 
     // In a real example, we would deserialize a record batch:
     // let batches = load_batches("path/to/vnds_data.parquet");
     // for batch in batches {
-    //     let individuals = deserializer.deserialize_batch(&batch).unwrap();
+    //     let individuals = deserializer.inner.deserialize_batch(&batch).unwrap();
     //     for individual in individuals {
     //         println!("Deserialized individual: {}", individual.pnr);
     //     }

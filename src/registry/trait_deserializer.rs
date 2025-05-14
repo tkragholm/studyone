@@ -11,13 +11,22 @@ use std::collections::HashMap;
 use crate::error::Result;
 use crate::models::core::Individual;
 
+/// Marker trait for registry-specific types
+///
+/// This trait is used to mark types that can be used as registry models.
+/// It's implemented for Individual and for user-defined registry types.
+pub trait RegistryType: Any + Send + Sync {}
+
+// Implement the trait for Individual
+impl RegistryType for Individual {}
+
 /// Trait for registry field extraction from Arrow data
 ///
 /// This trait defines the interface for extracting fields from
 /// Arrow data and setting them on an Individual using registry-specific
 /// trait methods. It's designed to work with both manual implementations
 /// and auto-generated extractors from the unified schema.
-pub trait RegistryFieldExtractor: Send + Sync {
+pub trait RegistryFieldExtractor: Send + Sync + std::fmt::Debug {
     /// Extract a field value from the given record batch and row
     ///
     /// # Arguments
@@ -41,7 +50,7 @@ pub trait RegistryFieldExtractor: Send + Sync {
 ///
 /// This trait defines the interface for deserializing registry data
 /// into the Individual model using registry-specific field extractors.
-pub trait RegistryDeserializer: Send + Sync {
+pub trait RegistryDeserializer: Send + Sync + std::fmt::Debug {
     /// Get the registry type name
     fn registry_type(&self) -> &str;
 

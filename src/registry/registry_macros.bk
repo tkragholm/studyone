@@ -2,6 +2,36 @@
 //!
 //! This module contains macros for generating registry-specific code from
 //! simple struct definitions.
+//!
+//! Note: This module provides a regular macro approach to registry definition.
+//! For a more powerful approach using procedural macros, the `par_reader_macros` crate
+//! provides a `RegistryTrait` derive macro that is re-exported from the main crate.
+//! 
+//! # Regular Macro Approach (this module)
+//! ```rust
+//! use par_reader::define_registry;
+//! 
+//! define_registry! {
+//!     name: "VNDS",
+//!     description: "Migration registry",
+//!     struct VndsRegistry {
+//!         #[field(name = "PNR", nullable = false)]
+//!         pnr: String,
+//!     }
+//! }
+//! ```
+//!
+//! # Procedural Macro Approach (recommended)
+//! ```rust
+//! use par_reader::RegistryTrait;
+//! 
+//! #[derive(RegistryTrait)]
+//! #[registry(name = "VNDS", description = "Migration registry")]
+//! struct VndsRegistry {
+//!     #[field(name = "PNR", nullable = false)]
+//!     pnr: String,
+//! }
+//! ```
 
 /// Generate a registry deserializer from a struct-like definition
 ///

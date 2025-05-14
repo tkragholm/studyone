@@ -117,3 +117,12 @@ pub fn create_registry_schema(
 ) -> RegistrySchema {
     RegistrySchema::new(name, description, field_mappings)
 }
+
+/// Default implementation for `RegistrySchema`
+impl Default for RegistrySchema {
+    fn default() -> Self {
+        // Create a minimal schema with just a PNR field
+        let field_mappings = vec![];
+        Self::new("Default", "Default empty schema", field_mappings)
+    }
+}

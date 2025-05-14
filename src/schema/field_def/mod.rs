@@ -6,7 +6,7 @@
 mod adapt;
 mod field;
 mod macros;
-mod mapping;
+pub mod mapping;
 mod registry_schema;
 
 pub use adapt::SchemaAdapter;

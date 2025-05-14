@@ -335,6 +335,61 @@ impl Individual {
             plurality: None,
         }
     }
+    
+    /// Set a property value by name
+    /// 
+    /// This method is used by the registry deserializer to set property values
+    /// dynamically, primarily for the procedural macro system.
+    pub fn set_property(&mut self, property: &str, value: Box<dyn std::any::Any>) {
+        // Handle common field types
+        match property {
+            "pnr" => {
+                if let Some(v) = value.downcast_ref::<String>() {
+                    self.pnr = v.clone();
+                }
+            },
+            "gender" => {
+                if let Some(v) = value.downcast_ref::<Option<String>>() {
+                    self.gender = v.clone();
+                }
+            },
+            "birth_date" => {
+                if let Some(v) = value.downcast_ref::<Option<NaiveDate>>() {
+                    self.birth_date = *v;
+                }
+            },
+            "death_date" => {
+                if let Some(v) = value.downcast_ref::<Option<NaiveDate>>() {
+                    self.death_date = *v;
+                }
+            },
+            "mother_pnr" => {
+                if let Some(v) = value.downcast_ref::<Option<String>>() {
+                    self.mother_pnr = v.clone();
+                }
+            },
+            "father_pnr" => {
+                if let Some(v) = value.downcast_ref::<Option<String>>() {
+                    self.father_pnr = v.clone();
+                }
+            },
+            "event_type" => {
+                if let Some(v) = value.downcast_ref::<Option<String>>() {
+                    self.event_type = v.clone();
+                }
+            },
+            "event_date" => {
+                if let Some(v) = value.downcast_ref::<Option<NaiveDate>>() {
+                    self.event_date = *v;
+                }
+            },
+            // Add more field mappings as needed
+            _ => {
+                // For fields not explicitly handled, log a debug message
+                eprintln!("Property not handled: {property}");
+            }
+        }
+    }
 
     /// Compute rural status from municipality code
     pub fn compute_rural_status(&mut self) {
@@ -746,13 +801,13 @@ impl Individual {
 
     /// Check if this Individual has both parents in the dataset
     #[must_use]
-    pub fn has_both_parents(&self) -> bool {
+    pub const fn has_both_parents(&self) -> bool {
         self.has_mother() && self.has_father()
     }
 
     /// Check if this Individual has either parent in the dataset
     #[must_use]
-    pub fn has_any_parent(&self) -> bool {
+    pub const fn has_any_parent(&self) -> bool {
         self.has_mother() || self.has_father()
     }
 }

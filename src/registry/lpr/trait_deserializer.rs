@@ -23,6 +23,16 @@ struct LprStringExtractor {
     setter: Box<dyn Fn(&mut dyn Any, Option<String>) -> Result<()> + Send + Sync>,
 }
 
+impl std::fmt::Debug for LprStringExtractor {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("LprStringExtractor")
+            .field("source_field", &self.source_field)
+            .field("target_field", &self.target_field)
+            .field("setter", &"<function>")
+            .finish()
+    }
+}
+
 impl LprStringExtractor {
     /// Create a new string field extractor
     pub fn new<F>(source_field: &str, target_field: &str, setter: F) -> Self
@@ -77,6 +87,16 @@ struct LprDateExtractor {
     source_field: String,
     target_field: String,
     setter: Box<dyn Fn(&mut dyn Any, Option<NaiveDate>) -> Result<()> + Send + Sync>,
+}
+
+impl std::fmt::Debug for LprDateExtractor {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("LprDateExtractor")
+            .field("source_field", &self.source_field)
+            .field("target_field", &self.target_field)
+            .field("setter", &"<function>")
+            .finish()
+    }
 }
 
 impl LprDateExtractor {
@@ -134,6 +154,16 @@ struct LprIntExtractor {
     source_field: String,
     target_field: String,
     setter: Box<dyn Fn(&mut dyn Any, Option<i32>) -> Result<()> + Send + Sync>,
+}
+
+impl std::fmt::Debug for LprIntExtractor {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("LprIntExtractor")
+            .field("source_field", &self.source_field)
+            .field("target_field", &self.target_field)
+            .field("setter", &"<function>")
+            .finish()
+    }
 }
 
 impl LprIntExtractor {
@@ -229,6 +259,7 @@ impl RegistryFieldExtractor for LprIntExtractor {
 /// LPR field extractor for diagnosis fields
 ///
 /// This special extractor handles adding diagnosis codes to the `LprFields` trait
+#[derive(Debug)]
 struct LprDiagnosisExtractor {
     source_field: String,
 }
@@ -278,6 +309,7 @@ impl RegistryFieldExtractor for LprDiagnosisExtractor {
 }
 
 /// LPR registry ADM deserializer that uses the trait-based field access system
+#[derive(Debug)]
 pub struct LprAdmTraitDeserializer {
     field_extractors: Vec<Box<dyn RegistryFieldExtractor>>,
     field_map: HashMap<String, String>,
@@ -384,6 +416,7 @@ impl RegistryDeserializer for LprAdmTraitDeserializer {
 }
 
 /// LPR registry DIAG deserializer that uses the trait-based field access system
+#[derive(Debug)]
 pub struct LprDiagTraitDeserializer {
     field_extractors: Vec<Box<dyn RegistryFieldExtractor>>,
     field_map: HashMap<String, String>,

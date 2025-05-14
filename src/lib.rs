@@ -141,6 +141,9 @@ pub use registry::{
     transform_records,
 };
 
+// Re-export the procedural macros for registry definitions
+pub use par_reader_macros::RegistryTrait;
+
 // Registry factory functions
 pub use registry::factory::{
     load_multiple_registries,

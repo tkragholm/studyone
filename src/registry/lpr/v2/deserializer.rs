@@ -16,8 +16,6 @@ use crate::registry::lpr::v2::schema::schema_unified::{
 };
 use crate::registry::trait_deserializer::RegistryDeserializer;
 
-/// Generate trait deserializers for LPR v2 registries
-
 // Generate trait deserializer for LPR_ADM
 crate::generate_trait_deserializer!(LprAdmTraitDeserializer, "LPR_ADM", create_lpr_adm_schema);
 
@@ -87,6 +85,7 @@ pub fn deserialize_bes_row(batch: &RecordBatch, row: usize) -> Result<Option<Ind
 ///
 /// This extension of the auto-generated trait deserializer adds support for
 /// PNR lookups when deserializing `LPR_DIAG` records.
+#[derive(Debug)]
 pub struct LprDiagWithPnrDeserializer {
     inner: LprDiagTraitDeserializer,
     pnr_lookup: HashMap<String, String>,
@@ -94,7 +93,8 @@ pub struct LprDiagWithPnrDeserializer {
 
 impl LprDiagWithPnrDeserializer {
     /// Create a new `LPR_DIAG` trait deserializer with PNR lookup
-    #[must_use] pub fn new(pnr_lookup: HashMap<String, String>) -> Self {
+    #[must_use]
+    pub fn new(pnr_lookup: HashMap<String, String>) -> Self {
         Self {
             inner: LprDiagTraitDeserializer::new(),
             pnr_lookup,
