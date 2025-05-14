@@ -3,9 +3,7 @@
 //! This is a simple test for the RegistryTrait derive macro
 
 use par_reader::*;
-use arrow::record_batch::RecordBatch;
 use chrono::NaiveDate;
-use std::path::Path;
 
 fn main() {
     println!("VNDS Registry test");
