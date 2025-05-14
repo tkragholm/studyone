@@ -109,6 +109,107 @@ This document outlines the approach for implementing the tasks listed in TODO.tx
    - Create specialized query builders for each registry
    - Add high-level API for common operations
 
+## Support for Different ID Field Types (LPR Implementation Fix)
+
+The current trait deserializer system has been enhanced to support different ID field types. However, an issue in the base `RegistryDeserializer` trait implementation prevents it from working fully with non-PNR identifiers.
+
+### Current Issue
+
+In `trait_deserializer.rs`, the `deserialize_row` method returns `None` when the Individual's `pnr` field is empty:
+
+```rust
+fn deserialize_row(&self, batch: &RecordBatch, row: usize) -> Result<Option<Individual>> {
+    // Create a new Individual with empty values
+    let mut individual = Individual::new(
+        String::new(), // Empty PNR to be filled by extractors
+        None,          // No birth date yet
+    );
+
+    // Apply all field extractors
+    for extractor in self.field_extractors() {
+        extractor.extract_and_set(batch, row, &mut individual as &mut dyn Any)?;
+    }
+
+    // Return the deserialized Individual if it has a valid PNR
+    if individual.pnr.is_empty() {
+        Ok(None)  // <-- THIS LINE causes issues for non-PNR registries
+    } else {
+        Ok(Some(individual))
+    }
+}
+```
+
+For registry types like LPR_DIAG that use record_number instead of PNR, this means that `deserialize_row` always returns `None`.
+
+### Temporary Workaround
+
+A manual extraction approach has been implemented in the example code that works correctly:
+
+1. The ADM records are processed first to build a mapping from RECNUM to PNR
+2. The DIAG records are manually extracted from the Arrow batch
+3. For each DIAG record, we check if its RECNUM exists in our mapping
+4. If it does, we create a Diagnosis object with the PNR from the mapping
+
+### Long-Term Solution
+
+1. **Update the `RegistryDeserializer` trait**:
+   - Modify the trait to be aware of which field is being used as the identifier
+   - Update the `deserialize_row` method to check the appropriate ID field instead of always checking `pnr`
+
+```rust
+fn deserialize_row(&self, batch: &RecordBatch, row: usize) -> Result<Option<Individual>> {
+    // Create a new Individual with empty values
+    let mut individual = Individual::new(
+        String::new(), 
+        None,
+    );
+
+    // Apply all field extractors
+    for extractor in self.field_extractors() {
+        extractor.extract_and_set(batch, row, &mut individual as &mut dyn Any)?;
+    }
+
+    // Check appropriate ID field based on registry type
+    let has_valid_id = match self.id_field_type() {
+        "pnr" => !individual.pnr.is_empty(),
+        "record_number" => individual.properties()
+            .and_then(|props| props.get("record_number"))
+            .and_then(|v| v.downcast_ref::<Option<String>>())
+            .and_then(|v| v.as_ref().map(|s| !s.is_empty()))
+            .unwrap_or(false),
+        "dw_ek_kontakt" => individual.properties()
+            .and_then(|props| props.get("dw_ek_kontakt"))
+            .and_then(|v| v.downcast_ref::<Option<String>>())
+            .and_then(|v| v.as_ref().map(|s| !s.is_empty()))
+            .unwrap_or(false),
+        _ => !individual.pnr.is_empty(), // Default to checking PNR
+    };
+
+    if has_valid_id {
+        Ok(Some(individual))
+    } else {
+        Ok(None)
+    }
+}
+```
+
+2. **Expand the proc macro**:
+   - Add an attribute to specify the identifier field
+   - Generate the appropriate trait implementation based on the identifier type
+   - Ensure the ID field is correctly handled in all generated code
+
+```rust
+#[derive(RegistryTrait)]
+#[registry(name = "LPR_DIAG", description = "LPR Diagnosis registry", id_field = "record_number")]
+struct LprDiagRegistry {
+    #[field(name = "RECNUM")]
+    record_number: Option<String>,
+    
+    #[field(name = "C_DIAG")]
+    diagnosis_code: Option<String>,
+}
+```
+
 ## Benefits
 
 1. **Improved Type Safety**

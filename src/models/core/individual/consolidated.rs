@@ -15,6 +15,7 @@ use arrow::datatypes::DataType;
 use chrono::{Datelike, NaiveDate};
 use serde::{Deserialize, Serialize};
 use std::default::Default;
+use std::collections::HashMap;
 
 /// Role of an individual in the study context
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -33,7 +34,7 @@ pub enum Role {
 ///
 /// A single unified struct that handles both storage and serde operations
 /// All BEF derived dates are in the following format: DD/MM/YYYY
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Individual {
     // Identifiers
     /// Personal identification number (PNR)
@@ -51,6 +52,10 @@ pub struct Individual {
     /// Spouse's personal identification number
     #[serde(alias = "E_FAELLE_ID")]
     pub spouse_pnr: Option<String>,
+    
+    /// Additional properties that don't have explicit fields
+    #[serde(skip)]
+    properties: Option<HashMap<String, Box<dyn std::any::Any + Send + Sync>>>,
 
     // Core characteristics
     /// Gender of the individual
@@ -263,6 +268,86 @@ impl Default for Individual {
     }
 }
 
+// Implement Clone for Individual
+impl Clone for Individual {
+    fn clone(&self) -> Self {
+        // Create a new default instance
+        let mut cloned = Self::default();
+        
+        // Copy all fields except properties
+        cloned.pnr = self.pnr.clone();
+        cloned.mother_pnr = self.mother_pnr.clone();
+        cloned.father_pnr = self.father_pnr.clone();
+        cloned.family_id = self.family_id.clone();
+        cloned.spouse_pnr = self.spouse_pnr.clone();
+        
+        cloned.gender = self.gender.clone();
+        cloned.birth_date = self.birth_date;
+        cloned.death_date = self.death_date;
+        cloned.age = self.age;
+        
+        cloned.origin = self.origin.clone();
+        cloned.citizenship_status = self.citizenship_status.clone();
+        cloned.immigration_type = self.immigration_type.clone();
+        cloned.marital_status = self.marital_status.clone();
+        cloned.marital_date = self.marital_date;
+        
+        cloned.municipality_code = self.municipality_code.clone();
+        cloned.regional_code = self.regional_code.clone();
+        cloned.is_rural = self.is_rural;
+        cloned.household_type = self.household_type;
+        cloned.family_size = self.family_size;
+        cloned.household_size = self.household_size;
+        
+        cloned.residence_from = self.residence_from;
+        cloned.position_in_family = self.position_in_family;
+        cloned.family_type = self.family_type;
+        
+        cloned.event_type = self.event_type.clone();
+        cloned.event_date = self.event_date;
+        
+        cloned.education_code = self.education_code;
+        cloned.education_valid_from = self.education_valid_from;
+        cloned.education_valid_to = self.education_valid_to;
+        cloned.education_institution = self.education_institution;
+        cloned.education_source = self.education_source;
+        cloned.education_level = self.education_level;
+        
+        cloned.socioeconomic_status = self.socioeconomic_status;
+        
+        cloned.annual_income = self.annual_income;
+        cloned.employment_income = self.employment_income;
+        cloned.income_year = self.income_year;
+        
+        cloned.hospital_admissions_count = self.hospital_admissions_count;
+        cloned.emergency_visits_count = self.emergency_visits_count;
+        cloned.outpatient_visits_count = self.outpatient_visits_count;
+        cloned.gp_visits_count = self.gp_visits_count;
+        cloned.last_hospital_admission_date = self.last_hospital_admission_date;
+        cloned.hospitalization_days = self.hospitalization_days;
+        cloned.length_of_stay = self.length_of_stay;
+        
+        cloned.diagnoses = self.diagnoses.clone();
+        cloned.procedures = self.procedures.clone();
+        cloned.hospital_admissions = self.hospital_admissions.clone();
+        cloned.discharge_dates = self.discharge_dates.clone();
+        cloned.death_cause = self.death_cause.clone();
+        cloned.underlying_death_cause = self.underlying_death_cause.clone();
+        
+        cloned.birth_weight = self.birth_weight;
+        cloned.birth_length = self.birth_length;
+        cloned.gestational_age = self.gestational_age;
+        cloned.apgar_score = self.apgar_score;
+        cloned.birth_order = self.birth_order;
+        cloned.plurality = self.plurality;
+        
+        // Don't copy properties - they can't be cloned
+        // This is acceptable behavior since properties are just for temporary storage
+        
+        cloned
+    }
+}
+
 // Core Individual methods
 impl Individual {
     /// Create a new Individual with minimal required information
@@ -288,6 +373,9 @@ impl Individual {
             death_date: None,
             origin: None,
             age: None,
+            
+            // Properties map for dynamic fields
+            properties: None,
 
             // Basic demographic information
             municipality_code: None,
@@ -359,7 +447,7 @@ impl Individual {
     ///
     /// This method is used by the registry deserializer to set property values
     /// dynamically, primarily for the procedural macro system.
-    pub fn set_property(&mut self, property: &str, value: Box<dyn std::any::Any>) {
+    pub fn set_property(&mut self, property: &str, value: Box<dyn std::any::Any + Send + Sync>) {
         // Handle common field types
         match property {
             "pnr" => {
@@ -428,13 +516,19 @@ impl Individual {
             "diagnosis_type" => {
                 // Store as a property if needed in the future
                 // Currently we don't have a dedicated field for this in Individual
+                self.store_property(property, value);
             }
             "record_number" => {
-                // Store as a property if needed in the future
-                // Currently we don't have a dedicated field for this in Individual
+                // Store in the properties map for use when mapping between registries
+                self.store_property(property, value);
+            }
+            "dw_ek_kontakt" => {
+                // Store in the properties map for use when mapping between registries
+                self.store_property(property, value);
             }
             "department_code" => {
                 // Store as a property if needed in the future
+                self.store_property(property, value);
             }
             "municipality_code" => {
                 if let Some(v) = value.downcast_ref::<Option<String>>() {
@@ -481,12 +575,29 @@ impl Individual {
                     self.length_of_stay = *v;
                 }
             }
-            // Add more field mappings as needed
+            // Any other property will be stored in the properties map
             _ => {
-                // For fields not explicitly handled, log a debug message
-                eprintln!("Property not handled: {property}");
+                self.store_property(property, value);
             }
         }
+    }
+    
+    /// Store a property in the properties map
+    fn store_property(&mut self, property: &str, value: Box<dyn std::any::Any + Send + Sync>) {
+        // Create the properties map if it doesn't exist
+        if self.properties.is_none() {
+            self.properties = Some(HashMap::new());
+        }
+        
+        // Now we can safely unwrap and insert
+        if let Some(props) = &mut self.properties {
+            props.insert(property.to_string(), value);
+        }
+    }
+    
+    /// Get access to the properties map
+    pub fn properties(&self) -> Option<&HashMap<String, Box<dyn std::any::Any + Send + Sync>>> {
+        self.properties.as_ref()
     }
 
     /// Compute rural status from municipality code

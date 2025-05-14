@@ -88,3 +88,7 @@ async fn parallel_async_loading(path: &Path) -> Result<Vec<RecordBatch>> {
         Ok(Vec::new())
     }
 }
+
+fn main() {
+    println!("run_async_loader_example");
+}

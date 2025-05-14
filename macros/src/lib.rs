@@ -6,7 +6,10 @@
 use darling::{ast, FromDeriveInput, FromField};
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
-use syn::{parse_macro_input, DeriveInput, Type};
+use syn::{parse_macro_input, DeriveInput};
+
+// Import utility functions for the proc macro
+mod utils;
 
 /// Receiver for the struct that derives `RegistryTrait`
 #[derive(Debug, FromDeriveInput)]
@@ -19,6 +22,9 @@ struct RegistryTraitReceiver {
     name: Option<String>,
     #[darling(default)]
     description: Option<String>,
+    /// Identifier field type (pnr, record_number, or dw_ek_kontakt)
+    #[darling(default)]
+    id_field: Option<String>,
     /// The struct data with parsed fields
     data: ast::Data<(), RegistryFieldReceiver>,
 }
@@ -45,11 +51,11 @@ struct RegistryFieldReceiver {
 ///
 /// This macro generates a registry trait implementation from a struct definition.
 ///
-/// # Example
+/// # Example with PNR as identifier
 ///
 /// ```rust
 /// #[derive(RegistryTrait)]
-/// #[registry(name = "VNDS", description = "Migration registry")]
+/// #[registry(name = "VNDS", description = "Migration registry", id_field = "pnr")]
 /// struct VndsRegistry {
 ///     #[field(name = "PNR")]
 ///     pnr: String,
@@ -59,6 +65,40 @@ struct RegistryFieldReceiver {
 ///
 ///     #[field(name = "HAEND_DATO")]
 ///     event_date: Option<chrono::NaiveDate>,
+/// }
+/// ```
+///
+/// # Example with RECNUM as identifier (for LPR_DIAG)
+///
+/// ```rust
+/// #[derive(RegistryTrait)]
+/// #[registry(name = "LPR_DIAG", description = "LPR Diagnosis registry", id_field = "record_number")]
+/// struct LprDiagRegistry {
+///     #[field(name = "RECNUM")]
+///     record_number: Option<String>,
+///
+///     #[field(name = "C_DIAG")]
+///     diagnosis_code: Option<String>,
+///
+///     #[field(name = "C_DIAGTYPE")]
+///     diagnosis_type: Option<String>,
+/// }
+/// ```
+///
+/// # Example with DW_EK_KONTAKT as identifier (for LPR3)
+///
+/// ```rust
+/// #[derive(RegistryTrait)]
+/// #[registry(name = "LPR3_DIAG", description = "LPR3 Diagnosis registry", id_field = "dw_ek_kontakt")]
+/// struct Lpr3DiagRegistry {
+///     #[field(name = "DW_EK_KONTAKT")]
+///     dw_ek_kontakt: Option<String>,
+///
+///     #[field(name = "C_DIAG")]
+///     diagnosis_code: Option<String>,
+///
+///     #[field(name = "C_DIAGTYPE")]
+///     diagnosis_type: Option<String>,
 /// }
 /// ```
 #[proc_macro_derive(RegistryTrait, attributes(registry, field))]
@@ -82,6 +122,9 @@ pub fn derive_registry_trait(input: TokenStream) -> TokenStream {
         .description
         .clone()
         .unwrap_or_else(|| format!("{registry_name} registry"));
+    
+    // Get the ID field type (default to "pnr" if not specified)
+    let id_field = receiver.id_field.clone().unwrap_or_else(|| "pnr".to_string());
 
     // Extract the fields
     let ast::Data::Struct(fields) = &receiver.data else {
@@ -89,7 +132,7 @@ pub fn derive_registry_trait(input: TokenStream) -> TokenStream {
     };
 
     // Generate the trait implementation
-    let expanded = generate_registry_impl(&receiver.ident, &registry_name, &registry_desc, fields);
+    let expanded = generate_registry_impl(&receiver.ident, &registry_name, &registry_desc, &id_field, fields);
 
     // Convert back to proc_macro::TokenStream
     TokenStream::from(expanded)
@@ -100,6 +143,7 @@ fn generate_registry_impl(
     struct_name: &syn::Ident,
     registry_name: &str,
     registry_desc: &str,
+    id_field: &str,
     fields: &ast::Fields<RegistryFieldReceiver>,
 ) -> proc_macro2::TokenStream {
     let deserializer_name = format_ident!("{}Deserializer", struct_name);
@@ -119,92 +163,11 @@ fn generate_registry_impl(
         let source_name = field.field_name.clone()
             .unwrap_or_else(|| field_name.to_string().to_uppercase());
 
-        let is_option = is_option_type(field_type);
-        let (field_type_enum, extractor_method, setter_method) = extract_field_type_info(field_type);
-
-        // Generate setter code
-        // We'll use the set_property method in Individual to store values by field name
-        let is_option_field = is_option_type(field_type);
+        let is_option = utils::is_option_type(field_type);
+        let (field_type_enum, extractor_method, setter_method) = utils::extract_field_type_info(field_type);
         
-        // Generate setter code based on the field type
-        let field_name_str = field_name.to_string();
-        let setter_code = match field_name_str.as_str() {
-            // Special handling for date fields
-            "event_date" => {
-                quote! {
-                    |individual, value| {
-                        use chrono::NaiveDate;
-                        use std::any::Any;
-                        
-                        // Debug logging
-                        static mut SETTER_COUNT: usize = 0;
-                        unsafe {
-                            if SETTER_COUNT < 5 {
-                                println!("Setting event_date value to Individual: value={:?}", value);
-                                SETTER_COUNT += 1;
-                            }
-                        }
-                        
-                        // Cast to Individual
-                        let individual_obj = individual as &mut crate::models::core::Individual;
-                        
-                        // Convert the value to Option<NaiveDate> and box it
-                        let boxed_value: Box<dyn Any> = Box::new(Some(value as NaiveDate));
-                        individual_obj.set_property("event_date", boxed_value);
-                    }
-                }
-            },
-            // Generic handling for other Option<T> fields
-            _ if is_option_field => {
-                quote! {
-                    |individual, value| {
-                        // Add debug logging for the first few calls
-                        static mut SETTER_COUNT: usize = 0;
-                        unsafe {
-                            if SETTER_COUNT < 5 {
-                                println!("Setting Optional {} value to Individual: field={}, value={:?}", 
-                                        stringify!(#field_name), stringify!(#field_name), value);
-                                SETTER_COUNT += 1;
-                            }
-                        }
-                        
-                        // Since Individual is the concrete type we're working with in our trait implementation,
-                        // we can simply cast it directly. The individual parameter is a &mut dyn Any, which we
-                        // know is really a &mut Individual.
-                        let individual_obj = individual as &mut crate::models::core::Individual;
-                        
-                        // For Option<T> fields, we need to wrap the value in Some
-                        // Box::new can't directly box None, so we need to create an Option first
-                        let boxed_value: Box<dyn std::any::Any> = Box::new(Some(value));
-                        individual_obj.set_property(stringify!(#field_name), boxed_value);
-                    }
-                }
-            },
-            // Generic handling for non-Option fields
-            _ => {
-                quote! {
-                    |individual, value| {
-                        // Add debug logging for the first few calls
-                        static mut SETTER_COUNT: usize = 0;
-                        unsafe {
-                            if SETTER_COUNT < 5 {
-                                println!("Setting {} value to Individual: field={}, value={:?}", 
-                                        stringify!(#field_name), stringify!(#field_name), value);
-                                SETTER_COUNT += 1;
-                            }
-                        }
-                        
-                        // Since Individual is the concrete type we're working with in our trait implementation,
-                        // we can simply cast it directly. The individual parameter is a &mut dyn Any, which we
-                        // know is really a &mut Individual.
-                        let individual_obj = individual as &mut crate::models::core::Individual;
-                        
-                        // Box the value directly for non-Option fields
-                        individual_obj.set_property(stringify!(#field_name), Box::new(value));
-                    }
-                }
-            }
-        };
+        // Generate the setter code based on field type and whether it's the ID field
+        let setter_code = utils::generate_field_setter_code(field_name, field_type, id_field);
 
         quote! {
             crate::schema::field_def::FieldMapping::new(
@@ -220,7 +183,156 @@ fn generate_registry_impl(
         }
     });
 
-    // Generate the trait implementation
+    // Check if the struct has the specified ID field
+    let has_id_field = fields.iter().any(|field| {
+        field.ident.as_ref()
+            .map(|ident| ident.to_string() == id_field)
+            .unwrap_or(false)
+    });
+    
+    // Check if the struct has a record_number field
+    let has_record_number = has_field_named(fields, "record_number");
+    
+    // Update the unused variable to avoid warnings
+    let _has_id_field = has_id_field;
+    
+    // Generate appropriate From implementation
+    let from_impl = if id_field == "pnr" {
+        if has_record_number {
+            // For structs using PNR as id_field and having a record_number field (e.g., LPR_ADM)
+            quote! {
+                impl From<crate::models::core::Individual> for #struct_name {
+                    fn from(individual: crate::models::core::Individual) -> Self {
+                        // Only print for the first few records to avoid flooding the console
+                        static mut PRINT_COUNT: usize = 0;
+                        unsafe {
+                            if PRINT_COUNT < 3 {
+                                println!("Converting Individual to {}", stringify!(#struct_name));
+                                PRINT_COUNT += 1;
+                            }
+                        }
+                        
+                        // Create a default instance of our struct
+                        let mut instance = Self::default();
+                        
+                        // Set the PNR field directly
+                        instance.pnr = individual.pnr.clone();
+                        
+                        // Check if the record_number property exists in the Individual
+                        if let Some(props) = individual.properties() {
+                            if let Some(record_num) = props.get("record_number") {
+                                if let Some(recnum) = record_num.downcast_ref::<Option<String>>() {
+                                    instance.record_number = recnum.clone();
+                                }
+                            }
+                        }
+                        
+                        // Return the populated instance
+                        instance
+                    }
+                }
+            }
+        } else {
+            // For structs using PNR as id_field but having no record_number field
+            quote! {
+                impl From<crate::models::core::Individual> for #struct_name {
+                    fn from(individual: crate::models::core::Individual) -> Self {
+                        // Only print for the first few records to avoid flooding the console
+                        static mut PRINT_COUNT: usize = 0;
+                        unsafe {
+                            if PRINT_COUNT < 3 {
+                                println!("Converting Individual to {}", stringify!(#struct_name));
+                                PRINT_COUNT += 1;
+                            }
+                        }
+                        
+                        // Create a default instance of our struct
+                        let mut instance = Self::default();
+                        
+                        // Set the PNR field directly
+                        instance.pnr = individual.pnr.clone();
+                        
+                        // Return the populated instance
+                        instance
+                    }
+                }
+            }
+        }
+    } else if id_field == "record_number" {
+        // For structs using record_number as id_field (LPR_DIAG)
+        quote! {
+            impl From<crate::models::core::Individual> for #struct_name {
+                fn from(individual: crate::models::core::Individual) -> Self {
+                    // Only print for the first few records to avoid flooding the console
+                    static mut PRINT_COUNT: usize = 0;
+                    unsafe {
+                        if PRINT_COUNT < 3 {
+                            println!("Converting Individual to {}", stringify!(#struct_name));
+                            PRINT_COUNT += 1;
+                        }
+                    }
+                    
+                    // Create a default instance of our struct
+                    let instance = Self::default();
+                    
+                    // We can't set record_number directly from Individual
+                    // It will be populated during processing
+                    
+                    // Return the instance
+                    instance
+                }
+            }
+        }
+    } else if id_field == "dw_ek_kontakt" {
+        // For structs using dw_ek_kontakt as id_field (LPR3)
+        quote! {
+            impl From<crate::models::core::Individual> for #struct_name {
+                fn from(individual: crate::models::core::Individual) -> Self {
+                    // Only print for the first few records to avoid flooding the console
+                    static mut PRINT_COUNT: usize = 0;
+                    unsafe {
+                        if PRINT_COUNT < 3 {
+                            println!("Converting Individual to {}", stringify!(#struct_name));
+                            PRINT_COUNT += 1;
+                        }
+                    }
+                    
+                    // Create a default instance of our struct
+                    let instance = Self::default();
+                    
+                    // We can't set dw_ek_kontakt directly from Individual
+                    // It will be populated during processing
+                    
+                    // Return the instance
+                    instance
+                }
+            }
+        }
+    } else {
+        // Default implementation for other id_field types
+        quote! {
+            impl From<crate::models::core::Individual> for #struct_name {
+                fn from(individual: crate::models::core::Individual) -> Self {
+                    // Only print for the first few records to avoid flooding the console
+                    static mut PRINT_COUNT: usize = 0;
+                    unsafe {
+                        if PRINT_COUNT < 3 {
+                            println!("Converting Individual to {}", stringify!(#struct_name));
+                            PRINT_COUNT += 1;
+                        }
+                    }
+                    
+                    // Create a default instance of our struct
+                    let instance = Self::default();
+                    
+                    // Return the instance
+                    instance
+                }
+            }
+        }
+    };
+
+    // Generate the complete implementation
     quote! {
         /// Auto-generated deserializer for registry
         ///
@@ -288,32 +400,8 @@ fn generate_registry_impl(
             }
         }
 
-        // Comment out the From implementation for now
-        // We'll focus on getting the basic deserializer working first
-        // This avoids complex type mappings between Individual and custom types
-
-        // The example will need to be updated to use the Individual directly
-        impl From<crate::models::core::Individual> for #struct_name {
-            fn from(individual: crate::models::core::Individual) -> Self {
-                // Only print for the first few records to avoid flooding the console
-                static mut PRINT_COUNT: usize = 0;
-                unsafe {
-                    if PRINT_COUNT < 3 {
-                        println!("Converting Individual: PNR='{}'", individual.pnr);
-                        PRINT_COUNT += 1;
-                    }
-                }
-                
-                // Create a default instance of our struct
-                let mut instance = Self::default();
-                
-                // Set the PNR field which is guaranteed to exist
-                instance.pnr = individual.pnr;
-                
-                // Return the populated instance
-                instance
-            }
-        }
+        // From implementation
+        #from_impl
 
         // Implement Default for our struct
         impl Default for #struct_name {
@@ -332,161 +420,11 @@ fn generate_registry_impl(
     }
 }
 
-/// Check if a type is an Option<T>
-fn is_option_type(ty: &Type) -> bool {
-    match ty {
-        Type::Path(type_path) => {
-            let path = &type_path.path;
-            if path.segments.len() == 1 {
-                let segment = &path.segments[0];
-                segment.ident == "Option"
-            } else {
-                false
-            }
-        }
-        _ => false,
-    }
-}
-
-/// Extract the field type, extractor method, and setter method from a Type
-fn extract_field_type_info(
-    ty: &Type,
-) -> (
-    proc_macro2::TokenStream,
-    proc_macro2::TokenStream,
-    proc_macro2::TokenStream,
-) {
-    if let Type::Path(type_path) = ty {
-        let path = &type_path.path;
-        if path.segments.len() == 1 {
-            let segment = &path.segments[0];
-            let ident = &segment.ident;
-
-            // Extract the inner type if it's an Option<T>
-            if ident == "Option" {
-                if let syn::PathArguments::AngleBracketed(args) = &segment.arguments {
-                    if let Some(syn::GenericArgument::Type(inner_type)) = args.args.first() {
-                        return extract_inner_type_info(inner_type);
-                    }
-                }
-            }
-
-            return extract_inner_type_info(ty);
-        }
-    }
-
-    // Default to String if type can't be determined
-    (
-        quote! { String },
-        quote! { string },
-        quote! { string_setter },
-    )
-}
-
-/// Extract the inner type name, extractor method, and setter method
-fn extract_inner_type_info(
-    ty: &Type,
-) -> (
-    proc_macro2::TokenStream,
-    proc_macro2::TokenStream,
-    proc_macro2::TokenStream,
-) {
-    if let Type::Path(type_path) = ty {
-        let path = &type_path.path;
-        if path.segments.len() == 1 {
-            let segment = &path.segments[0];
-            let ident = &segment.ident;
-
-            if ident == "String" || ident == "str" {
-                return (
-                    quote! { String },
-                    quote! { string },
-                    quote! { string_setter },
-                );
-            } else if ident == "i8"
-                || ident == "i16"
-                || ident == "i32"
-                || ident == "i64"
-                || ident == "u8"
-                || ident == "u16"
-                || ident == "u32"
-                || ident == "u64"
-            {
-                return (
-                    quote! { Integer },
-                    quote! { integer },
-                    quote! { i32_setter },
-                );
-            } else if ident == "f32" || ident == "f64" {
-                return (
-                    quote! { Decimal },
-                    quote! { decimal },
-                    quote! { f64_setter },
-                );
-            } else if ident == "NaiveDate" || ident == "Date" {
-                return (quote! { Date }, quote! { date }, quote! { date_setter });
-            } else if ident == "bool" {
-                return (
-                    quote! { Boolean },
-                    quote! { boolean },
-                    quote! { bool_setter },
-                );
-            }
-        }
-    }
-
-    // Default to String if type can't be determined
-    (
-        quote! { String },
-        quote! { string },
-        quote! { string_setter },
-    )
-}
-
-/// Get the Rust type for a field
-#[allow(dead_code)]
-fn get_rust_type(ty: &Type) -> proc_macro2::TokenStream {
-    if let Type::Path(type_path) = ty {
-        let path = &type_path.path;
-        if path.segments.len() == 1 {
-            let segment = &path.segments[0];
-            let ident = &segment.ident;
-
-            // Check if it's an Option type to extract inner type
-            if ident == "Option" {
-                if let syn::PathArguments::AngleBracketed(args) = &segment.arguments {
-                    if let Some(syn::GenericArgument::Type(inner_type)) = args.args.first() {
-                        return get_rust_type(inner_type);
-                    }
-                }
-            }
-
-            // Return the actual type
-            if ident == "String" || ident == "str" {
-                return quote! { String };
-            } else if ident == "i8"
-                || ident == "i16"
-                || ident == "i32"
-                || ident == "i64"
-                || ident == "u8"
-                || ident == "u16"
-                || ident == "u32"
-                || ident == "u64"
-            {
-                return quote! { i32 };
-            } else if ident == "f32" || ident == "f64" {
-                return quote! { f64 };
-            } else if ident == "NaiveDate" || ident == "Date" {
-                return quote! { chrono::NaiveDate };
-            } else if ident == "bool" {
-                return quote! { bool };
-            }
-
-            // If it's another type, just use its identifier
-            return quote! { #ident };
-        }
-    }
-
-    // Default to String if type can't be determined
-    quote! { String }
+/// Helper to check if a struct has a specific field
+fn has_field_named(fields: &ast::Fields<RegistryFieldReceiver>, name: &str) -> bool {
+    fields.iter().any(|field| {
+        field.ident.as_ref()
+            .map(|ident| ident.to_string() == name)
+            .unwrap_or(false)
+    })
 }

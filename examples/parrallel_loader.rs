@@ -13,9 +13,9 @@ use std::fs::{self};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use crate::error::Result;
-use crate::error::util::{safe_open_file, validate_directory};
-use crate::filter_expression::{Expr, read_and_filter_parquet};
+use par_reader::error::Result;
+use par_reader::error::util::{safe_open_file, validate_directory};
+use par_reader::filter_expression::{Expr, read_and_filter_parquet};
 
 /// Read a parquet file into Arrow record batches
 pub fn read_parquet(
@@ -60,7 +60,12 @@ pub fn read_parquet(
             reader_builder
                 .with_projection(projection_mask)
                 .build()
-                .with_context(|| format!("Failed to build parquet reader with projection for {}", path.display()))?
+                .with_context(|| {
+                    format!(
+                        "Failed to build parquet reader with projection for {}",
+                        path.display()
+                    )
+                })?
         }
     } else {
         // No projection, read all columns
@@ -183,8 +188,8 @@ pub fn load_parquet_files_parallel(
 
     // Find all parquet files in the directory
     let mut parquet_files = Vec::<PathBuf>::new();
-    for entry_result in fs::read_dir(dir)
-        .with_context(|| format!("Failed to read directory: {}", dir.display()))?
+    for entry_result in
+        fs::read_dir(dir).with_context(|| format!("Failed to read directory: {}", dir.display()))?
     {
         let entry = entry_result
             .with_context(|| format!("Failed to read directory entry in {}", dir.display()))?;
@@ -201,7 +206,11 @@ pub fn load_parquet_files_parallel(
         return Ok(Vec::new());
     }
 
-    log::info!("Found {} parquet files in {}", parquet_files.len(), dir.display());
+    log::info!(
+        "Found {} parquet files in {}",
+        parquet_files.len(),
+        dir.display()
+    );
 
     // Clone schema and pnr_filter for sharing across threads
     let schema_arc = schema.map(|s| Arc::new(s.clone()));
@@ -223,7 +232,14 @@ pub fn load_parquet_files_parallel(
     // Combine all the results, propagating any errors
     let mut combined_batches = Vec::new();
     for (idx, result) in all_batches.into_iter().enumerate() {
-        let batches = result.with_context(|| format!("Error processing file {}", parquet_files.get(idx).map_or_else(|| "unknown".to_string(), |p| p.display().to_string())))?;
+        let batches = result.with_context(|| {
+            format!(
+                "Error processing file {}",
+                parquet_files
+                    .get(idx)
+                    .map_or_else(|| "unknown".to_string(), |p| p.display().to_string())
+            )
+        })?;
         combined_batches.extend(batches);
     }
 
@@ -255,8 +271,8 @@ pub fn load_parquet_files_parallel_with_filter(
 
     // Find all parquet files in the directory
     let mut parquet_files = Vec::<PathBuf>::new();
-    for entry_result in fs::read_dir(dir)
-        .with_context(|| format!("Failed to read directory: {}", dir.display()))?
+    for entry_result in
+        fs::read_dir(dir).with_context(|| format!("Failed to read directory: {}", dir.display()))?
     {
         let entry = entry_result
             .with_context(|| format!("Failed to read directory entry in {}", dir.display()))?;
@@ -295,7 +311,8 @@ pub fn load_parquet_files_parallel_with_filter(
         let batches = result.with_context(|| {
             format!(
                 "Error processing file {}",
-                parquet_files.get(idx)
+                parquet_files
+                    .get(idx)
                     .map_or_else(|| "unknown".to_string(), |p| p.display().to_string())
             )
         })?;
@@ -303,4 +320,8 @@ pub fn load_parquet_files_parallel_with_filter(
     }
 
     Ok(combined_batches)
+}
+
+fn main() {
+    print!("Example");
 }
