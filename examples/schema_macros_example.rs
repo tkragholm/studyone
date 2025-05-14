@@ -3,10 +3,10 @@
 //! This example shows how to use the procedural macros to define registries
 //! with minimal boilerplate.
 
-use chrono::NaiveDate;
-use par_reader_macros::RegistryTrait;
-use std::path::Path;
 use arrow::array::Array;
+use chrono::NaiveDate;
+use macros::RegistryTrait;
+use std::path::Path;
 
 // Now we can use the derive macro
 #[derive(RegistryTrait, Debug)]
@@ -49,13 +49,16 @@ pub fn run_schema_macros_example() {
 
                 // Print batch schema to see available columns
                 println!("Batch schema: {:?}", batch.schema());
-                
+
                 // Check if PNR column exists
                 if let Ok(pnr_idx) = batch.schema().index_of("PNR") {
                     println!("PNR column found at index {pnr_idx}");
                     // Print first 5 PNR values
                     let pnr_array = batch.column(pnr_idx);
-                    if let Some(string_array) = pnr_array.as_any().downcast_ref::<arrow::array::StringArray>() {
+                    if let Some(string_array) = pnr_array
+                        .as_any()
+                        .downcast_ref::<arrow::array::StringArray>()
+                    {
                         println!("First 5 PNR values from raw data:");
                         for i in 0..std::cmp::min(5, string_array.len()) {
                             println!("  [{}]: {}", i, string_array.value(i));
@@ -68,16 +71,22 @@ pub fn run_schema_macros_example() {
                 // Get the schema info from the deserializer
                 println!("Checking extractors in the deserializer:");
                 for extractor in deserializer.inner.field_extractors() {
-                    println!("  Extractor source field: {}, target field: {}", 
-                           extractor.source_field_name(), extractor.target_field_name());
+                    println!(
+                        "  Extractor source field: {}, target field: {}",
+                        extractor.source_field_name(),
+                        extractor.target_field_name()
+                    );
                     // Check if this field exists in the batch
-                    if batch.column_by_name(extractor.source_field_name()).is_some() {
+                    if batch
+                        .column_by_name(extractor.source_field_name())
+                        .is_some()
+                    {
                         println!("  - Column found in batch");
                     } else {
                         println!("  - Column NOT found in batch");
                     }
                 }
-                
+
                 // Deserialize the batch into our custom registry type
                 match deserializer.deserialize_batch(batch) {
                     Ok(records) => {

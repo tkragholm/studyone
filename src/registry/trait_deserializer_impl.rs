@@ -5,15 +5,18 @@
 
 use std::collections::HashMap;
 
+use crate::registry::extractors::{
+    DateExtractor, FloatExtractor, IntegerExtractor, Setter, StringExtractor,
+};
 use crate::registry::trait_deserializer::{RegistryDeserializer, RegistryFieldExtractor};
 use crate::schema::RegistrySchema;
 use crate::schema::field_def::FieldType;
-use crate::registry::extractors::{StringExtractor, IntegerExtractor, FloatExtractor, DateExtractor, Setter};
 
 /// Generic implementation of a registry deserializer
 #[derive(Debug)]
 pub struct RegistryDeserializerImpl {
     registry_type: String,
+    #[allow(dead_code)]
     registry_desc: String,
     field_extractors: Vec<Box<dyn RegistryFieldExtractor>>,
     field_map: HashMap<String, String>,
@@ -21,10 +24,14 @@ pub struct RegistryDeserializerImpl {
 
 impl RegistryDeserializerImpl {
     /// Create a new registry deserializer implementation
-    pub fn new(registry_type: impl Into<String>, registry_desc: impl Into<String>, schema: RegistrySchema) -> Self {
+    pub fn new(
+        registry_type: impl Into<String>,
+        registry_desc: impl Into<String>,
+        schema: RegistrySchema,
+    ) -> Self {
         let registry_type = registry_type.into();
         let registry_desc = registry_desc.into();
-        
+
         // Create field extractors from schema mappings
         let mut field_extractors: Vec<Box<dyn RegistryFieldExtractor>> = Vec::new();
         let mut field_map = HashMap::new();

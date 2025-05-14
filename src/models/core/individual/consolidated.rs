@@ -4,8 +4,8 @@
 
 use crate::RecordBatch;
 use crate::error::Result;
-use crate::models::core::registry_traits::{LprFields, IndFields, DodFields};
-use crate::models::core::traits::{EntityModel, HealthStatus, TemporalValidity, ArrowSchema};
+use crate::models::core::registry_traits::{DodFields, IndFields, LprFields};
+use crate::models::core::traits::{ArrowSchema, EntityModel, HealthStatus, TemporalValidity};
 
 use arrow::datatypes::{Field, Schema};
 
@@ -335,9 +335,9 @@ impl Individual {
             plurality: None,
         }
     }
-    
+
     /// Set a property value by name
-    /// 
+    ///
     /// This method is used by the registry deserializer to set property values
     /// dynamically, primarily for the procedural macro system.
     pub fn set_property(&mut self, property: &str, value: Box<dyn std::any::Any>) {
@@ -347,42 +347,42 @@ impl Individual {
                 if let Some(v) = value.downcast_ref::<String>() {
                     self.pnr = v.clone();
                 }
-            },
+            }
             "gender" => {
                 if let Some(v) = value.downcast_ref::<Option<String>>() {
                     self.gender = v.clone();
                 }
-            },
+            }
             "birth_date" => {
                 if let Some(v) = value.downcast_ref::<Option<NaiveDate>>() {
                     self.birth_date = *v;
                 }
-            },
+            }
             "death_date" => {
                 if let Some(v) = value.downcast_ref::<Option<NaiveDate>>() {
                     self.death_date = *v;
                 }
-            },
+            }
             "mother_pnr" => {
                 if let Some(v) = value.downcast_ref::<Option<String>>() {
                     self.mother_pnr = v.clone();
                 }
-            },
+            }
             "father_pnr" => {
                 if let Some(v) = value.downcast_ref::<Option<String>>() {
                     self.father_pnr = v.clone();
                 }
-            },
+            }
             "event_type" => {
                 if let Some(v) = value.downcast_ref::<Option<String>>() {
                     self.event_type = v.clone();
                 }
-            },
+            }
             "event_date" => {
                 if let Some(v) = value.downcast_ref::<Option<NaiveDate>>() {
                     self.event_date = *v;
                 }
-            },
+            }
             // Add more field mappings as needed
             _ => {
                 // For fields not explicitly handled, log a debug message
@@ -488,6 +488,7 @@ impl Individual {
     ///
     /// This method copies fields from the source Individual, but only if
     /// the corresponding field in this Individual is not already set.
+    #[allow(dead_code)]
     fn merge_fields(&mut self, source: &Self) {
         // Only copy fields if they're not already set
         if self.gender.is_none() {
@@ -817,23 +818,23 @@ impl DodFields for Individual {
     fn death_date(&self) -> Option<NaiveDate> {
         self.death_date
     }
-    
+
     fn set_death_date(&mut self, value: Option<NaiveDate>) {
         self.death_date = value;
     }
-    
+
     fn death_cause(&self) -> Option<&str> {
         self.death_cause.as_deref()
     }
-    
+
     fn set_death_cause(&mut self, value: Option<String>) {
         self.death_cause = value;
     }
-    
+
     fn underlying_death_cause(&self) -> Option<&str> {
         self.underlying_death_cause.as_deref()
     }
-    
+
     fn set_underlying_death_cause(&mut self, value: Option<String>) {
         self.underlying_death_cause = value;
     }
@@ -853,16 +854,16 @@ impl ArrowSchema for Individual {
             Field::new("father_pnr", DataType::Utf8, true),
             // Add more fields as needed
         ];
-        
+
         Schema::new(fields)
     }
-    
+
     /// Convert a `RecordBatch` to a vector of Individual models
     fn from_record_batch(batch: &RecordBatch) -> Result<Vec<Self>> {
         // This is a placeholder implementation - a full implementation would
         // extract all individual fields from the batch
         let mut individuals = Vec::with_capacity(batch.num_rows());
-        
+
         // Extract the PNR column
         if let Some(pnr_column) = batch.column_by_name("pnr") {
             if let Some(pnr_array) = pnr_column.as_any().downcast_ref::<StringArray>() {
@@ -875,10 +876,10 @@ impl ArrowSchema for Individual {
                 }
             }
         }
-        
+
         Ok(individuals)
     }
-    
+
     /// Convert a vector of Individual models to a `RecordBatch`
     fn to_record_batch(_models: &[Self]) -> Result<RecordBatch> {
         // This is a placeholder - a full implementation would convert
@@ -892,55 +893,55 @@ impl IndFields for Individual {
     fn annual_income(&self) -> Option<f64> {
         self.annual_income
     }
-    
+
     fn set_annual_income(&mut self, value: Option<f64>) {
         self.annual_income = value;
     }
-    
+
     fn disposable_income(&self) -> Option<f64> {
         None // Not implemented in the Individual struct yet
     }
-    
+
     fn set_disposable_income(&mut self, _value: Option<f64>) {
         // Not implemented in the Individual struct yet
     }
-    
+
     fn employment_income(&self) -> Option<f64> {
         self.employment_income
     }
-    
+
     fn set_employment_income(&mut self, value: Option<f64>) {
         self.employment_income = value;
     }
-    
+
     fn self_employment_income(&self) -> Option<f64> {
         None // Not implemented in the Individual struct yet
     }
-    
+
     fn set_self_employment_income(&mut self, _value: Option<f64>) {
         // Not implemented in the Individual struct yet
     }
-    
+
     fn capital_income(&self) -> Option<f64> {
         None // Not implemented in the Individual struct yet
     }
-    
+
     fn set_capital_income(&mut self, _value: Option<f64>) {
         // Not implemented in the Individual struct yet
     }
-    
+
     fn transfer_income(&self) -> Option<f64> {
         None // Not implemented in the Individual struct yet
     }
-    
+
     fn set_transfer_income(&mut self, _value: Option<f64>) {
         // Not implemented in the Individual struct yet
     }
-    
+
     fn income_year(&self) -> Option<i32> {
         self.income_year
     }
-    
+
     fn set_income_year(&mut self, value: Option<i32>) {
         self.income_year = value;
     }
@@ -954,10 +955,11 @@ impl TemporalValidity for Individual {
         // and either they haven't died yet or they died after the date
         match self.birth_date {
             Some(birth) => {
-                birth <= *date && match self.death_date {
-                    Some(death) => death >= *date,
-                    None => true, // No death date means still alive
-                }
+                birth <= *date
+                    && match self.death_date {
+                        Some(death) => death >= *date,
+                        None => true, // No death date means still alive
+                    }
             }
             None => false, // No birth date means we can't determine validity
         }
@@ -966,7 +968,8 @@ impl TemporalValidity for Individual {
     /// Get the start date of validity (birth date)
     fn valid_from(&self) -> NaiveDate {
         // Return birth date or a default date if not available
-        self.birth_date.unwrap_or_else(|| NaiveDate::from_ymd_opt(1900, 1, 1).unwrap())
+        self.birth_date
+            .unwrap_or_else(|| NaiveDate::from_ymd_opt(1900, 1, 1).unwrap())
     }
 
     /// Get the end date of validity (death date if any)
@@ -991,10 +994,11 @@ impl HealthStatus for Individual {
         // Same logic as was_valid_at
         match self.birth_date {
             Some(birth) => {
-                birth <= *date && match self.death_date {
-                    Some(death) => death >= *date,
-                    None => true, // No death date means still alive
-                }
+                birth <= *date
+                    && match self.death_date {
+                        Some(death) => death >= *date,
+                        None => true, // No death date means still alive
+                    }
             }
             None => false, // No birth date means we can't determine if alive
         }
@@ -1014,16 +1018,17 @@ impl HealthStatus for Individual {
                 if self.was_alive_at(reference_date) {
                     // Calculate years between birth date and reference date
                     let years = reference_date.year() - birth_date.year();
-                    
+
                     // Adjust for month and day (if birthday hasn't occurred yet this year)
-                    let adjustment = if reference_date.month() < birth_date.month() ||
-                        (reference_date.month() == birth_date.month() && 
-                         reference_date.day() < birth_date.day()) {
+                    let adjustment = if reference_date.month() < birth_date.month()
+                        || (reference_date.month() == birth_date.month()
+                            && reference_date.day() < birth_date.day())
+                    {
                         1
                     } else {
                         0
                     };
-                    
+
                     Some(years - adjustment)
                 } else {
                     None // Not alive at the reference date
@@ -1039,11 +1044,11 @@ impl LprFields for Individual {
     fn diagnoses(&self) -> Option<&[String]> {
         self.diagnoses.as_deref()
     }
-    
+
     fn set_diagnoses(&mut self, value: Option<Vec<String>>) {
         self.diagnoses = value;
     }
-    
+
     fn add_diagnosis(&mut self, diagnosis: String) {
         if let Some(diagnoses) = &mut self.diagnoses {
             diagnoses.push(diagnosis);
@@ -1051,15 +1056,15 @@ impl LprFields for Individual {
             self.diagnoses = Some(vec![diagnosis]);
         }
     }
-    
+
     fn procedures(&self) -> Option<&[String]> {
         self.procedures.as_deref()
     }
-    
+
     fn set_procedures(&mut self, value: Option<Vec<String>>) {
         self.procedures = value;
     }
-    
+
     fn add_procedure(&mut self, procedure: String) {
         if let Some(procedures) = &mut self.procedures {
             procedures.push(procedure);
@@ -1067,15 +1072,15 @@ impl LprFields for Individual {
             self.procedures = Some(vec![procedure]);
         }
     }
-    
+
     fn hospital_admissions(&self) -> Option<&[NaiveDate]> {
         self.hospital_admissions.as_deref()
     }
-    
+
     fn set_hospital_admissions(&mut self, value: Option<Vec<NaiveDate>>) {
         self.hospital_admissions = value;
     }
-    
+
     fn add_hospital_admission(&mut self, date: NaiveDate) {
         if let Some(admissions) = &mut self.hospital_admissions {
             admissions.push(date);
@@ -1083,15 +1088,15 @@ impl LprFields for Individual {
             self.hospital_admissions = Some(vec![date]);
         }
     }
-    
+
     fn discharge_dates(&self) -> Option<&[NaiveDate]> {
         self.discharge_dates.as_deref()
     }
-    
+
     fn set_discharge_dates(&mut self, value: Option<Vec<NaiveDate>>) {
         self.discharge_dates = value;
     }
-    
+
     fn add_discharge_date(&mut self, date: NaiveDate) {
         if let Some(dates) = &mut self.discharge_dates {
             dates.push(date);
@@ -1099,11 +1104,11 @@ impl LprFields for Individual {
             self.discharge_dates = Some(vec![date]);
         }
     }
-    
+
     fn length_of_stay(&self) -> Option<i32> {
         self.length_of_stay
     }
-    
+
     fn set_length_of_stay(&mut self, value: Option<i32>) {
         self.length_of_stay = value;
     }

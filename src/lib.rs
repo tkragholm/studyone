@@ -23,8 +23,7 @@ pub mod utils;
 
 pub mod filter_expression;
 
-// Examples
-pub mod examples;
+// Examples are now in the examples directory
 
 // Re-export the most common types for easier use
 // Core types
@@ -43,7 +42,7 @@ pub use models::core::individual::Individual;
 // These models are commented out in the source models/mod.rs file
 // When they're needed, they should be properly re-exported there first
 // pub use models::derived::Child;
-// pub use models::derived::Family;  
+// pub use models::derived::Family;
 // pub use models::derived::Parent;
 // pub use models::economic::Income;
 // pub use models::health::Diagnosis;
@@ -142,14 +141,10 @@ pub use registry::{
 };
 
 // Re-export the procedural macros for registry definitions
-pub use par_reader_macros::RegistryTrait;
+pub use macros::RegistryTrait;
 
 // Registry factory functions
-pub use registry::factory::{
-    load_multiple_registries,
-    registry_from_name,
-    registry_from_path,
-};
+pub use registry::factory::{load_multiple_registries, registry_from_name, registry_from_path};
 
 // PNR filtering utilities
 pub use pnr_filter::{

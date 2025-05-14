@@ -299,18 +299,19 @@ fn generate_registry_impl(
                 static mut PRINT_COUNT: usize = 0;
                 unsafe {
                     if PRINT_COUNT < 3 {
-                        println!("Converting Individual: PNR='{}', event_type={:?}, event_date={:?}", 
-                            individual.pnr, individual.event_type, individual.event_date);
+                        println!("Converting Individual: PNR='{}'", individual.pnr);
                         PRINT_COUNT += 1;
                     }
                 }
                 
-                // Create our struct with values from the Individual
-                Self {
-                    pnr: individual.pnr,
-                    event_type: individual.event_type.clone(),
-                    event_date: individual.event_date,
-                }
+                // Create a default instance of our struct
+                let mut instance = Self::default();
+                
+                // Set the PNR field which is guaranteed to exist
+                instance.pnr = individual.pnr;
+                
+                // Return the populated instance
+                instance
             }
         }
 

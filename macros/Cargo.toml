@@ -1,5 +1,5 @@
 [package]
-name = "par-reader-macros"
+name = "macros"
 version = "0.1.0"
 edition = "2021"
 description = "Procedural macros for the par-reader crate"

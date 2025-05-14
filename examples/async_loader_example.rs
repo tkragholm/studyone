@@ -11,10 +11,10 @@ use std::sync::Arc;
 use arrow::datatypes::Schema;
 use arrow::record_batch::RecordBatch;
 
-use crate::async_io::ParquetLoader;
-use crate::common::traits::{AsyncDirectoryLoader, AsyncLoader, AsyncParallelLoader};
-use crate::error::Result;
-use crate::registry::bef::schema;
+use par_reader::async_io::ParquetLoader;
+use par_reader::common::traits::{AsyncDirectoryLoader, AsyncLoader, AsyncParallelLoader};
+use par_reader::error::Result;
+use par_reader::registry::bef::schema;
 
 /// Run the async loader example
 pub async fn run_async_loader_example(path: &Path) -> Result<()> {

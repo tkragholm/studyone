@@ -16,6 +16,7 @@ use crate::schema::field_def::{FieldDefinition, FieldMapping, FieldType};
 use crate::schema::field_def::{RegistrySchema, create_registry_schema};
 
 /// Create a closure for setting the PNR field on an Individual
+#[allow(dead_code)]
 fn pnr_setter() -> Arc<dyn Fn(&mut dyn Any, &dyn Any) + Send + Sync> {
     Arc::new(|target, value| {
         if let Some(individual) = target.downcast_mut::<Individual>() {
@@ -27,6 +28,7 @@ fn pnr_setter() -> Arc<dyn Fn(&mut dyn Any, &dyn Any) + Send + Sync> {
 }
 
 /// Create a closure for setting the death date field on an Individual
+#[allow(dead_code)]
 fn death_date_setter() -> Arc<dyn Fn(&mut dyn Any, &dyn Any) + Send + Sync> {
     Arc::new(|target, value| {
         if let Some(individual) = target.downcast_mut::<Individual>() {
@@ -39,6 +41,7 @@ fn death_date_setter() -> Arc<dyn Fn(&mut dyn Any, &dyn Any) + Send + Sync> {
 }
 
 /// Create a closure for setting the death cause field on an Individual
+#[allow(dead_code)]
 fn death_cause_setter() -> Arc<dyn Fn(&mut dyn Any, &dyn Any) + Send + Sync> {
     Arc::new(|target, value| {
         if let Some(individual) = target.downcast_mut::<Individual>() {
@@ -51,6 +54,7 @@ fn death_cause_setter() -> Arc<dyn Fn(&mut dyn Any, &dyn Any) + Send + Sync> {
 }
 
 /// Create a closure for setting the underlying death cause field on an Individual
+#[allow(dead_code)]
 fn underlying_death_cause_setter() -> Arc<dyn Fn(&mut dyn Any, &dyn Any) + Send + Sync> {
     Arc::new(|target, value| {
         if let Some(individual) = target.downcast_mut::<Individual>() {
@@ -63,7 +67,8 @@ fn underlying_death_cause_setter() -> Arc<dyn Fn(&mut dyn Any, &dyn Any) + Send 
 }
 
 /// Get the unified schema for DOD registry
-#[must_use] pub fn create_dod_schema() -> RegistrySchema {
+#[must_use]
+pub fn create_dod_schema() -> RegistrySchema {
     // Create field mappings
     let field_mappings = vec![
         // PNR field

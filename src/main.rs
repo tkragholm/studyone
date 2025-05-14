@@ -24,8 +24,8 @@ async fn main() -> Result<()> {
     let use_schema_macros = args.len() > 1 && args[1] == "--schema-macros";
 
     // Filter parameters for the cohort
-    let start_date = "20080101";
-    let end_date = "20091231";
+    let _start_date = "20080101";
+    let _end_date = "20091231";
 
     if use_schema_macros {
         println!("Running schema macros example");
