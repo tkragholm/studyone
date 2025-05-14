@@ -36,7 +36,7 @@ pub fn run_schema_macros_example() {
     // Path to the VNDS Parquet file
     let parquet_path =
         Path::new("/Users/tobiaskragholm/generated_data/parquet/vnds/202209.parquet");
-    println!("Loading data from: {:?}", parquet_path);
+    println!("Loading data from: {parquet_path:?}");
 
     // Load the Parquet file using the crate's utility function
     match crate::examples::parrallel_loader::read_parquet(parquet_path, None, None) {
@@ -52,7 +52,7 @@ pub fn run_schema_macros_example() {
                 
                 // Check if PNR column exists
                 if let Ok(pnr_idx) = batch.schema().index_of("PNR") {
-                    println!("PNR column found at index {}", pnr_idx);
+                    println!("PNR column found at index {pnr_idx}");
                     // Print first 5 PNR values
                     let pnr_array = batch.column(pnr_idx);
                     if let Some(string_array) = pnr_array.as_any().downcast_ref::<arrow::array::StringArray>() {
@@ -85,7 +85,7 @@ pub fn run_schema_macros_example() {
 
                         // Print the first 5 records (or fewer if there are less than 5)
                         let limit = std::cmp::min(5, records.len());
-                        println!("First {} records:", limit);
+                        println!("First {limit} records:");
 
                         for (j, record) in records.iter().take(limit).enumerate() {
                             println!(
@@ -107,11 +107,11 @@ pub fn run_schema_macros_example() {
 
                         println!("\nEvent Type Distribution:");
                         for (event_type, count) in event_types {
-                            println!("  {}: {} records", event_type, count);
+                            println!("  {event_type}: {count} records");
                         }
                     }
                     Err(err) => {
-                        eprintln!("Error deserializing batch: {}", err);
+                        eprintln!("Error deserializing batch: {err}");
                     }
                 }
 
@@ -120,7 +120,7 @@ pub fn run_schema_macros_example() {
             }
         }
         Err(err) => {
-            eprintln!("Error loading Parquet file: {}", err);
+            eprintln!("Error loading Parquet file: {err}");
         }
     }
 }

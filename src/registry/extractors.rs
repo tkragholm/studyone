@@ -357,7 +357,7 @@ impl DateExtractor {
         }
         
         // For debugging
-        println!("Failed to parse date string: '{}'", date_str);
+        println!("Failed to parse date string: '{date_str}'");
         None
     }
 }
@@ -390,7 +390,7 @@ impl RegistryFieldExtractor for DateExtractor {
                         
                         let date = self.parse_date(string_array.value(row));
                         if date.is_some() {
-                            println!("Successfully parsed date: {:?}", date);
+                            println!("Successfully parsed date: {date:?}");
                         }
                         date
                     } else {

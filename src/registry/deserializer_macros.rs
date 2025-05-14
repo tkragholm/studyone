@@ -62,7 +62,7 @@ macro_rules! generate_trait_deserializer {
                             );
                             field_extractors.push(Box::new(extractor));
                         }
-                        crate::schema::FieldType::Integer => {
+                        $crate::schema::FieldType::Integer => {
                             // Create integer extractor
                             let extractor = crate::registry::extractors::IntegerExtractor::new(
                                 &source_field,
