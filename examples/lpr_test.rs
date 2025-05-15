@@ -1,8 +1,8 @@
 //! Test for the Registry trait with LPR data
 //!
-//! This is a simple test for the RegistryTrait derive macro with LPR data
+//! This is a simple test for the `RegistryTrait` derive macro with LPR data
 
-use par_reader::*;
+use par_reader::{ModelCollection, RegistryTrait, error, models, registry, schema};
 use chrono::NaiveDate;
 
 fn main() {

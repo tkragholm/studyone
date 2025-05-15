@@ -3,11 +3,11 @@
 //! This example demonstrates the new support for different ID field types
 //! in registry deserializers, including:
 //! - PNR (Personal Identification Number) - Default
-//! - RECNUM (Record Number) - Used in LPR_DIAG
+//! - RECNUM (Record Number) - Used in `LPR_DIAG`
 
 // Remove unused import
 use chrono::NaiveDate;
-use par_reader::*;
+use par_reader::{ModelCollection, RegistryTrait, error, models, registry, schema};
 use std::collections::HashMap;
 use std::path::Path;
 
@@ -77,7 +77,10 @@ fn create_recnum_to_pnr_mapping(adm_records: &[LprAdmRegistry]) -> HashMap<Strin
         }
     }
 
-    println!("Created mapping with {} RECNUM -> PNR pairs\n", mapping.len());
+    println!(
+        "Created mapping with {} RECNUM -> PNR pairs\n",
+        mapping.len()
+    );
     mapping
 }
 
@@ -87,17 +90,17 @@ pub fn run_id_field_test() {
 
     // Path to a BEF Parquet file (uses PNR as ID)
     let bef_path = Path::new("/Users/tobiaskragholm/generated_data/parquet/bef/202209.parquet");
-    println!("Loading BEF data from: {:?}", bef_path);
+    println!("Loading BEF data from: {bef_path:?}");
 
     // Path to LPR ADM Parquet file (uses PNR as ID but has RECNUM for joining)
     let lpr_adm_path =
         Path::new("/Users/tobiaskragholm/generated_data/parquet/lpr_adm/2000.parquet");
-    println!("Loading LPR ADM data from: {:?}", lpr_adm_path);
+    println!("Loading LPR ADM data from: {lpr_adm_path:?}");
 
     // Path to LPR DIAG Parquet file (uses RECNUM as ID)
     let lpr_diag_path =
         Path::new("/Users/tobiaskragholm/generated_data/parquet/lpr_diag/2000.parquet");
-    println!("Loading LPR DIAG data from: {:?}", lpr_diag_path);
+    println!("Loading LPR DIAG data from: {lpr_diag_path:?}");
 
     // Create deserializers for each registry
     let bef_deserializer = BefRegistryDeserializer::new();
@@ -148,7 +151,7 @@ pub fn run_id_field_test() {
             println!("No BEF batches found");
         }
         Err(err) => {
-            eprintln!("Error loading BEF data: {}", err);
+            eprintln!("Error loading BEF data: {err}");
         }
     }
 
@@ -185,7 +188,7 @@ pub fn run_id_field_test() {
             Vec::new()
         }
         Err(err) => {
-            eprintln!("Error loading LPR ADM data: {}", err);
+            eprintln!("Error loading LPR ADM data: {err}");
             Vec::new()
         }
     };
@@ -202,14 +205,14 @@ pub fn run_id_field_test() {
             );
 
             println!("\nDeserializing LPR_DIAG records using trait deserializer...");
-            
+
             // Use the trait deserializer to convert Arrow RecordBatch to LprDiagRegistry objects
             let diag_records: Vec<LprDiagRegistry> = diag_deserializer
                 .deserialize_batch(&diag_batches[0])
                 .unwrap_or_default();
-            
+
             println!("Deserialized {} LPR DIAG records", diag_records.len());
-            
+
             // Print first few records
             for (i, record) in diag_records.iter().take(5).enumerate() {
                 println!("Record {}: {:?}", i + 1, record);
@@ -219,7 +222,9 @@ pub fn run_id_field_test() {
 
             // Fallback debugging if no records were found (should not happen with our fixes)
             if diag_records.is_empty() {
-                println!("\nNo LPR_DIAG records were found. This indicates an issue with the deserialization.");
+                println!(
+                    "\nNo LPR_DIAG records were found. This indicates an issue with the deserialization."
+                );
             }
 
             // Count matched records that have a corresponding PNR from the mapping
@@ -267,7 +272,7 @@ pub fn run_id_field_test() {
             println!("No LPR DIAG batches found");
         }
         Err(err) => {
-            eprintln!("Error loading LPR DIAG data: {}", err);
+            eprintln!("Error loading LPR DIAG data: {err}");
         }
     }
 }

@@ -5,7 +5,7 @@
 
 use arrow::array::Array;
 use chrono::NaiveDate;
-use par_reader::*;  // Import everything from par_reader like the working example
+use par_reader::{ModelCollection, RegistryTrait, error, models, registry, schema};  // Import everything from par_reader like the working example
 use std::path::Path;
 
 // Now we can use the derive macro

@@ -1,9 +1,9 @@
 //! Test for the Registry trait with VNDS data
 //!
-//! This is a simple test for the RegistryTrait derive macro
+//! This is a simple test for the `RegistryTrait` derive macro
 
 use chrono::NaiveDate;
-use par_reader::*;
+use par_reader::{ModelCollection, RegistryTrait, error, models, registry, schema};
 
 fn main() {
     println!("VNDS Registry test");
