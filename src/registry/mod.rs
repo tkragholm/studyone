@@ -44,51 +44,18 @@ pub trait RegisterLoader: Send + Sync {
         base_path: &Path,
         pnr_filter: Option<&HashSet<String>>,
     ) -> Result<Vec<RecordBatch>> {
-        // Default implementation for macro-generated deserializers
-        // Creates a loader with schema and runs async loading in a blocking runtime
-        let schema = self.get_schema();
+        // Check if we're already in a tokio runtime
+        let current = tokio::runtime::Handle::try_current();
 
-        // Check if PNR filtering is supported
-        if let Some(pnr_column) = self.get_pnr_column_name() {
-            let loader = crate::async_io::loader::Loader::with_schema_ref(schema)
-                .with_pnr_column(pnr_column);
-
-            // Create a blocking runtime to run the async code
-            let rt = tokio::runtime::Runtime::new()?;
-
-            // Use the trait implementation to load data
-            rt.block_on(async {
-                if let Some(filter) = pnr_filter {
-                    // Create a PNR filter using the expr module
-                    use crate::filter::expr::{Expr, ExpressionFilter, LiteralValue};
-
-                    // Create the expression filter using the proper column name
-                    let values: Vec<LiteralValue> = filter
-                        .iter()
-                        .map(|s| LiteralValue::String(s.clone()))
-                        .collect();
-
-                    let expr = Expr::In(pnr_column.to_string(), values);
-                    let pnr_filter = ExpressionFilter::new(expr);
-
-                    // Use filter with loader
-                    loader
-                        .load_with_filter_async(base_path, std::sync::Arc::new(pnr_filter))
-                        .await
-                } else {
-                    // Otherwise use the directory loader
-                    loader.load_async(base_path).await
-                }
-            })
+        if let Ok(_) = current {
+            // We're already in a tokio runtime, use futures executor
+            futures::executor::block_on(self.load_async(base_path, pnr_filter))
         } else {
-            // If no PNR column is available, use a regular loader
-            let loader = crate::async_io::loader::Loader::with_schema_ref(schema);
-
             // Create a blocking runtime to run the async code
             let rt = tokio::runtime::Runtime::new()?;
 
-            // Load without filtering
-            rt.block_on(async { loader.load_async(base_path).await })
+            // Use the async implementation
+            rt.block_on(self.load_async(base_path, pnr_filter))
         }
     }
 
@@ -109,33 +76,127 @@ pub trait RegisterLoader: Send + Sync {
                 let loader = crate::async_io::loader::Loader::with_schema_ref(schema.clone())
                     .with_pnr_column(pnr_column);
 
-                if let Some(filter) = pnr_filter {
-                    // Create a PNR filter using the expr module
-                    use crate::filter::expr::{Expr, ExpressionFilter, LiteralValue};
+                // First check if we're dealing with a directory
+                let metadata = tokio::fs::metadata(base_path).await;
 
-                    // Create the expression filter using the proper column name
-                    let values: Vec<LiteralValue> = filter
-                        .iter()
-                        .map(|s| LiteralValue::String(s.clone()))
-                        .collect();
+                if let Ok(md) = metadata {
+                    if md.is_dir() {
+                        // Handle directory loading - consistently use DirectoryLoader for better code path
+                        if let Some(filter) = pnr_filter {
+                            // Create a PNR filter using the expr module
+                            use crate::filter::expr::{Expr, ExpressionFilter, LiteralValue};
 
-                    let expr = Expr::In(pnr_column.to_string(), values);
-                    let pnr_filter = ExpressionFilter::new(expr);
+                            // Create the expression filter using the proper column name
+                            let values: Vec<LiteralValue> = filter
+                                .iter()
+                                .map(|s| LiteralValue::String(s.clone()))
+                                .collect();
 
-                    // Use filter with loader
-                    loader
-                        .load_with_filter_async(base_path, std::sync::Arc::new(pnr_filter))
-                        .await
+                            // Create the expression
+                            let expr = Expr::In(pnr_column.to_string(), values);
+                            
+                            // Load with PNR filtering by converting to Express filter
+                            let filter = std::sync::Arc::new(ExpressionFilter::new(expr.clone()));
+                            
+                            // First find all files
+                            let parquet_files = crate::common::traits::async_loading::AsyncFileHelper::find_parquet_files(base_path).await?;
+                            
+                            if parquet_files.is_empty() {
+                                log::warn!("No parquet files found in directory: {}", base_path.display());
+                                return Ok(Vec::new());
+                            }
+                            
+                            // Then process each file with the filter
+                            let mut all_batches = Vec::new();
+                            for file_path in parquet_files {
+                                let batches = loader.load_with_filter_async(&file_path, filter.clone()).await?;
+                                all_batches.extend(batches);
+                            }
+                            
+                            Ok(all_batches)
+                        } else {
+                            // Load directory without filtering
+                            // Use a single approach to find files
+                            let parquet_files = crate::common::traits::async_loading::AsyncFileHelper::find_parquet_files(base_path).await?;
+                            
+                            if parquet_files.is_empty() {
+                                log::warn!("No parquet files found in directory: {}", base_path.display());
+                                return Ok(Vec::new());
+                            }
+                            
+                            // Then process each file
+                            let mut all_batches = Vec::new();
+                            for file_path in parquet_files {
+                                let batches = loader.load_async(&file_path).await?;
+                                all_batches.extend(batches);
+                            }
+                            
+                            Ok(all_batches)
+                        }
+                    } else {
+                        // Handle single file loading
+                        if let Some(filter) = pnr_filter {
+                            // Create a PNR filter using the expr module
+                            use crate::filter::expr::{Expr, ExpressionFilter, LiteralValue};
+
+                            // Create the expression filter using the proper column name
+                            let values: Vec<LiteralValue> = filter
+                                .iter()
+                                .map(|s| LiteralValue::String(s.clone()))
+                                .collect();
+
+                            let expr = Expr::In(pnr_column.to_string(), values);
+                            let pnr_filter = ExpressionFilter::new(expr);
+
+                            // Use filter with loader for single file
+                            loader
+                                .load_with_filter_async(base_path, std::sync::Arc::new(pnr_filter))
+                                .await
+                        } else {
+                            // Load without filtering
+                            loader.load_async(base_path).await
+                        }
+                    }
                 } else {
-                    // Otherwise use the directory loader
-                    loader.load_async(base_path).await
+                    // Handle path not found or accessible
+                    Err(anyhow::anyhow!("Failed to access path: {}", base_path.display()).into())
                 }
             })
         } else {
             // If no PNR column is available, use a regular loader
             Box::pin(async move {
                 let loader = crate::async_io::loader::Loader::with_schema_ref(schema);
-                loader.load_async(base_path).await
+
+                // First check if we're dealing with a directory
+                let metadata = tokio::fs::metadata(base_path).await;
+
+                if let Ok(md) = metadata {
+                    if md.is_dir() {
+                        // Handle directory loading
+                        // Use a single approach to find files
+                        let parquet_files = crate::common::traits::async_loading::AsyncFileHelper::find_parquet_files(base_path).await?;
+                        
+                        if parquet_files.is_empty() {
+                            log::warn!("No parquet files found in directory: {}", base_path.display());
+                            return Ok(Vec::new());
+                        }
+                        
+                        // Then process each file
+                        let mut all_batches = Vec::new();
+                        for file_path in parquet_files {
+                            let batches = loader.load_async(&file_path).await?;
+                            all_batches.extend(batches);
+                        }
+                        
+                        Ok(all_batches)
+                    } else {
+                        // Load single file
+                        loader.load_async(base_path).await
+                    }
+                } else {
+                    // Handle path not found or accessible
+                    Err(anyhow::anyhow!("Failed to access path: {}", base_path.display()).into())
+                }
             })
         }
     }

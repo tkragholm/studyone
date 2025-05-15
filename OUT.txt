@@ -1,82 +1,18 @@
-Testing BEF Registry with macro-based implementation
-Created deserializer for BEF registry
-Loading and analyzing data from directory: /Users/tobiaskragholm/generated_data/parquet/bef
-Found 35 Parquet files
-Setting Optional gender value to Individual: field=gender, value="M"
-Parsing date string: '1989-10-15' for field 'FOED_DAG'
-Successfully parsed date: Some(1989-10-15)
-Setting Optional birth_date value to Individual: field=birth_date, value=1989-10-15
-Setting Optional mother_pnr value to Individual: field=mother_pnr, value="180899-8584"
-Setting Optional father_pnr value to Individual: field=father_pnr, value="250172-2144"
-Setting Optional family_id value to Individual: field=family_id, value="F00000002"
-Setting Optional spouse_pnr value to Individual: field=spouse_pnr, value="null"
-Setting Optional family_size value to Individual: field=family_size, value=6
-Setting Optional household_size value to Individual: field=household_size, value=6
-Parsing date string: '1989-10-15' for field 'BOP_VFRA'
-Successfully parsed date: Some(1989-10-15)
-Setting Optional residence_from value to Individual: field=residence_from, value=1989-10-15
-Setting Optional family_type value to Individual: field=family_type, value=10
-Setting Optional gender value to Individual: field=gender, value="M"
-Parsing date string: '1982-02-16' for field 'FOED_DAG'
-Successfully parsed date: Some(1982-02-16)
-Setting Optional birth_date value to Individual: field=birth_date, value=1982-02-16
-Setting Optional mother_pnr value to Individual: field=mother_pnr, value="110450-5908"
-Setting Optional father_pnr value to Individual: field=father_pnr, value="230265-5813"
-Setting Optional family_id value to Individual: field=family_id, value="F00000003"
-Setting Optional spouse_pnr value to Individual: field=spouse_pnr, value="null"
-Setting Optional family_size value to Individual: field=family_size, value=5
-Setting Optional household_size value to Individual: field=household_size, value=5
-Parsing date string: '1982-02-16' for field 'BOP_VFRA'
-Setting Optional residence_from value to Individual: field=residence_from, value=1982-02-16
-Setting Optional family_type value to Individual: field=family_type, value=3
-Setting Optional gender value to Individual: field=gender, value="M"
-Parsing date string: '1963-08-27' for field 'FOED_DAG'
-Setting Optional birth_date value to Individual: field=birth_date, value=1963-08-27
-Setting Optional mother_pnr value to Individual: field=mother_pnr, value="141209-4431"
-Setting Optional father_pnr value to Individual: field=father_pnr, value="010751-1166"
-Setting Optional family_id value to Individual: field=family_id, value="F00000020"
-Setting Optional spouse_pnr value to Individual: field=spouse_pnr, value="null"
-Setting Optional family_size value to Individual: field=family_size, value=1
-Setting Optional household_size value to Individual: field=household_size, value=1
-Setting Optional residence_from value to Individual: field=residence_from, value=1963-08-27
-Setting Optional family_type value to Individual: field=family_type, value=3
-Setting Optional gender value to Individual: field=gender, value="M"
-Setting Optional birth_date value to Individual: field=birth_date, value=1958-09-13
-Setting Optional mother_pnr value to Individual: field=mother_pnr, value="050401-6053"
-Setting Optional father_pnr value to Individual: field=father_pnr, value="060579-6592"
-Setting Optional family_id value to Individual: field=family_id, value="F00000024"
-Setting Optional spouse_pnr value to Individual: field=spouse_pnr, value="091204-1210"
-Setting Optional family_size value to Individual: field=family_size, value=1
-Setting Optional household_size value to Individual: field=household_size, value=1
-Setting Optional residence_from value to Individual: field=residence_from, value=1958-09-13
-Setting Optional family_type value to Individual: field=family_type, value=8
-Setting Optional gender value to Individual: field=gender, value="M"
-Setting Optional birth_date value to Individual: field=birth_date, value=1965-02-18
-Setting Optional mother_pnr value to Individual: field=mother_pnr, value="020660-1013"
-Setting Optional father_pnr value to Individual: field=father_pnr, value="031253-9580"
-Setting Optional family_id value to Individual: field=family_id, value="F00000004"
-Setting Optional spouse_pnr value to Individual: field=spouse_pnr, value="null"
-Setting Optional family_size value to Individual: field=family_size, value=6
-Setting Optional household_size value to Individual: field=household_size, value=6
-Setting Optional residence_from value to Individual: field=residence_from, value=1965-02-18
-Setting Optional family_type value to Individual: field=family_type, value=7
-
---- MODEL STATISTICS ---
-Total individuals loaded: 5991661
-Total properties: 59916610
-Average properties per individual: 10.00
-
-Field population statistics:
-Field Name           | Count      | Percentage
----------------------|------------|-----------
-family_type          | 5991661    | 100.00%
-mother_pnr           | 5991661    | 100.00%
-residence_from       | 5991661    | 100.00%
-household_size       | 5991661    | 100.00%
-spouse_pnr           | 5991661    | 100.00%
-family_id            | 5991661    | 100.00%
-birth_date           | 5991661    | 100.00%
-family_size          | 5991661    | 100.00%
-gender               | 5991661    | 100.00%
-father_pnr           | 5991661    | 100.00%
-BEF Registry test completed successfully!
+[2025-05-15T11:44:55Z INFO  par_reader] Loading registry data from: /Users/tobiaskragholm/generated_data/parquet
+[2025-05-15T11:44:55Z INFO  par_reader] Loading BEF registry data...
+[2025-05-15T11:44:55Z INFO  par_reader::utils] Searching for parquet files recursively in /Users/tobiaskragholm/generated_data/parquet/bef
+[2025-05-15T11:44:55Z INFO  par_reader::common::traits::async_loading] Successfully found 35 items from /Users/tobiaskragholm/generated_data/parquet/bef (searched recursively)
+[2025-05-15T11:44:55Z INFO  par_reader::utils] Searching for parquet files recursively in /Users/tobiaskragholm/generated_data/parquet/bef
+[2025-05-15T11:44:55Z INFO  par_reader::common::traits::async_loading] Successfully found 35 items from /Users/tobiaskragholm/generated_data/parquet/bef (searched recursively)
+[2025-05-15T11:44:55Z INFO  par_reader::utils] Reading parquet file asynchronously /Users/tobiaskragholm/generated_data/parquet/bef/201906.parquet
+[2025-05-15T11:44:55Z INFO  par_reader::utils] Reading parquet file asynchronously /Users/tobiaskragholm/generated_data/parquet/bef/202106.parquet
+[2025-05-15T11:44:55Z INFO  par_reader::utils] Reading parquet file asynchronously /Users/tobiaskragholm/generated_data/parquet/bef/202212.parquet
+[2025-05-15T11:44:55Z INFO  par_reader::utils] Reading parquet file asynchronously /Users/tobiaskragholm/generated_data/parquet/bef/200312.parquet
+[2025-05-15T11:44:55Z INFO  par_reader::utils] Reading parquet file asynchronously /Users/tobiaskragholm/generated_data/parquet/bef/201712.parquet
+[2025-05-15T11:44:55Z INFO  par_reader::utils] Reading parquet file asynchronously /Users/tobiaskragholm/generated_data/parquet/bef/200812.parquet
+[2025-05-15T11:44:55Z INFO  par_reader::utils] Reading parquet file asynchronously /Users/tobiaskragholm/generated_data/parquet/bef/202203.parquet
+[2025-05-15T11:44:55Z INFO  par_reader::utils] Reading parquet file asynchronously /Users/tobiaskragholm/generated_data/parquet/bef/200512.parquet
+[2025-05-15T11:44:55Z INFO  par_reader::utils] Reading parquet file asynchronously /Users/tobiaskragholm/generated_data/parquet/bef/201112.parquet
+[2025-05-15T11:44:55Z INFO  par_reader::utils] Reading parquet file asynchronously /Users/tobiaskragholm/generated_data/parquet/bef/202006.parquet
+[2025-05-15T11:44:55Z INFO  par_reader::utils] Reading parquet file asynchronously /Users/tobiaskragholm/generated_data/parquet/bef/201612.parquet
+[2025-05-15T11:44:55Z INFO  par_reader::utils] Reading parquet file asynchronously /Users/tobiaskragholm/generated_data/parquet/bef/200212.parquet
