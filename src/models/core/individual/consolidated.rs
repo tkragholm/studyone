@@ -457,12 +457,22 @@ impl Individual {
             }
             "gender" => {
                 if let Some(v) = value.downcast_ref::<Option<String>>() {
+                    // Store the value in the dedicated field
                     self.gender = v.clone();
+                    
+                    // Also store in properties map for access in From<Individual>
+                    // This ensures consistent property access when converting back to registry-specific types
+                    self.store_property(property, value);
                 }
             }
             "birth_date" => {
                 if let Some(v) = value.downcast_ref::<Option<NaiveDate>>() {
+                    // Store the value in the dedicated field
                     self.birth_date = *v;
+                    
+                    // Also store in properties map for access in From<Individual>
+                    // This ensures consistent property access when converting back to registry-specific types
+                    self.store_property(property, value);
                 }
             }
             "death_date" => {
@@ -503,6 +513,9 @@ impl Individual {
                 }
             }
             "diagnosis_code" => {
+                // Store diagnosis code as a property and in the diagnoses collection
+                
+                // First extract the value for adding to the diagnoses vector
                 if let Some(v) = value.downcast_ref::<Option<String>>() {
                     if let Some(ref mut diagnoses) = self.diagnoses {
                         if let Some(diagnosis) = v {
@@ -512,14 +525,26 @@ impl Individual {
                         self.diagnoses = Some(vec![diagnosis.clone()]);
                     }
                 }
+                
+                // Store the original value in the properties map
+                self.store_property(property, value);
             }
             "diagnosis_type" => {
-                // Store as a property if needed in the future
-                // Currently we don't have a dedicated field for this in Individual
+                // Store diagnosis type as a property for access in registry-specific types
+                
+                // Store as a property for access in From<Individual>
                 self.store_property(property, value);
             }
             "record_number" => {
                 // Store in the properties map for use when mapping between registries
+                // Debug log for the first few record_number properties
+                static mut RECORD_NUM_COUNT: usize = 0;
+                unsafe {
+                    if RECORD_NUM_COUNT < 3 {
+                        println!("Setting record_number property: {:?}", value);
+                        RECORD_NUM_COUNT += 1;
+                    }
+                }
                 self.store_property(property, value);
             }
             "dw_ek_kontakt" => {

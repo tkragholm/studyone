@@ -5,7 +5,7 @@
 //! - PNR (Personal Identification Number) - Default
 //! - RECNUM (Record Number) - Used in LPR_DIAG
 
-use arrow::record_batch::RecordBatch;
+// Remove unused import
 use chrono::NaiveDate;
 use par_reader::*;
 use std::collections::HashMap;
@@ -77,26 +77,8 @@ fn create_recnum_to_pnr_mapping(adm_records: &[LprAdmRegistry]) -> HashMap<Strin
         }
     }
 
-    println!("Created mapping with {} RECNUM -> PNR pairs", mapping.len());
+    println!("Created mapping with {} RECNUM -> PNR pairs\n", mapping.len());
     mapping
-}
-
-/// Load records from a Parquet file
-fn load_records<T: From<par_reader::models::core::Individual>>(
-    deserializer: &std::sync::Arc<dyn par_reader::registry::trait_deserializer::RegistryDeserializer>,
-    batch: &RecordBatch,
-) -> Vec<T> {
-    // First try using the deserializer directly - should work for all ID field types now
-    match deserializer.deserialize_batch(batch) {
-        Ok(individuals) => {
-            // Convert each Individual to the target type
-            individuals.into_iter().map(T::from).collect()
-        }
-        Err(err) => {
-            eprintln!("Error deserializing batch: {}", err);
-            Vec::new()
-        }
-    }
 }
 
 /// Run the test for different ID field types
@@ -215,36 +197,32 @@ pub fn run_id_field_test() {
     match par_reader::loader::read_parquet(lpr_diag_path, None, None) {
         Ok(diag_batches) if !diag_batches.is_empty() => {
             println!(
-                "Successfully loaded LPR DIAG batch with {} rows",
+                "Successfully loaded LPR DIAG batch with {} rows\n",
                 diag_batches[0].num_rows()
             );
 
-            // Deserialize the DIAG records using the new approach
-            let diag_records: Vec<LprDiagRegistry> =
-                load_records(&diag_deserializer.inner, &diag_batches[0]);
+            println!("\nDeserializing LPR_DIAG records using trait deserializer...");
+            
+            // Use the trait deserializer to convert Arrow RecordBatch to LprDiagRegistry objects
+            let diag_records: Vec<LprDiagRegistry> = diag_deserializer
+                .deserialize_batch(&diag_batches[0])
+                .unwrap_or_default();
+            
+            println!("Deserialized {} LPR DIAG records", diag_records.len());
+            
+            // Print first few records
+            for (i, record) in diag_records.iter().take(5).enumerate() {
+                println!("Record {}: {:?}", i + 1, record);
+            }
 
             println!("Deserialized {} LPR DIAG records", diag_records.len());
 
-            // Print the first few records and their associated PNR from the mapping
-            for (i, record) in diag_records.iter().take(5).enumerate() {
-                let pnr = record
-                    .record_number
-                    .as_ref()
-                    .and_then(|recnum| recnum_to_pnr.get(recnum))
-                    .cloned()
-                    .unwrap_or_else(|| "Not found".to_string());
-
-                println!(
-                    "[{}] RECNUM: {:?}, Diagnosis: {:?}, Type: {:?}, PNR: {}",
-                    i + 1,
-                    record.record_number,
-                    record.diagnosis_code,
-                    record.diagnosis_type,
-                    pnr
-                );
+            // Fallback debugging if no records were found (should not happen with our fixes)
+            if diag_records.is_empty() {
+                println!("\nNo LPR_DIAG records were found. This indicates an issue with the deserialization.");
             }
 
-            // Count matched records
+            // Count matched records that have a corresponding PNR from the mapping
             let matched_count = diag_records
                 .iter()
                 .filter(|r| {
@@ -254,6 +232,30 @@ pub fn run_id_field_test() {
                         .is_some()
                 })
                 .count();
+
+            // Print examples of LPR_DIAG records with their associated PNRs
+            println!("\nExamples of DIAG records with matched PNRs:");
+            let matched_records = diag_records
+                .iter()
+                .filter_map(|r| {
+                    r.record_number
+                        .as_ref()
+                        .and_then(|recnum| recnum_to_pnr.get(recnum))
+                        .map(|pnr| (r, pnr))
+                })
+                .take(5)
+                .collect::<Vec<_>>();
+
+            for (i, (record, pnr)) in matched_records.iter().enumerate() {
+                println!(
+                    "Record {}: RECNUM={:?}, Diagnosis={:?}, Type={:?}, PNR={}",
+                    i + 1,
+                    record.record_number,
+                    record.diagnosis_code,
+                    record.diagnosis_type,
+                    pnr
+                );
+            }
 
             println!(
                 "Found PNR matches for {}/{} DIAG records",

@@ -6,7 +6,7 @@
 use darling::{ast, FromDeriveInput, FromField};
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
-use syn::{parse_macro_input, DeriveInput};
+use syn::{parse_macro_input, DeriveInput, Type};
 
 // Import utility functions for the proc macro
 mod utils;
@@ -22,7 +22,7 @@ struct RegistryTraitReceiver {
     name: Option<String>,
     #[darling(default)]
     description: Option<String>,
-    /// Identifier field type (pnr, record_number, or dw_ek_kontakt)
+    /// Identifier field type (pnr, `record_number`, or `dw_ek_kontakt`)
     #[darling(default)]
     id_field: Option<String>,
     /// The struct data with parsed fields
@@ -68,7 +68,7 @@ struct RegistryFieldReceiver {
 /// }
 /// ```
 ///
-/// # Example with RECNUM as identifier (for LPR_DIAG)
+/// # Example with RECNUM as identifier (for `LPR_DIAG`)
 ///
 /// ```rust
 /// #[derive(RegistryTrait)]
@@ -85,7 +85,7 @@ struct RegistryFieldReceiver {
 /// }
 /// ```
 ///
-/// # Example with DW_EK_KONTAKT as identifier (for LPR3)
+/// # Example with `DW_EK_KONTAKT` as identifier (for LPR3)
 ///
 /// ```rust
 /// #[derive(RegistryTrait)]
@@ -122,9 +122,12 @@ pub fn derive_registry_trait(input: TokenStream) -> TokenStream {
         .description
         .clone()
         .unwrap_or_else(|| format!("{registry_name} registry"));
-    
+
     // Get the ID field type (default to "pnr" if not specified)
-    let id_field = receiver.id_field.clone().unwrap_or_else(|| "pnr".to_string());
+    let id_field = receiver
+        .id_field
+        .clone()
+        .unwrap_or_else(|| "pnr".to_string());
 
     // Extract the fields
     let ast::Data::Struct(fields) = &receiver.data else {
@@ -132,7 +135,13 @@ pub fn derive_registry_trait(input: TokenStream) -> TokenStream {
     };
 
     // Generate the trait implementation
-    let expanded = generate_registry_impl(&receiver.ident, &registry_name, &registry_desc, &id_field, fields);
+    let expanded = generate_registry_impl(
+        &receiver.ident,
+        &registry_name,
+        &registry_desc,
+        &id_field,
+        fields,
+    );
 
     // Convert back to proc_macro::TokenStream
     TokenStream::from(expanded)
@@ -157,15 +166,32 @@ fn generate_registry_impl(
     // Generate field mappings
     let field_mappings = fields.iter().map(|field| {
         let field_name = field.ident.as_ref().unwrap();
+        let field_name_str = field_name.to_string();
         let field_type = &field.ty;
 
         // Extract field attributes
-        let source_name = field.field_name.clone()
+        let source_name = field
+            .field_name
+            .clone()
             .unwrap_or_else(|| field_name.to_string().to_uppercase());
 
+        // Determine the target property name for ID fields
+        // We need to make sure it's mapped to the standardized name expected by the trait deserializer
+        let target_property_name = if field_name_str == "record_number" {
+            // For RECNUM fields, always use "record_number" as the target property name
+            "record_number".to_string()
+        } else if field_name_str == "dw_ek_kontakt" {
+            // For DW_EK_KONTAKT fields, always use "dw_ek_kontakt" as the target property name
+            "dw_ek_kontakt".to_string()
+        } else {
+            // For other fields, use the field name as-is
+            field_name.to_string()
+        };
+
         let is_option = utils::is_option_type(field_type);
-        let (field_type_enum, extractor_method, setter_method) = utils::extract_field_type_info(field_type);
-        
+        let (field_type_enum, extractor_method, setter_method) =
+            utils::extract_field_type_info(field_type);
+
         // Generate the setter code based on field type and whether it's the ID field
         let setter_code = utils::generate_field_setter_code(field_name, field_type, id_field);
 
@@ -173,7 +199,7 @@ fn generate_registry_impl(
             crate::schema::field_def::FieldMapping::new(
                 crate::schema::field_def::FieldDefinition::new(
                     #source_name,
-                    stringify!(#field_name),
+                    #target_property_name,
                     crate::schema::field_def::FieldType::#field_type_enum,
                     #is_option,
                 ),
@@ -185,47 +211,143 @@ fn generate_registry_impl(
 
     // Check if the struct has the specified ID field
     let has_id_field = fields.iter().any(|field| {
-        field.ident.as_ref()
-            .map(|ident| *ident == id_field)
-            .unwrap_or(false)
+        field
+            .ident
+            .as_ref()
+            .is_some_and(|ident| *ident == id_field)
     });
-    
-    // Check if the struct has a record_number field
-    let has_record_number = has_field_named(fields, "record_number");
-    
+
+    // Check if the struct has a record_number field (for debugging)
+    let _has_record_number = has_field_named(fields, "record_number");
+
     // Update the unused variable to avoid warnings
     let _has_id_field = has_id_field;
-    
+
     // Prepare field extraction for properties
     let field_extraction_statements = fields.iter().filter_map(|field| {
         let field_name = field.ident.as_ref().unwrap();
         let field_name_str = field_name.to_string();
-        
+
         // Skip ID field extraction as it's handled separately
         if field_name_str == id_field {
             None
         } else {
-            // For non-ID fields, generate property extraction code
-            Some(quote! {
-                // Extract property by field name
-                if let Some(props) = individual.properties() {
-                    if let Some(value) = props.get(#field_name_str) {
-                        // Handle common types with downcast
-                        // First try Option<String>
-                        if let Some(string_val) = value.downcast_ref::<Option<String>>() {
-                            instance.#field_name = string_val.clone();
-                        } 
-                        // Then try Option<NaiveDate>
-                        else if let Some(date_val) = value.downcast_ref::<Option<chrono::NaiveDate>>() {
-                            instance.#field_name = *date_val;
-                        }
-                        // Then try String (non-Option)
-                        else if let Some(string_val) = value.downcast_ref::<String>() {
-                            instance.#field_name = string_val.clone();
-                        }
-                    }
+            // Extract field type information before generating code
+            let is_option = utils::is_option_type(&field.ty);
+
+            // For non-ID fields, generate property extraction code based on the field type
+            // First get the field type as a string for matching
+            let field_type = if let Type::Path(type_path) = &field.ty {
+                if let Some(segment) = type_path.path.segments.first() {
+                    segment.ident.to_string()
+                } else {
+                    "Unknown".to_string()
                 }
-            })
+            } else {
+                "Unknown".to_string()
+            };
+
+            // For Option types, extract the inner type
+            let inner_type = if field_type == "Option" {
+                if let Type::Path(type_path) = &field.ty {
+                    if let Some(segment) = type_path.path.segments.first() {
+                        if let syn::PathArguments::AngleBracketed(args) = &segment.arguments {
+                            if let Some(syn::GenericArgument::Type(Type::Path(inner_path))) = args.args.first() {
+                                if let Some(inner_segment) = inner_path.path.segments.first() {
+                                    inner_segment.ident.to_string()
+                                } else {
+                                    "Unknown".to_string()
+                                }
+                            } else {
+                                "Unknown".to_string()
+                            }
+                        } else {
+                            "Unknown".to_string()
+                        }
+                    } else {
+                        "Unknown".to_string()
+                    }
+                } else {
+                    "Unknown".to_string()
+                }
+            } else {
+                field_type
+            };
+
+            // Now match on the type for code generation
+            match inner_type.as_str() {
+                // For String fields
+                "String" => {
+                    if is_option {
+                        // For Option<String> fields
+                        Some(quote! {
+                            // Extract Option<String> property - try both field name and source field name
+                            if let Some(props) = individual.properties() {
+                                // Debug logging has been removed
+                                
+                                // Try both actual field name and stringified field name
+                                let property_value = props.get(#field_name_str)
+                                    .or_else(|| props.get(stringify!(#field_name)));
+                                    
+                                if let Some(value) = property_value {
+                                    if let Some(string_val) = value.downcast_ref::<Option<String>>() {
+                                        // Debug logging has been removed
+                                        instance.#field_name = string_val.clone();
+                                    }
+                                }
+                            }
+                        })
+                    } else {
+                        // For String fields (non-Option)
+                        Some(quote! {
+                            // Extract String property - try both field name and source field name
+                            if let Some(props) = individual.properties() {
+                                // Try both actual field name and stringified field name
+                                let property_value = props.get(#field_name_str)
+                                    .or_else(|| props.get(stringify!(#field_name)));
+                                    
+                                if let Some(value) = property_value {
+                                    if let Some(string_val) = value.downcast_ref::<String>() {
+                                        instance.#field_name = string_val.clone();
+                                    }
+                                }
+                            }
+                        })
+                    }
+                },
+                // For Date fields
+                "Date" | "NaiveDate" => {
+                    Some(quote! {
+                        // Extract Option<NaiveDate> property - try both field name and source field name
+                        if let Some(props) = individual.properties() {
+                            // Debug logging has been removed
+                            
+                            // Try both actual field name and stringified field name
+                            let property_value = props.get(#field_name_str)
+                                .or_else(|| props.get(stringify!(#field_name)));
+                                
+                            if let Some(value) = property_value {
+                                if let Some(date_val) = value.downcast_ref::<Option<chrono::NaiveDate>>() {
+                                    // Debug logging has been removed
+                                    instance.#field_name = *date_val;
+                                }
+                            }
+                        }
+                    })
+                },
+                // For Integer and other field types - add more as needed
+                _ => {
+                    // Default extraction for other types
+                    Some(quote! {
+                        // Extract generic property
+                        if let Some(props) = individual.properties() {
+                            if let Some(_value) = props.get(#field_name_str) {
+                                // No specific handling for this type yet
+                            }
+                        }
+                    })
+                }
+            }
         }
     }).collect::<Vec<_>>();
 
@@ -243,16 +365,16 @@ fn generate_registry_impl(
                             PRINT_COUNT += 1;
                         }
                     }
-                    
+
                     // Create a default instance of our struct
                     let mut instance = Self::default();
-                    
+
                     // Set the PNR field directly
                     instance.pnr = individual.pnr.clone();
-                    
+
                     // Extract all other fields from properties
                     #(#field_extraction_statements)*
-                    
+
                     // Return the populated instance
                     instance
                 }
@@ -271,10 +393,10 @@ fn generate_registry_impl(
                             PRINT_COUNT += 1;
                         }
                     }
-                    
+
                     // Create a default instance of our struct
                     let mut instance = Self::default();
-                    
+
                     // Extract record_number and all other fields from properties
                     if let Some(props) = individual.properties() {
                         if let Some(record_num) = props.get("record_number") {
@@ -283,10 +405,10 @@ fn generate_registry_impl(
                             }
                         }
                     }
-                    
+
                     // Extract all other fields from properties
                     #(#field_extraction_statements)*
-                    
+
                     // Return the populated instance
                     instance
                 }
@@ -305,10 +427,10 @@ fn generate_registry_impl(
                             PRINT_COUNT += 1;
                         }
                     }
-                    
+
                     // Create a default instance of our struct
                     let mut instance = Self::default();
-                    
+
                     // Extract dw_ek_kontakt and all other fields from properties
                     if let Some(props) = individual.properties() {
                         if let Some(kontakt) = props.get("dw_ek_kontakt") {
@@ -317,10 +439,10 @@ fn generate_registry_impl(
                             }
                         }
                     }
-                    
+
                     // Extract all other fields from properties
                     #(#field_extraction_statements)*
-                    
+
                     // Return the populated instance
                     instance
                 }
@@ -339,13 +461,13 @@ fn generate_registry_impl(
                             PRINT_COUNT += 1;
                         }
                     }
-                    
+
                     // Create a default instance of our struct
                     let mut instance = Self::default();
-                    
+
                     // Extract all fields from properties
                     #(#field_extraction_statements)*
-                    
+
                     // Return the populated instance
                     instance
                 }
@@ -445,8 +567,9 @@ fn generate_registry_impl(
 /// Helper to check if a struct has a specific field
 fn has_field_named(fields: &ast::Fields<RegistryFieldReceiver>, name: &str) -> bool {
     fields.iter().any(|field| {
-        field.ident.as_ref()
-            .map(|ident| *ident == name)
-            .unwrap_or(false)
+        field
+            .ident
+            .as_ref()
+            .is_some_and(|ident| *ident == name)
     })
 }

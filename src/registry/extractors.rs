@@ -74,9 +74,37 @@ impl RegistryFieldExtractor for StringExtractor {
                     Some(format!("{array:?}"))
                 };
 
+                // Special handling for ID fields to ensure proper mapping
+                let is_id_field = match self.source_field.as_str() {
+                    "RECNUM" => {
+                        // Special handling for RECNUM field to ensure proper ID field validation
+                        true
+                    },
+                    "DW_EK_KONTAKT" => true,
+                    _ => false
+                };
+
                 // Set the value using the provided setter
                 if let Some(string_value) = value {
+                    // We need to clone the string value since we'll use it multiple times
+                    let string_value_clone = string_value.clone();
                     self.setter.call(target, Box::new(string_value));
+                    
+                    // For known ID fields, ensure we also set the property with the standardized name
+                    // This is important for proper ID field validation in the RegistryDeserializer
+                    if is_id_field {
+                        if let Some(individual) = target.downcast_mut::<crate::models::core::Individual>() {
+                            // Ensure we set the standardized property name for ID fields
+                            // This is essential for proper ID field validation
+                            
+                            // Based on the source field, set the appropriate property
+                            if self.source_field == "RECNUM" {
+                                individual.set_property("record_number", Box::new(Some(string_value_clone)));
+                            } else if self.source_field == "DW_EK_KONTAKT" {
+                                individual.set_property("dw_ek_kontakt", Box::new(Some(string_value_clone)));
+                            }
+                        }
+                    }
                 }
                 Ok(())
             }

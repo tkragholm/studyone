@@ -185,17 +185,16 @@ pub fn generate_field_setter_code(
                     individual_obj.set_property("record_number", Box::new(value));
                 }
             };
-        } else {
-            return quote! {
-                |individual, value| {
-                    // Cast to Individual
-                    let individual_obj = individual as &mut crate::models::core::Individual;
-
-                    // Store the record number in a property
-                    individual_obj.set_property("record_number", Box::new(value));
-                }
-            };
         }
+        return quote! {
+            |individual, value| {
+                // Cast to Individual
+                let individual_obj = individual as &mut crate::models::core::Individual;
+
+                // Store the record number in a property
+                individual_obj.set_property("record_number", Box::new(value));
+            }
+        };
     } else if field_name_str == "dw_ek_kontakt" && id_type == "dw_ek_kontakt" {
         // This is the DW_EK_KONTAKT field and we're using it as the ID
         if is_option_field {
@@ -208,17 +207,16 @@ pub fn generate_field_setter_code(
                     individual_obj.set_property("dw_ek_kontakt", Box::new(value));
                 }
             };
-        } else {
-            return quote! {
-                |individual, value| {
-                    // Cast to Individual
-                    let individual_obj = individual as &mut crate::models::core::Individual;
-
-                    // Store the kontakt ID in a property
-                    individual_obj.set_property("dw_ek_kontakt", Box::new(value));
-                }
-            };
         }
+        return quote! {
+            |individual, value| {
+                // Cast to Individual
+                let individual_obj = individual as &mut crate::models::core::Individual;
+
+                // Store the kontakt ID in a property
+                individual_obj.set_property("dw_ek_kontakt", Box::new(value));
+            }
+        };
     }
 
     // Special handling for date fields

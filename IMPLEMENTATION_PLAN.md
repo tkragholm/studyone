@@ -113,9 +113,11 @@ This document outlines the approach for implementing the tasks listed in TODO.tx
 
 The current trait deserializer system has been enhanced to support different ID field types. However, an issue in the base `RegistryDeserializer` trait implementation prevents it from working fully with non-PNR identifiers.
 
-### Current Issue
+### ID Field Validation Issue (Fixed)
 
-In `trait_deserializer.rs`, the `deserialize_row` method returns `None` when the Individual's `pnr` field is empty:
+Previously, in `trait_deserializer.rs`, the `deserialize_row` method would only check if the Individual's `pnr` field was empty, which caused issues for non-PNR registries. This has been fixed by implementing proper ID field type validation.
+
+The updated version now checks the appropriate ID field based on the registry type:
 
 ```rust
 fn deserialize_row(&self, batch: &RecordBatch, row: usize) -> Result<Option<Individual>> {
@@ -130,16 +132,49 @@ fn deserialize_row(&self, batch: &RecordBatch, row: usize) -> Result<Option<Indi
         extractor.extract_and_set(batch, row, &mut individual as &mut dyn Any)?;
     }
 
-    // Return the deserialized Individual if it has a valid PNR
-    if individual.pnr.is_empty() {
-        Ok(None)  // <-- THIS LINE causes issues for non-PNR registries
-    } else {
+    // Check appropriate ID field based on registry type
+    let has_valid_id = match self.id_field_type() {
+        "pnr" => !individual.pnr.is_empty(),
+        "record_number" => individual.properties()
+            .and_then(|props| props.get("record_number"))
+            .and_then(|v| v.downcast_ref::<Option<String>>())
+            .and_then(|v| v.as_ref().map(|s| !s.is_empty()))
+            .unwrap_or(false),
+        "dw_ek_kontakt" => individual.properties()
+            .and_then(|props| props.get("dw_ek_kontakt"))
+            .and_then(|v| v.downcast_ref::<Option<String>>())
+            .and_then(|v| v.as_ref().map(|s| !s.is_empty()))
+            .unwrap_or(false),
+        _ => !individual.pnr.is_empty(), // Default to checking PNR for backward compatibility
+    };
+
+    if has_valid_id {
         Ok(Some(individual))
+    } else {
+        Ok(None)
     }
 }
 ```
 
-For registry types like LPR_DIAG that use record_number instead of PNR, this means that `deserialize_row` always returns `None`.
+### Property Mapping Issue (Fixed)
+
+We identified and fixed two related issues in how properties are handled between Individual and registry-specific types:
+
+1. **ID Field Issue**: For non-PNR ID fields like "record_number" (used by LPR_DIAG), the StringExtractor was correctly extracting the "RECNUM" value from the Arrow record batch, but it wasn't properly setting it as the "record_number" property that the ID field validation checks for.
+
+2. **Field Value Consistency Issue**: Fields like birth_date, gender, diagnosis_code, and diagnosis_type were being extracted correctly but not properly stored in the properties map for access during conversion back to registry-specific types.
+
+The issues were fixed by:
+
+1. **Updating Field Mapping**: Modified the field mapping in `macros/src/lib.rs` to properly map source field names (e.g., "RECNUM") to the standardized property names (e.g., "record_number") used in ID field validation.
+
+2. **Enhancing StringExtractor**: Updated the `StringExtractor.extract_and_set` method in `src/registry/extractors.rs` to handle special ID fields, ensuring that when extracting the "RECNUM" field, it's also stored with the standardized property name "record_number".
+
+3. **Consistent Property Storage**: Modified `Individual.set_property` to ensure that fields like birth_date and gender are stored in both their dedicated fields and in the properties map, ensuring consistency for the `From<Individual>` implementation.
+
+4. **Improved Property Access**: Enhanced the `From<Individual>` implementation to more robustly check for properties using both the field name and stringified field name.
+
+This solution ensures that all registry types, regardless of their ID field type or field naming convention, properly store and retrieve values from the Individual model during deserialization and conversion.
 
 ### Temporary Workaround
 
