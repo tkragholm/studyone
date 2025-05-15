@@ -20,12 +20,13 @@ pub trait UnifiedRegistrySupport {
 ///
 /// This function creates a new PNR filterable loader for a registry,
 /// using either the unified schema system or the original schema system.
-#[must_use] pub fn create_loader(
+#[must_use]
+pub fn create_loader(
     unified_schema: SchemaRef,
     original_schema: SchemaRef,
     use_unified: bool,
     pnr_column: String, // Use owned String to avoid lifetime issues
-) -> (SchemaRef, Arc<crate::async_io::PnrFilterableLoader>) {
+) -> (SchemaRef, Arc<crate::async_io::Loader>) {
     let schema = if use_unified {
         unified_schema
     } else {
@@ -35,8 +36,7 @@ pub trait UnifiedRegistrySupport {
     // Create the loader with specific implementation - we use concrete type instead of trait
     // Pass pnr_column directly since with_pnr_column takes ownership through impl Into<String>
     let loader = Arc::new(
-        crate::async_io::PnrFilterableLoader::with_schema_ref(schema.clone())
-            .with_pnr_column(pnr_column),
+        crate::async_io::Loader::with_schema_ref(schema.clone()).with_pnr_column(pnr_column),
     );
 
     (schema, loader)

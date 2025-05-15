@@ -110,12 +110,12 @@ impl AsyncDirectoryLoader for ParquetLoader {
 
 /// Parquet loader with PNR filtering capabilities
 #[derive(Debug)]
-pub struct PnrFilterableLoader {
+pub struct Loader {
     base_loader: ParquetLoader,
     pnr_column: String,
 }
 
-impl PnrFilterableLoader {
+impl Loader {
     /// Create a new PNR-filterable loader
     #[must_use]
     pub fn new() -> Self {
@@ -158,13 +158,13 @@ impl PnrFilterableLoader {
     }
 }
 
-impl Default for PnrFilterableLoader {
+impl Default for Loader {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl AsyncLoader for PnrFilterableLoader {
+impl AsyncLoader for Loader {
     fn load_async<'a>(
         &'a self,
         path: &'a Path,
@@ -177,7 +177,7 @@ impl AsyncLoader for PnrFilterableLoader {
     }
 }
 
-impl AsyncFilterableLoader for PnrFilterableLoader {
+impl AsyncFilterableLoader for Loader {
     fn load_with_filter_async<'a>(
         &'a self,
         path: &'a Path,
@@ -187,7 +187,7 @@ impl AsyncFilterableLoader for PnrFilterableLoader {
     }
 }
 
-impl AsyncDirectoryLoader for PnrFilterableLoader {
+impl AsyncDirectoryLoader for Loader {
     fn find_files_async<'a>(
         &'a self,
         dir: &'a Path,
@@ -196,7 +196,7 @@ impl AsyncDirectoryLoader for PnrFilterableLoader {
     }
 }
 
-impl AsyncPnrFilterableLoader for PnrFilterableLoader {
+impl AsyncPnrFilterableLoader for Loader {
     fn load_with_pnr_filter_async<'a, S: ::std::hash::BuildHasher + Sync + 'a>(
         &'a self,
         path: &'a Path,

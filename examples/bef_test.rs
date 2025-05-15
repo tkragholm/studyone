@@ -4,7 +4,8 @@
 
 use par_reader::registry::RegisterLoader;
 use par_reader::registry::bef::{create_deserializer, deserialize_batch};
-
+use std::collections::HashMap;
+use std::fs;
 use std::path::Path;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -22,8 +23,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Loading and analyzing data from directory: {base_path}");
 
     // First list the files in the directory to find Parquet files
-    use std::collections::HashMap;
-    use std::fs;
 
     // Statistics tracking
     let mut total_individuals = 0;

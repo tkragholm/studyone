@@ -5,7 +5,7 @@
 use crate::RecordBatch;
 use crate::error::Result;
 use crate::models::core::registry_traits::{DodFields, IndFields, LprFields};
-use crate::models::core::traits::{ArrowSchema, EntityModel, HealthStatus, TemporalValidity};
+use crate::models::core::traits::{ArrowSchema, EntityModel};
 
 use arrow::datatypes::{Field, Schema};
 
@@ -562,7 +562,7 @@ impl Individual {
             // Other fields are handled below
             _ => {}
         }
-        
+
         // Always store all properties in the properties map for access in From<Individual> implementations
         // This ensures consistent property access when converting back to registry-specific types
         self.store_property(property, value);
@@ -644,23 +644,24 @@ impl Individual {
     /// # Returns
     ///
     /// `true` if any data was added to the Individual, `false` otherwise
-    // pub fn enhance_from_registry(&mut self, batch: &RecordBatch, row: usize) -> Result<bool> {
-    //     // First check if the PNR matches
-    //     if !self.pnr_matches_record(batch, row)? {
-    //         return Ok(false);
-    //     }
+    pub fn enhance_from_registry(&mut self, batch: &RecordBatch, row: usize) -> Result<bool> {
+        // First check if the PNR matches
+        if !self.pnr_matches_record(batch, row)? {
+            return Ok(false);
+        }
 
-    //     // Deserialize a new Individual from the registry record
-    //     if let Some(enhanced_individual) =
-    //         crate::registry::trait_deserializer::deserialize_row(batch, row)?
-    //     {
-    //         // Merge fields from the enhanced individual into self, but only if they're not already set
-    //         self.merge_fields(&enhanced_individual);
-    //         Ok(true)
-    //     } else {
-    //         Ok(false)
-    //     }
-    // }
+        todo!("Not implemented yet");
+        // // Deserialize a new Individual from the registry record
+        // if let Some(enhanced_individual) =
+        //     crate::registry::trait_deserializer::deserialize_row(batch, row)?
+        // {
+        //     // Merge fields from the enhanced individual into self, but only if they're not already set
+        //     self.merge_fields(&enhanced_individual);
+        //     Ok(true)
+        // } else {
+        //     Ok(false)
+        // }
+    }
 
     /// Check if this Individual's PNR matches the PNR in a registry record
     pub fn pnr_matches_record(&self, batch: &RecordBatch, row: usize) -> Result<bool> {
@@ -902,9 +903,6 @@ impl EntityModel for Individual {
     }
 }
 
-// The Default trait is already implemented at the top of the file
-// using the default_impl() method.
-
 // Implement family relationship methods
 impl Individual {
     /// Check if this Individual has a mother in the dataset
@@ -1003,7 +1001,7 @@ impl ArrowSchema for Individual {
     fn to_record_batch(_models: &[Self]) -> Result<RecordBatch> {
         // This is a placeholder - a full implementation would convert
         // all fields to Arrow arrays
-        Err(anyhow::anyhow!("Not implemented yet"))
+        todo!("Not implemented yet");
     }
 }
 
@@ -1063,98 +1061,6 @@ impl IndFields for Individual {
 
     fn set_income_year(&mut self, value: Option<i32>) {
         self.income_year = value;
-    }
-}
-
-// Implement TemporalValidity trait for Individual
-impl TemporalValidity for Individual {
-    /// Check if this entity was valid at a specific date
-    fn was_valid_at(&self, date: &NaiveDate) -> bool {
-        // For individuals, we consider them valid if they were born before or on the date
-        // and either they haven't died yet or they died after the date
-        match self.birth_date {
-            Some(birth) => {
-                birth <= *date
-                    && match self.death_date {
-                        Some(death) => death >= *date,
-                        None => true, // No death date means still alive
-                    }
-            }
-            None => false, // No birth date means we can't determine validity
-        }
-    }
-
-    /// Get the start date of validity (birth date)
-    fn valid_from(&self) -> NaiveDate {
-        // Return birth date or a default date if not available
-        self.birth_date
-            .unwrap_or_else(|| NaiveDate::from_ymd_opt(1900, 1, 1).unwrap())
-    }
-
-    /// Get the end date of validity (death date if any)
-    fn valid_to(&self) -> Option<NaiveDate> {
-        self.death_date
-    }
-
-    /// Create a snapshot of this entity at a specific point in time
-    fn snapshot_at(&self, date: &NaiveDate) -> Option<Self> {
-        if self.was_valid_at(date) {
-            Some(self.clone())
-        } else {
-            None
-        }
-    }
-}
-
-// Implement HealthStatus trait for Individual
-impl HealthStatus for Individual {
-    /// Check if the individual was alive at a specific date
-    fn was_alive_at(&self, date: &NaiveDate) -> bool {
-        // Same logic as was_valid_at
-        match self.birth_date {
-            Some(birth) => {
-                birth <= *date
-                    && match self.death_date {
-                        Some(death) => death >= *date,
-                        None => true, // No death date means still alive
-                    }
-            }
-            None => false, // No birth date means we can't determine if alive
-        }
-    }
-
-    /// Check if the individual was resident in Denmark at a specific date
-    fn was_resident_at(&self, date: &NaiveDate) -> bool {
-        // For simplicity, we assume residency if the individual was alive
-        // A more accurate implementation would check migration events
-        self.was_alive_at(date)
-    }
-
-    /// Calculate age at a specific reference date
-    fn age_at(&self, reference_date: &NaiveDate) -> Option<i32> {
-        match self.birth_date {
-            Some(birth_date) => {
-                if self.was_alive_at(reference_date) {
-                    // Calculate years between birth date and reference date
-                    let years = reference_date.year() - birth_date.year();
-
-                    // Adjust for month and day (if birthday hasn't occurred yet this year)
-                    let adjustment = if reference_date.month() < birth_date.month()
-                        || (reference_date.month() == birth_date.month()
-                            && reference_date.day() < birth_date.day())
-                    {
-                        1
-                    } else {
-                        0
-                    };
-
-                    Some(years - adjustment)
-                } else {
-                    None // Not alive at the reference date
-                }
-            }
-            None => None, // No birth date available
-        }
     }
 }
 

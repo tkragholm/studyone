@@ -1,198 +1,70 @@
-//! IND registry loader implementation using the trait-based approach
+//! IND registry using the macro-based approach
 //!
 //! The IND (Indkomst) registry contains income and tax information.
-//! This implementation uses the new async trait-based system.
 
-use super::RegisterLoader;
-pub mod deserializer;
-pub mod individual;
-pub mod schema;
-use crate::RecordBatch;
-use crate::Result;
-use crate::async_io::loader::PnrFilterableLoader;
-use crate::common::traits::{AsyncDirectoryLoader, AsyncPnrFilterableLoader};
-use crate::filter::Expr;
-use crate::filter::core::BatchFilter;
-use arrow::datatypes::SchemaRef;
-use std::collections::HashSet;
-use std::future::Future;
-use std::path::Path;
-use std::pin::Pin;
-use std::sync::Arc;
+use crate::RegistryTrait;
 
-/// IND registry loader for income and tax information
-/// Implemented using the new trait-based approach
-#[derive(Debug, Clone)]
-pub struct IndRegister {
-    schema: SchemaRef,
-    loader: Arc<PnrFilterableLoader>,
-    year: Option<i32>,
+/// Income registry with tax information
+#[derive(RegistryTrait, Debug)]
+#[registry(name = "IND", description = "Income registry")]
+pub struct IndRegistry {
+    /// Person ID (CPR number)
+    #[field(name = "PNR")]
+    pub pnr: String,
+
+    /// Annual income
+    #[field(name = "PERINDKIALT_13")]
+    pub annual_income: Option<f64>,
+
+    /// Employment income
+    #[field(name = "LOENMV_13")]
+    pub employment_income: Option<f64>,
+
+    /// Version
+    #[field(name = "VERSION")]
+    pub version: Option<String>,
+
+    /// Year
+    #[field(name = "YEAR")]
+    pub year: Option<i32>,
 }
 
-impl IndRegister {
-    /// Create a new IND registry loader
-    #[must_use]
-    pub fn new() -> Self {
-        let schema = schema::ind_schema();
-        let loader = PnrFilterableLoader::with_schema_ref(schema.clone()).with_pnr_column("PNR");
-
-        Self {
-            schema,
-            loader: Arc::new(loader),
-            year: None,
-        }
-    }
-
-    /// Create a new IND registry loader for a specific year
-    #[must_use]
-    pub fn for_year(year: i32) -> Self {
-        let schema = schema::ind_schema();
-        let loader = PnrFilterableLoader::with_schema_ref(schema.clone()).with_pnr_column("PNR");
-
-        Self {
-            schema,
-            loader: Arc::new(loader),
-            year: Some(year),
-        }
-    }
-
-    /// Get the configured year, if any
-    #[must_use]
-    pub const fn year(&self) -> Option<i32> {
-        self.year
-    }
+/// Helper function to create a new IND deserializer
+pub fn create_deserializer() -> IndRegistryDeserializer {
+    IndRegistryDeserializer::new()
 }
 
-impl Default for IndRegister {
-    fn default() -> Self {
-        Self::new()
-    }
+/// Helper function to deserialize a batch of records
+pub fn deserialize_batch(
+    deserializer: &IndRegistryDeserializer,
+    batch: &crate::RecordBatch,
+) -> crate::error::Result<Vec<crate::models::core::Individual>> {
+    // Use the inner deserializer to deserialize the batch
+    deserializer.inner.deserialize_batch(batch)
 }
 
-impl RegisterLoader for IndRegister {
+// Implement RegisterLoader for the macro-generated deserializer
+impl crate::registry::RegisterLoader for IndRegistryDeserializer {
     /// Get the name of the register
     fn get_register_name(&self) -> &'static str {
         "IND"
     }
 
     /// Get the schema for this register
-    fn get_schema(&self) -> SchemaRef {
-        self.schema.clone()
-    }
+    fn get_schema(&self) -> crate::SchemaRef {
+        // Create a simple Arrow schema for IND
+        let fields = vec![
+            arrow::datatypes::Field::new("PNR", arrow::datatypes::DataType::Utf8, false),
+            arrow::datatypes::Field::new(
+                "PERINDKIALT_13",
+                arrow::datatypes::DataType::Float64,
+                true,
+            ),
+            arrow::datatypes::Field::new("LOENMV_13", arrow::datatypes::DataType::Float64, true),
+            arrow::datatypes::Field::new("VERSION", arrow::datatypes::DataType::Utf8, true),
+            arrow::datatypes::Field::new("YEAR", arrow::datatypes::DataType::Int32, true),
+        ];
 
-    /// Load records from the IND register
-    ///
-    /// # Arguments
-    /// * `base_path` - Base directory containing the IND parquet files
-    /// * `pnr_filter` - Optional filter to only load data for specific PNRs
-    ///
-    /// # Returns
-    /// * `Result<Vec<RecordBatch>>` - Arrow record batches containing the loaded data
-    fn load(
-        &self,
-        base_path: &Path,
-        pnr_filter: Option<&HashSet<String>>,
-    ) -> Result<Vec<RecordBatch>> {
-        // Create a blocking runtime to run the async code
-        let rt = tokio::runtime::Runtime::new()?;
-
-        // Use the trait implementation to load data
-        rt.block_on(async {
-            let result = if let Some(filter) = pnr_filter {
-                // Use the PNR filter loader if a filter is provided
-                self.loader
-                    .load_with_pnr_filter_async(base_path, Some(filter))
-                    .await?
-            } else {
-                // Otherwise use the directory loader
-                self.loader.load_directory_async(base_path).await?
-            };
-
-            // Apply year filter if year is configured
-            if let Some(year) = self.year {
-                // Create a year filter expression
-                let year_filter = Arc::new(crate::filter::expr::ExpressionFilter::new(Expr::Eq(
-                    "YEAR".to_string(),
-                    crate::filter::expr::LiteralValue::Int(i64::from(year)),
-                )));
-
-                // Apply the filter to each batch
-                let mut filtered_results = Vec::new();
-
-                for batch in result {
-                    let filtered_batch = year_filter.filter(&batch)?;
-                    if filtered_batch.num_rows() > 0 {
-                        filtered_results.push(filtered_batch);
-                    }
-                }
-
-                Ok(filtered_results)
-            } else {
-                Ok(result)
-            }
-        })
-    }
-
-    /// Load records from the IND register asynchronously
-    ///
-    /// # Arguments
-    /// * `base_path` - Base directory containing the IND parquet files
-    /// * `pnr_filter` - Optional filter to only load data for specific PNRs
-    ///
-    /// # Returns
-    /// * `Result<Vec<RecordBatch>>` - Arrow record batches containing the loaded data
-    fn load_async<'a>(
-        &'a self,
-        base_path: &'a Path,
-        pnr_filter: Option<&'a HashSet<String>>,
-    ) -> Pin<Box<dyn Future<Output = Result<Vec<RecordBatch>>> + Send + 'a>> {
-        // Get references to what we need
-        let year = self.year;
-
-        // First load the data using the trait-based loader
-        let loader_future = if let Some(filter) = pnr_filter {
-            self.loader
-                .load_with_pnr_filter_async(base_path, Some(filter))
-        } else {
-            self.loader.load_directory_async(base_path)
-        };
-
-        // Create a future that will apply year filtering if needed
-        Box::pin(async move {
-            let result = loader_future.await?;
-
-            // Apply year filter if year is configured
-            if let Some(year) = year {
-                // Create a year filter expression
-                let year_filter = Arc::new(crate::filter::expr::ExpressionFilter::new(Expr::Eq(
-                    "YEAR".to_string(),
-                    crate::filter::expr::LiteralValue::Int(i64::from(year)),
-                )));
-
-                // Apply the filter to each batch
-                let mut filtered_results = Vec::new();
-
-                for batch in result {
-                    let filtered_batch = year_filter.filter(&batch)?;
-                    if filtered_batch.num_rows() > 0 {
-                        filtered_results.push(filtered_batch);
-                    }
-                }
-
-                Ok(filtered_results)
-            } else {
-                Ok(result)
-            }
-        })
-    }
-
-    /// Returns whether this registry supports direct PNR filtering
-    fn supports_pnr_filter(&self) -> bool {
-        true
-    }
-
-    /// Returns the column name containing the PNR
-    fn get_pnr_column_name(&self) -> Option<&'static str> {
-        Some("PNR")
+        std::sync::Arc::new(arrow::datatypes::Schema::new(fields))
     }
 }

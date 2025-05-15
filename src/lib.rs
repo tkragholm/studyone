@@ -100,46 +100,15 @@ pub use utils::{DEFAULT_BATCH_SIZE, load_parquet_files_parallel, read_parquet};
 
 // Async functionality
 pub use async_io::{
+    Loader,
     // Standard async loaders
     ParquetLoader,
-    PnrFilterableLoader,
     load_parquet_files_parallel_async,
     load_parquet_files_parallel_with_filter_async,
     read_parquet_async,
     read_parquet_with_filter_async,
 };
 pub use filter::async_filtering::read_parquet_with_pnr_filter_async;
-
-// Registry functionality
-pub use registry::{
-    // Registry loaders
-    //AkmRegister,
-    //BefRegister,
-    DodRegister,
-    DodsaarsagRegister,
-    // Removed IdanRegister,
-    IndRegister,
-    Lpr3DiagnoserRegister,
-    Lpr3KontakterRegister,
-    // LPR registry loaders
-    LprAdmRegister,
-    LprBesRegister,
-    LprDiagRegister,
-    LprPaths,
-    MfrRegister,
-    RegisterLoader,
-    UddfRegister,
-    VndsRegister,
-    add_postal_code_region,
-    add_year_column,
-    filter_by_date_range,
-    filter_out_missing_values,
-    find_lpr_files,
-    map_categorical_values,
-    scale_numeric_values,
-    // Transformation utilities
-    transform_records,
-};
 
 // Re-export the procedural macros for registry definitions
 pub use macros::RegistryTrait;

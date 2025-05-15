@@ -77,7 +77,10 @@ pub fn create_deserializer() -> BefRegistryDeserializer {
 }
 
 /// Helper function to deserialize a batch of records
-pub fn deserialize_batch(deserializer: &BefRegistryDeserializer, batch: &crate::RecordBatch) -> crate::error::Result<Vec<crate::models::core::Individual>> {
+pub fn deserialize_batch(
+    deserializer: &BefRegistryDeserializer,
+    batch: &crate::RecordBatch,
+) -> crate::error::Result<Vec<crate::models::core::Individual>> {
     // Use the inner deserializer to deserialize the batch
     deserializer.inner.deserialize_batch(batch)
 }
@@ -130,8 +133,8 @@ impl crate::registry::RegisterLoader for BefRegistryDeserializer {
     ) -> crate::Result<Vec<crate::RecordBatch>> {
         // Create a loader with our schema
         let schema = self.get_schema();
-        let loader = crate::async_io::loader::PnrFilterableLoader::with_schema_ref(schema.clone())
-            .with_pnr_column("PNR");
+        let loader =
+            crate::async_io::loader::Loader::with_schema_ref(schema).with_pnr_column("PNR");
 
         // Create a blocking runtime to run the async code
         let rt = tokio::runtime::Runtime::new()?;
@@ -176,9 +179,8 @@ impl crate::registry::RegisterLoader for BefRegistryDeserializer {
         // Move everything into the async block to avoid local variable references
         Box::pin(async move {
             // Create a loader inside the async block
-            let loader =
-                crate::async_io::loader::PnrFilterableLoader::with_schema_ref(schema.clone())
-                    .with_pnr_column("PNR");
+            let loader = crate::async_io::loader::Loader::with_schema_ref(schema.clone())
+                .with_pnr_column("PNR");
 
             if let Some(filter) = pnr_filter {
                 // Create a PNR filter using the expr module

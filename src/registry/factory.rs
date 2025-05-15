@@ -3,10 +3,9 @@
 //! This module provides factory functions to create registry loaders that use the unified schema system.
 
 use super::RegisterLoader;
-use crate::DodRegister;
-use crate::DodsaarsagRegister;
 use crate::RecordBatch;
 use crate::error::{ParquetReaderError, Result};
+use crate::registry::death::dodsaarsag::DodsaarsagRegister;
 use std::collections::HashSet;
 use std::path::Path;
 use std::sync::Arc;
@@ -14,37 +13,41 @@ use std::sync::Arc;
 /// Create a registry loader from a registry name using the unified schema system
 pub fn registry_from_name(name: &str) -> Result<Arc<dyn RegisterLoader>> {
     match name.to_lowercase().as_str() {
-        "akm" => todo!("Need to migrate to the new macro approach..."),
+        "akm" => {
+            // Use the macro-based AKM registry for the new implementation
+            let registry = super::akm::create_deserializer();
+            Ok(Arc::new(registry))
+        }
         "bef" => {
             // Use the macro-based BEF registry for the new implementation
             let registry = super::bef::create_deserializer();
             Ok(Arc::new(registry))
         }
-        "dod" => Ok(Arc::new(DodRegister::new())), // TODO: Add unified system support
-        "dodsaarsag" => Ok(Arc::new(DodsaarsagRegister::new())), // TODO: Add unified system support
+        "dod" => {
+            // Use the macro-based DOD registry for the new implementation
+            let registry = super::death::dod::create_deserializer();
+            Ok(Arc::new(registry))
+        }
+        "dodsaarsag" => Ok(Arc::new(DodsaarsagRegister::new())),
         "ind" => {
-            let mut register = super::ind::IndRegister::new();
-            // Enable unified system for IND
-            register.use_unified_system(true);
-            Ok(Arc::new(register))
+            // Use the macro-based IND registry for the new implementation
+            let registry = super::ind::create_deserializer();
+            Ok(Arc::new(registry))
         }
         "mfr" => {
-            let mut register = super::mfr::MfrRegister::new();
-            // Enable unified system for MFR
-            register.use_unified_system(true);
-            Ok(Arc::new(register))
+            // Use the macro-based MFR registry for the new implementation
+            let registry = super::mfr::create_deserializer();
+            Ok(Arc::new(registry))
         }
         "uddf" => {
-            let mut register = super::uddf::UddfRegister::new();
-            // Enable unified system for UDDF
-            register.use_unified_system(true);
-            Ok(Arc::new(register))
+            // Use the macro-based UDDF registry for the new implementation
+            let registry = super::uddf::create_deserializer();
+            Ok(Arc::new(registry))
         }
         "vnds" => {
-            let mut register = super::vnds::VndsRegister::new();
-            // Enable unified system for VNDS
-            register.use_unified_system(true);
-            Ok(Arc::new(register))
+            // Use the macro-based VNDS registry for the new implementation
+            let registry = super::vnds::create_deserializer();
+            Ok(Arc::new(registry))
         }
         "lpr_adm" => {
             let mut register = super::lpr::LprAdmRegister::new();
@@ -88,30 +91,28 @@ pub fn registry_from_path(path: &Path) -> Result<Arc<dyn RegisterLoader>> {
 
         // Check for registry name patterns in the path
         if lower_name.contains("akm") {
-            todo!("Need to migrate to the new macro approach...")
+            let registry = super::akm::create_deserializer();
+            return Ok(Arc::new(registry));
         } else if lower_name.contains("bef") {
             let registry = super::bef::create_deserializer();
             return Ok(Arc::new(registry));
         } else if lower_name.contains("dod") && !lower_name.contains("dodsaarsag") {
-            return Ok(Arc::new(DodRegister::new())); // TODO: Add unified system support
+            let registry = super::death::dod::create_deserializer();
+            return Ok(Arc::new(registry));
         } else if lower_name.contains("dodsaarsag") {
-            return Ok(Arc::new(DodsaarsagRegister::new())); // TODO: Add unified system support
+            return Ok(Arc::new(DodsaarsagRegister::new()));
         } else if lower_name.contains("ind") {
-            let mut register = super::ind::IndRegister::new();
-            register.use_unified_system(true);
-            return Ok(Arc::new(register));
+            let registry = super::ind::create_deserializer();
+            return Ok(Arc::new(registry));
         } else if lower_name.contains("mfr") || lower_name.contains("foedselsregister") {
-            let mut register = super::mfr::MfrRegister::new();
-            register.use_unified_system(true);
-            return Ok(Arc::new(register));
+            let registry = super::mfr::create_deserializer();
+            return Ok(Arc::new(registry));
         } else if lower_name.contains("uddf") || lower_name.contains("uddannelse") {
-            let mut register = super::uddf::UddfRegister::new();
-            register.use_unified_system(true);
-            return Ok(Arc::new(register));
+            let registry = super::uddf::create_deserializer();
+            return Ok(Arc::new(registry));
         } else if lower_name.contains("vnds") || lower_name.contains("migration") {
-            let mut register = super::vnds::VndsRegister::new();
-            register.use_unified_system(true);
-            return Ok(Arc::new(register));
+            let registry = super::vnds::create_deserializer();
+            return Ok(Arc::new(registry));
         } else if lower_name.contains("lpr_adm") {
             let mut register = super::lpr::LprAdmRegister::new();
             register.use_unified_system(true);

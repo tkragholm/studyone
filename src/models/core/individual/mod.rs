@@ -8,11 +8,6 @@ pub use self::consolidated::Role;
 
 // Core implementation
 pub mod consolidated;
-
-// Legacy modules for backward compatibility
-// These can be gradually removed as code transitions to the consolidated model
-//mod base;
-//mod conversion;
-
-//mod relationships;
-//mod temporal;
+mod health;
+mod relationships;
+mod temporal;

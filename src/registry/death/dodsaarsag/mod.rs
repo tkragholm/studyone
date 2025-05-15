@@ -3,9 +3,9 @@
 //! The DODSAARSAG registry contains death cause information.
 
 use crate::RecordBatch;
-use crate::RegisterLoader;
 use crate::Result;
 use crate::async_io::parallel_ops::load_parquet_files_parallel_with_pnr_filter_async;
+use crate::registry::RegisterLoader;
 pub mod schema;
 use crate::load_parquet_files_parallel;
 use arrow::datatypes::SchemaRef;

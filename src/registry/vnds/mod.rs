@@ -1,126 +1,58 @@
-//! VNDS registry loader implementation
+//! VNDS registry using the macro-based approach
 //!
 //! The VNDS (Vandringer/Migration) registry contains migration information.
 
-use super::RegisterLoader;
-pub mod individual;
-pub mod schema;
-pub mod trait_deserializer_macro;
-use crate::RecordBatch;
-use crate::Result;
-use crate::async_io::loader::PnrFilterableLoader;
-use crate::common::traits::{AsyncDirectoryLoader, AsyncPnrFilterableLoader};
-use arrow::datatypes::SchemaRef;
-use std::collections::HashSet;
-use std::future::Future;
-use std::path::Path;
-use std::pin::Pin;
-use std::sync::Arc;
+use crate::RegistryTrait;
+use chrono::NaiveDate;
 
-/// VNDS registry loader for migration information
-/// Implemented using the trait-based approach
-#[derive(Debug, Clone)]
-pub struct VndsRegister {
-    schema: SchemaRef,
-    loader: Arc<PnrFilterableLoader>,
+/// Migration registry with migration information
+#[derive(RegistryTrait, Debug)]
+#[registry(name = "VNDS", description = "Migration registry")]
+pub struct VndsRegistry {
+    /// Person ID (CPR number)
+    #[field(name = "PNR")]
+    pub pnr: String,
+
+    /// Migration code (in/out)
+    #[field(name = "INDUD_KODE")]
+    pub migration_code: Option<String>,
+
+    /// Event date
+    #[field(name = "HAEND_DATO")]
+    pub event_date: Option<NaiveDate>,
 }
 
-impl VndsRegister {
-    /// Create a new VNDS registry loader
-    #[must_use]
-    pub fn new() -> Self {
-        let schema = schema::vnds_schema();
-        let loader = PnrFilterableLoader::with_schema_ref(schema.clone()).with_pnr_column("PNR");
-
-        Self {
-            schema,
-            loader: Arc::new(loader),
-        }
-    }
+/// Helper function to create a new VNDS deserializer
+pub fn create_deserializer() -> VndsRegistryDeserializer {
+    VndsRegistryDeserializer::new()
 }
 
-impl Default for VndsRegister {
-    fn default() -> Self {
-        Self::new()
-    }
+/// Helper function to deserialize a batch of records
+pub fn deserialize_batch(deserializer: &VndsRegistryDeserializer, batch: &crate::RecordBatch) -> crate::error::Result<Vec<crate::models::core::Individual>> {
+    // Use the inner deserializer to deserialize the batch
+    deserializer.inner.deserialize_batch(batch)
 }
 
-impl RegisterLoader for VndsRegister {
+// Implement RegisterLoader for the macro-generated deserializer
+impl crate::registry::RegisterLoader for VndsRegistryDeserializer {
     /// Get the name of the register
     fn get_register_name(&self) -> &'static str {
         "VNDS"
     }
 
     /// Get the schema for this register
-    fn get_schema(&self) -> SchemaRef {
-        self.schema.clone()
-    }
+    fn get_schema(&self) -> crate::SchemaRef {
+        // Create a simple Arrow schema for VNDS
+        let fields = vec![
+            arrow::datatypes::Field::new("PNR", arrow::datatypes::DataType::Utf8, false),
+            arrow::datatypes::Field::new("INDUD_KODE", arrow::datatypes::DataType::Utf8, true),
+            arrow::datatypes::Field::new("HAEND_DATO", arrow::datatypes::DataType::Date32, true),
+        ];
 
-    /// Load records from the VNDS register
-    ///
-    /// # Arguments
-    /// * `base_path` - Base directory containing the VNDS parquet files
-    /// * `pnr_filter` - Optional filter to only load data for specific PNRs
-    ///
-    /// # Returns
-    /// * `Result<Vec<RecordBatch>>` - Arrow record batches containing the loaded data
-    fn load(
-        &self,
-        base_path: &Path,
-        pnr_filter: Option<&HashSet<String>>,
-    ) -> Result<Vec<RecordBatch>> {
-        // Create a blocking runtime to run the async code
-        let rt = tokio::runtime::Runtime::new()?;
-
-        // Use the trait implementation to load data
-        rt.block_on(async {
-            if let Some(filter) = pnr_filter {
-                // Use the PNR filter loader if a filter is provided
-                self.loader
-                    .load_with_pnr_filter_async(base_path, Some(filter))
-                    .await
-            } else {
-                // Otherwise use the directory loader
-                self.loader.load_directory_async(base_path).await
-            }
-        })
-    }
-
-    /// Load records from the VNDS register asynchronously
-    ///
-    /// # Arguments
-    /// * `base_path` - Base directory containing the VNDS parquet files
-    /// * `pnr_filter` - Optional filter to only load data for specific PNRs
-    ///
-    /// # Returns
-    /// * `Result<Vec<RecordBatch>>` - Arrow record batches containing the loaded data
-    fn load_async<'a>(
-        &'a self,
-        base_path: &'a Path,
-        pnr_filter: Option<&'a HashSet<String>>,
-    ) -> Pin<Box<dyn Future<Output = Result<Vec<RecordBatch>>> + Send + 'a>> {
-        // Use the trait-based loader directly for async operations
-        if let Some(filter) = pnr_filter {
-            // Use the PNR filter loader if a filter is provided
-            self.loader
-                .load_with_pnr_filter_async(base_path, Some(filter))
-        } else {
-            // Otherwise use the directory loader
-            self.loader.load_directory_async(base_path)
-        }
-    }
-
-    /// Returns whether this registry supports direct PNR filtering
-    fn supports_pnr_filter(&self) -> bool {
-        true
-    }
-
-    /// Returns the column name containing the PNR
-    fn get_pnr_column_name(&self) -> Option<&'static str> {
-        Some("PNR")
+        std::sync::Arc::new(arrow::datatypes::Schema::new(fields))
     }
 }
 
-// Re-export ModelConversion implementation from the conversion module
-// The implementation details have been moved there to separate concerns
-// and reduce the coupling between registry and model implementations
+pub mod individual;
+pub mod schema;
+pub mod trait_deserializer_macro;

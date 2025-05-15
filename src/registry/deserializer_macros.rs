@@ -76,7 +76,7 @@ macro_rules! generate_trait_deserializer {
                             let extractor = $crate::registry::extractors::FloatExtractor::new(
                                 &source_field,
                                 &target_field,
-                                crate::registry::extractors::Setter::new(mapping.setter.clone()),
+                                $crate::registry::extractors::Setter::new(mapping.setter.clone()),
                             );
                             field_extractors.push(Box::new(extractor));
                         }

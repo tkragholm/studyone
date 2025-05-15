@@ -1,11 +1,10 @@
 //! Family relationships and derived models
 //!
-//! This module contains methods for working with family relationships 
+//! This module contains methods for working with family relationships
 //! and creating derived models like Child and Parent.
 
-use crate::models::core::types::FamilyType;
 use crate::models::core::individual::Individual;
-use crate::models::core::types::Gender;
+use crate::models::core::types::FamilyType;
 use crate::models::derived::{Child, Family, Parent};
 use chrono::NaiveDate;
 use std::collections::{HashMap, HashSet};
@@ -23,28 +22,29 @@ impl Individual {
     }
 
     /// Determine if this individual is a parent based on relations
-    #[must_use] pub fn is_parent_in_dataset(&self, all_individuals: &[Self]) -> bool {
+    #[must_use]
+    pub fn is_parent_in_dataset(&self, all_individuals: &[Self]) -> bool {
         all_individuals.iter().any(|ind| {
-            (ind.mother_pnr
-                .as_ref() == Some(&self.pnr))
-                || (ind
-                    .father_pnr
-                    .as_ref() == Some(&self.pnr))
+            (ind.mother_pnr.as_ref() == Some(&self.pnr))
+                || (ind.father_pnr.as_ref() == Some(&self.pnr))
         })
     }
 
     /// Create a Child model from this Individual
-    #[must_use] pub fn to_child(&self) -> Child {
+    #[must_use]
+    pub fn to_child(&self) -> Child {
         Child::from_individual(Arc::new(self.clone()))
     }
 
     /// Create a Parent model from this Individual
-    #[must_use] pub fn to_parent(&self) -> Parent {
+    #[must_use]
+    pub fn to_parent(&self) -> Parent {
         Parent::from_individual(Arc::new(self.clone()))
     }
 
     /// Group individuals by family ID
-    #[must_use] pub fn group_by_family(individuals: &[Self]) -> HashMap<String, Vec<&Self>> {
+    #[must_use]
+    pub fn group_by_family(individuals: &[Self]) -> HashMap<String, Vec<&Self>> {
         let mut family_map: HashMap<String, Vec<&Self>> = HashMap::new();
 
         for individual in individuals {
@@ -60,7 +60,8 @@ impl Individual {
     }
 
     /// Create families from a collection of individuals
-    #[must_use] pub fn create_families(individuals: &[Self], reference_date: &NaiveDate) -> Vec<Family> {
+    #[must_use]
+    pub fn create_families(individuals: &[Self], reference_date: &NaiveDate) -> Vec<Family> {
         let family_groups = Self::group_by_family(individuals);
         let mut families = Vec::new();
 
@@ -73,9 +74,9 @@ impl Individual {
             for member in &members {
                 if member.is_child(reference_date) {
                     children.push(member);
-                } else if member.gender == Gender::Female {
+                } else if member.gender == Some("F".to_string()) {
                     mothers.push(member);
-                } else if member.gender == Gender::Male {
+                } else if member.gender == Some("M".to_string()) {
                     fathers.push(member);
                 }
             }
@@ -99,7 +100,8 @@ impl Individual {
     }
 
     /// Create Child models for all children in the dataset
-    #[must_use] pub fn create_children(individuals: &[Self], reference_date: &NaiveDate) -> Vec<Child> {
+    #[must_use]
+    pub fn create_children(individuals: &[Self], reference_date: &NaiveDate) -> Vec<Child> {
         individuals
             .iter()
             .filter(|ind| ind.is_child(reference_date))
@@ -108,7 +110,8 @@ impl Individual {
     }
 
     /// Create Parent models for all parents in the dataset
-    #[must_use] pub fn create_parents(individuals: &[Self]) -> Vec<Parent> {
+    #[must_use]
+    pub fn create_parents(individuals: &[Self]) -> Vec<Parent> {
         let parent_pnrs: HashSet<&String> = individuals
             .iter()
             .filter_map(|ind| ind.mother_pnr.as_ref())
