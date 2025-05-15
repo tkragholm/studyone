@@ -7,7 +7,7 @@
 
 // Remove unused import
 use chrono::NaiveDate;
-use par_reader::{ModelCollection, RegistryTrait, error, models, registry, schema};
+use par_reader::{RegistryTrait, error, models, registry, schema};
 use std::collections::HashMap;
 use std::path::Path;
 

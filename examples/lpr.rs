@@ -2,15 +2,15 @@
 //!
 //! This is a simple test for the `RegistryTrait` derive macro with LPR data
 
-use par_reader::{ModelCollection, RegistryTrait, error, models, registry, schema};
 use chrono::NaiveDate;
+use par_reader::{RegistryTrait, error, models, registry, schema};
 
 fn main() {
     println!("LPR Registry test");
-    
+
     // Define LPR ADM Registry using the derive macro
     #[derive(RegistryTrait, Debug)]
-    #[registry(name = "LPR_ADM", description = "LPR Admission registry")]
+    #[registry(name = "LPR_ADM", description = "LPR Administrative registry")]
     struct LprAdmRegistry {
         // Core identification fields
         #[field(name = "PNR")]
@@ -57,11 +57,11 @@ fn main() {
         #[field(name = "RECNUM")]
         record_number: Option<String>,
     }
-    
+
     // Create deserializers for both registry types
     let adm_deserializer = LprAdmRegistryDeserializer::new();
     let diag_deserializer = LprDiagRegistryDeserializer::new();
-    
+
     // Print deserializer info
     println!(
         "Created deserializer for {} registry",
@@ -71,6 +71,6 @@ fn main() {
         "Created deserializer for {} registry",
         diag_deserializer.inner.registry_type()
     );
-    
+
     println!("LPR Registries test completed successfully!");
 }

@@ -42,23 +42,7 @@ default = []
 # Enable backtraces in error messages (requires nightly Rust or Rust 1.65+)
 backtrace = []
 
-# Examples
-[[example]]
-name = "vnds"
-path = "examples/vnds_test.rs"
 
-# Examples
-[[example]]
-name = "schema"
-path = "examples/schema.rs"
-
-[[example]]
-name = "lpr"
-path = "examples/lpr_diag_example.rs"
-
-[[example]]
-name = "lpr3"
-path = "examples/lpr3_example.rs"
 
 
 

@@ -162,7 +162,7 @@ We identified and fixed two related issues in how properties are handled between
 
 1. **ID Field Issue**: For non-PNR ID fields like "record_number" (used by LPR_DIAG), the StringExtractor was correctly extracting the "RECNUM" value from the Arrow record batch, but it wasn't properly setting it as the "record_number" property that the ID field validation checks for.
 
-2. **Field Value Consistency Issue**: Fields like birth_date, gender, diagnosis_code, and diagnosis_type were being extracted correctly but not properly stored in the properties map for access during conversion back to registry-specific types.
+2. **Field Value Consistency Issue**: Fields like birth_date, gender, diagnosis_code, event_type, and event_date were being extracted correctly but not properly stored in the properties map for access during conversion back to registry-specific types.
 
 The issues were fixed by:
 
@@ -170,7 +170,7 @@ The issues were fixed by:
 
 2. **Enhancing StringExtractor**: Updated the `StringExtractor.extract_and_set` method in `src/registry/extractors.rs` to handle special ID fields, ensuring that when extracting the "RECNUM" field, it's also stored with the standardized property name "record_number".
 
-3. **Consistent Property Storage**: Modified `Individual.set_property` to ensure that fields like birth_date and gender are stored in both their dedicated fields and in the properties map, ensuring consistency for the `From<Individual>` implementation.
+3. **Universal Property Storage**: Modified `Individual.set_property` to use a more systematic approach where all fields are stored in both their dedicated fields and in the properties map, ensuring consistency for all `From<Individual>` implementations.
 
 4. **Improved Property Access**: Enhanced the `From<Individual>` implementation to more robustly check for properties using both the field name and stringified field name.
 
@@ -261,3 +261,57 @@ struct LprDiagRegistry {
    - IDE autocompletion for registry-specific methods
    - Clear documentation through code structure
    - Fewer runtime errors due to improved type safety
+
+## Recommendations for Property System Improvement
+
+The current property system in the Individual model maintains two storage mechanisms:
+1. Dedicated fields for type-safe access to common properties (e.g., pnr, birth_date, gender)
+2. A dynamic properties map (`HashMap<String, Box<dyn Any + Send + Sync>>`) for extensibility
+
+While our current fix ensures values are always stored in both locations, there are opportunities for further improvements:
+
+### 1. Leveraging Registry Traits with Proc Macros
+
+The codebase already defines registry-specific traits (`BefFields`, `LprFields`, `VndsFields`, etc.) that provide type-safe interfaces. We should better leverage these traits in the property system:
+
+1. **Full Trait Implementation**: Ensure the Individual model fully implements all registry traits, providing type-safe access methods.
+
+2. **Trait-Based Conversion**: Modify the proc macro-generated `From<Individual>` implementations to use the trait methods instead of directly accessing the properties map:
+
+   ```rust
+   // Current approach (directly accessing properties map)
+   if let Some(props) = individual.properties() {
+       if let Some(value) = props.get("event_type") {
+           if let Some(string_val) = value.downcast_ref::<Option<String>>() {
+               instance.event_type = string_val.clone();
+           }
+       }
+   }
+   
+   // Improved approach (using trait methods)
+   if let Some(vnds_fields) = as_vnds_fields(&individual) {
+       instance.event_type = vnds_fields.event_type().map(String::from);
+   }
+   ```
+
+### 2. Property Reflection System
+
+Develop a more robust property reflection system that automatically handles synchronization between dedicated fields and the properties map:
+
+1. **PropertyReflection Trait**: Define a trait that abstracts the process of reflecting values between dedicated fields and the properties map.
+
+2. **Automatic Field Reflection**: Use proc macros to generate field reflection code that eliminates the need for manual property handling in the `set_property` method.
+
+3. **Type-Safe Property Access**: Provide generic type-safe wrappers around property access that eliminate the need for manual downcasting.
+
+### 3. Unified Registry Trait
+
+Consider creating a unified registry trait that combines elements from all registry-specific traits:
+
+1. **Common Interface**: Define a common interface for accessing fields across all registry types.
+
+2. **Registry Type Detection**: Add methods to detect which registry type an Individual instance represents.
+
+3. **Registry Type Conversion**: Provide methods for converting between registry types when possible.
+
+By implementing these improvements, we can create a more robust, type-safe, and maintainable system for handling properties, making the codebase easier to work with and less prone to runtime errors.
