@@ -1,153 +1,207 @@
-//! BEF registry loader implementation
+//! BEF registry using the macro-based approach
 //!
 //! The BEF (Befolkning) registry contains population demographic information.
 
-mod register;
-pub use register::BefCombinedRegister;
+use crate::RegistryTrait;
+use crate::common::traits::async_loading::AsyncFilterableLoader;
+use crate::common::traits::async_loading::AsyncLoader;
+use chrono::NaiveDate;
 
-pub mod deserializer;
-pub mod individual;
-pub mod schema;
+/// Population registry with demographic information
+#[derive(RegistryTrait, Debug)]
+#[registry(name = "BEF", description = "Population registry")]
+pub struct BefRegistry {
+    /// Person ID (CPR number)
+    #[field(name = "PNR")]
+    pub pnr: String,
 
-use super::RegisterLoader;
-use crate::RecordBatch;
-use crate::Result;
-use crate::async_io::loader::PnrFilterableLoader;
-use crate::common::traits::{AsyncDirectoryLoader, AsyncPnrFilterableLoader};
-use arrow::datatypes::SchemaRef;
-use schema::bef_schema;
-use std::collections::HashSet;
-use std::future::Future;
-use std::path::Path;
-use std::pin::Pin;
-use std::sync::Arc;
+    /// Gender code
+    #[field(name = "KOEN")]
+    pub gender: Option<String>,
 
-/// BEF registry loader for population demographic information
-/// Implemented using the trait-based approach
-#[derive(Debug, Clone)]
-pub struct BefRegister {
-    schema: SchemaRef,
-    loader: Arc<PnrFilterableLoader>,
-    unified_system: bool,
+    /// Birth date
+    #[field(name = "FOED_DAG")]
+    pub birth_date: Option<NaiveDate>,
+
+    /// Mother's person ID
+    #[field(name = "MOR_ID")]
+    pub mother_pnr: Option<String>,
+
+    /// Father's person ID
+    #[field(name = "FAR_ID")]
+    pub father_pnr: Option<String>,
+
+    /// Family ID
+    #[field(name = "FAMILIE_ID")]
+    pub family_id: Option<String>,
+
+    /// Spouse's person ID
+    #[field(name = "AEGTE_ID")]
+    pub spouse_pnr: Option<String>,
+
+    /// Age in years
+    #[field(name = "ALDER")]
+    pub age: Option<i32>,
+
+    /// Number of persons in family
+    #[field(name = "ANTPERSF")]
+    pub family_size: Option<i32>,
+
+    /// Number of persons in household
+    #[field(name = "ANTPERSH")]
+    pub household_size: Option<i32>,
+
+    /// Date of residence from
+    #[field(name = "BOP_VFRA")]
+    pub residence_from: Option<NaiveDate>,
+
+    /// Family type code
+    #[field(name = "FAMILIE_TYPE")]
+    pub family_type: Option<i32>,
+
+    /// Immigration type
+    /// 1: People of danish origin
+    /// 2: Immigrants
+    /// 3: Descendants
+    #[field(name = "IE_TYPE")]
+    pub immigration_type: Option<String>,
+
+    /// Position in family
+    #[field(name = "PLADS")]
+    pub position_in_family: Option<i32>,
 }
 
-impl BefRegister {
-    /// Create a new BEF registry loader
-    #[must_use]
-    pub fn new() -> Self {
-        let schema = bef_schema();
-        let loader = PnrFilterableLoader::with_schema_ref(schema.clone()).with_pnr_column("PNR");
-
-        Self {
-            schema,
-            loader: Arc::new(loader),
-            unified_system: false,
-        }
-    }
-
-    /// Enable or disable the unified schema system
-    pub fn use_unified_system(&mut self, enable: bool) {
-        self.unified_system = enable;
-
-        // Update schema based on the unified system setting
-        self.schema = if enable {
-            schema::bef_schema()
-        } else {
-            schema::bef_schema()
-        };
-
-        // Update the loader with the new schema
-        self.loader = Arc::new(
-            PnrFilterableLoader::with_schema_ref(self.schema.clone()).with_pnr_column("PNR"),
-        );
-    }
-
-    /// Check if the unified schema system is enabled
-    #[must_use] pub const fn is_unified_system_enabled(&self) -> bool {
-        self.unified_system
-    }
+/// Helper function to create a new BEF deserializer
+pub fn create_deserializer() -> BefRegistryDeserializer {
+    BefRegistryDeserializer::new()
 }
 
-impl Default for BefRegister {
-    fn default() -> Self {
-        Self::new()
-    }
+/// Helper function to deserialize a batch of records
+pub fn deserialize_batch(deserializer: &BefRegistryDeserializer, batch: &crate::RecordBatch) -> crate::error::Result<Vec<crate::models::core::Individual>> {
+    // Use the inner deserializer to deserialize the batch
+    deserializer.inner.deserialize_batch(batch)
 }
 
-impl RegisterLoader for BefRegister {
+// Implement RegisterLoader for the macro-generated deserializer
+impl crate::registry::RegisterLoader for BefRegistryDeserializer {
     /// Get the name of the register
     fn get_register_name(&self) -> &'static str {
         "BEF"
     }
 
     /// Get the schema for this register
-    fn get_schema(&self) -> SchemaRef {
-        self.schema.clone()
+    fn get_schema(&self) -> crate::SchemaRef {
+        // Create a simple Arrow schema for BEF
+        let fields = vec![
+            arrow::datatypes::Field::new("PNR", arrow::datatypes::DataType::Utf8, false),
+            arrow::datatypes::Field::new("KOEN", arrow::datatypes::DataType::Utf8, true),
+            arrow::datatypes::Field::new("FOED_DAG", arrow::datatypes::DataType::Date32, true),
+            arrow::datatypes::Field::new("MOR_ID", arrow::datatypes::DataType::Utf8, true),
+            arrow::datatypes::Field::new("FAR_ID", arrow::datatypes::DataType::Utf8, true),
+            arrow::datatypes::Field::new("FAMILIE_ID", arrow::datatypes::DataType::Utf8, true),
+            arrow::datatypes::Field::new("AEGTE_ID", arrow::datatypes::DataType::Utf8, true),
+            arrow::datatypes::Field::new("ALDER", arrow::datatypes::DataType::Int32, true),
+            arrow::datatypes::Field::new("ANTPERSF", arrow::datatypes::DataType::Int32, true),
+            arrow::datatypes::Field::new("ANTPERSH", arrow::datatypes::DataType::Int32, true),
+            arrow::datatypes::Field::new("BOP_VFRA", arrow::datatypes::DataType::Date32, true),
+            arrow::datatypes::Field::new("FAMILIE_TYPE", arrow::datatypes::DataType::Int32, true),
+            arrow::datatypes::Field::new("IE_TYPE", arrow::datatypes::DataType::Utf8, true),
+            arrow::datatypes::Field::new("PLADS", arrow::datatypes::DataType::Int32, true),
+        ];
+
+        std::sync::Arc::new(arrow::datatypes::Schema::new(fields))
     }
 
     /// Enable or disable the unified schema system
-    fn use_unified_system(&mut self, enable: bool) {
-        // Call the struct's own method
-        Self::use_unified_system(self, enable);
+    fn use_unified_system(&mut self, _enable: bool) {
+        // Always using unified system, no-op
     }
 
     /// Check if the unified schema system is enabled
     fn is_unified_system_enabled(&self) -> bool {
-        self.unified_system
+        true // Always enabled
     }
 
     /// Load records from the BEF register
-    ///
-    /// # Arguments
-    /// * `base_path` - Base directory containing the BEF parquet files
-    /// * `pnr_filter` - Optional filter to only load data for specific PNRs
-    ///
-    /// # Returns
-    /// * `Result<Vec<RecordBatch>>` - Arrow record batches containing the loaded data
     fn load(
         &self,
-        base_path: &Path,
-        pnr_filter: Option<&HashSet<String>>,
-    ) -> Result<Vec<RecordBatch>> {
+        base_path: &std::path::Path,
+        pnr_filter: Option<&std::collections::HashSet<String>>,
+    ) -> crate::Result<Vec<crate::RecordBatch>> {
+        // Create a loader with our schema
+        let schema = self.get_schema();
+        let loader = crate::async_io::loader::PnrFilterableLoader::with_schema_ref(schema.clone())
+            .with_pnr_column("PNR");
+
         // Create a blocking runtime to run the async code
         let rt = tokio::runtime::Runtime::new()?;
 
         // Use the trait implementation to load data
         rt.block_on(async {
             if let Some(filter) = pnr_filter {
-                // Use the PNR filter loader if a filter is provided
-                self.loader
-                    .load_with_pnr_filter_async(base_path, Some(filter))
+                // Create a PNR filter using the expr module
+                use crate::filter::expr::{Expr, ExpressionFilter, LiteralValue};
+
+                // Create the expression filter using the proper column name
+                let values: Vec<LiteralValue> = filter
+                    .iter()
+                    .map(|s| LiteralValue::String(s.clone()))
+                    .collect();
+
+                let expr = Expr::In("PNR".to_string(), values);
+                let pnr_filter = ExpressionFilter::new(expr);
+
+                // Use filter with loader
+                loader
+                    .load_with_filter_async(base_path, std::sync::Arc::new(pnr_filter))
                     .await
             } else {
                 // Otherwise use the directory loader
-                self.loader.load_directory_async(base_path).await
+                loader.load_async(base_path).await
             }
         })
     }
 
     /// Load records from the BEF register asynchronously
-    ///
-    /// # Arguments
-    /// * `base_path` - Base directory containing the BEF parquet files
-    /// * `pnr_filter` - Optional filter to only load data for specific PNRs
-    ///
-    /// # Returns
-    /// * `Result<Vec<RecordBatch>>` - Arrow record batches containing the loaded data
     fn load_async<'a>(
         &'a self,
-        base_path: &'a Path,
-        pnr_filter: Option<&'a HashSet<String>>,
-    ) -> Pin<Box<dyn Future<Output = Result<Vec<RecordBatch>>> + Send + 'a>> {
-        // Use the trait-based loader directly for async operations
-        if let Some(filter) = pnr_filter {
-            // Use the PNR filter loader if a filter is provided
-            self.loader
-                .load_with_pnr_filter_async(base_path, Some(filter))
-        } else {
-            // Otherwise use the directory loader
-            self.loader.load_directory_async(base_path)
-        }
+        base_path: &'a std::path::Path,
+        pnr_filter: Option<&'a std::collections::HashSet<String>>,
+    ) -> std::pin::Pin<
+        Box<dyn std::future::Future<Output = crate::Result<Vec<crate::RecordBatch>>> + Send + 'a>,
+    > {
+        // Get the schema and clone other needed values to move into the async block
+        let schema = self.get_schema();
+
+        // Move everything into the async block to avoid local variable references
+        Box::pin(async move {
+            // Create a loader inside the async block
+            let loader =
+                crate::async_io::loader::PnrFilterableLoader::with_schema_ref(schema.clone())
+                    .with_pnr_column("PNR");
+
+            if let Some(filter) = pnr_filter {
+                // Create a PNR filter using the expr module
+                use crate::filter::expr::{Expr, ExpressionFilter, LiteralValue};
+
+                // Create the expression filter using the proper column name
+                let values: Vec<LiteralValue> = filter
+                    .iter()
+                    .map(|s| LiteralValue::String(s.clone()))
+                    .collect();
+
+                let expr = Expr::In("PNR".to_string(), values);
+                let pnr_filter = ExpressionFilter::new(expr);
+
+                // Use filter with loader
+                loader
+                    .load_with_filter_async(base_path, std::sync::Arc::new(pnr_filter))
+                    .await
+            } else {
+                // Otherwise use the directory loader
+                loader.load_async(base_path).await
+            }
+        })
     }
 
     /// Returns whether this registry supports direct PNR filtering

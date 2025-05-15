@@ -101,9 +101,9 @@ pub mod generic_deserializer;
 pub mod unified_registry;
 
 // Re-export registry structs for easier access
-pub use akm::AkmRegister;
-pub use bef::BefCombinedRegister;
-pub use bef::BefRegister;
+//pub use akm::AkmRegister;
+//pub use bef::BefCombinedRegister;
+//pub use bef::BefRegister;
 pub use death::dod::DodRegister;
 pub use death::dodsaarsag::DodsaarsagRegister;
 pub use ind::IndRegister;

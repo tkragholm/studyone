@@ -113,8 +113,8 @@ pub use filter::async_filtering::read_parquet_with_pnr_filter_async;
 // Registry functionality
 pub use registry::{
     // Registry loaders
-    AkmRegister,
-    BefRegister,
+    //AkmRegister,
+    //BefRegister,
     DodRegister,
     DodsaarsagRegister,
     // Removed IdanRegister,

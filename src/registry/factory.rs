@@ -14,18 +14,12 @@ use std::sync::Arc;
 /// Create a registry loader from a registry name using the unified schema system
 pub fn registry_from_name(name: &str) -> Result<Arc<dyn RegisterLoader>> {
     match name.to_lowercase().as_str() {
-        "akm" => {
-            let mut register = super::akm::AkmRegister::new();
-            // Enable unified system for AKM
-            register.use_unified_system(true);
-            Ok(Arc::new(register))
-        },
+        "akm" => todo!("Need to migrate to the new macro approach..."),
         "bef" => {
-            let mut register = super::bef::BefRegister::new();
-            // Enable unified system for BEF
-            register.use_unified_system(true);
-            Ok(Arc::new(register))
-        },
+            // Use the macro-based BEF registry for the new implementation
+            let registry = super::bef::create_deserializer();
+            Ok(Arc::new(registry))
+        }
         "dod" => Ok(Arc::new(DodRegister::new())), // TODO: Add unified system support
         "dodsaarsag" => Ok(Arc::new(DodsaarsagRegister::new())), // TODO: Add unified system support
         "ind" => {
@@ -33,55 +27,55 @@ pub fn registry_from_name(name: &str) -> Result<Arc<dyn RegisterLoader>> {
             // Enable unified system for IND
             register.use_unified_system(true);
             Ok(Arc::new(register))
-        },
+        }
         "mfr" => {
             let mut register = super::mfr::MfrRegister::new();
             // Enable unified system for MFR
             register.use_unified_system(true);
             Ok(Arc::new(register))
-        },
+        }
         "uddf" => {
             let mut register = super::uddf::UddfRegister::new();
             // Enable unified system for UDDF
             register.use_unified_system(true);
             Ok(Arc::new(register))
-        },
+        }
         "vnds" => {
             let mut register = super::vnds::VndsRegister::new();
             // Enable unified system for VNDS
             register.use_unified_system(true);
             Ok(Arc::new(register))
-        },
+        }
         "lpr_adm" => {
             let mut register = super::lpr::LprAdmRegister::new();
             // Enable unified system for LPR_ADM
             register.use_unified_system(true);
             Ok(Arc::new(register))
-        },
+        }
         "lpr_diag" => {
             let mut register = super::lpr::LprDiagRegister::new();
             // Enable unified system for LPR_DIAG
             register.use_unified_system(true);
             Ok(Arc::new(register))
-        },
+        }
         "lpr_bes" => {
             let mut register = super::lpr::LprBesRegister::new();
             // Enable unified system for LPR_BES
             register.use_unified_system(true);
             Ok(Arc::new(register))
-        },
+        }
         "lpr3_kontakter" => {
             let mut register = super::lpr::Lpr3KontakterRegister::new();
             // Enable unified system for LPR3_KONTAKTER
             register.use_unified_system(true);
             Ok(Arc::new(register))
-        },
+        }
         "lpr3_diagnoser" => {
             let mut register = super::lpr::Lpr3DiagnoserRegister::new();
             // Enable unified system for LPR3_DIAGNOSER
             register.use_unified_system(true);
             Ok(Arc::new(register))
-        },
+        }
         _ => Err(ParquetReaderError::MetadataError(format!("Unknown registry: {name}")).into()),
     }
 }
@@ -94,13 +88,10 @@ pub fn registry_from_path(path: &Path) -> Result<Arc<dyn RegisterLoader>> {
 
         // Check for registry name patterns in the path
         if lower_name.contains("akm") {
-            let mut register = super::akm::AkmRegister::new();
-            register.use_unified_system(true);
-            return Ok(Arc::new(register));
+            todo!("Need to migrate to the new macro approach...")
         } else if lower_name.contains("bef") {
-            let mut register = super::bef::BefRegister::new();
-            register.use_unified_system(true);
-            return Ok(Arc::new(register));
+            let registry = super::bef::create_deserializer();
+            return Ok(Arc::new(registry));
         } else if lower_name.contains("dod") && !lower_name.contains("dodsaarsag") {
             return Ok(Arc::new(DodRegister::new())); // TODO: Add unified system support
         } else if lower_name.contains("dodsaarsag") {

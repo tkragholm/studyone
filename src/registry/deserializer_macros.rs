@@ -71,9 +71,9 @@ macro_rules! generate_trait_deserializer {
                             );
                             field_extractors.push(Box::new(extractor));
                         }
-                        crate::schema::FieldType::Decimal => {
+                        $crate::schema::FieldType::Decimal => {
                             // Create float extractor
-                            let extractor = crate::registry::extractors::FloatExtractor::new(
+                            let extractor = $crate::registry::extractors::FloatExtractor::new(
                                 &source_field,
                                 &target_field,
                                 crate::registry::extractors::Setter::new(mapping.setter.clone()),
