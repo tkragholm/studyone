@@ -12,12 +12,16 @@
 //! about patients in the Danish healthcare system.
 
 // Re-export registry structs for easier access
-pub use v2::adm::{create_deserializer as create_adm_deserializer, LprAdmRegistry};
-pub use v2::diag::{create_deserializer as create_diag_deserializer, LprDiagRegistry};
-pub use v2::bes::{create_deserializer as create_bes_deserializer, LprBesRegistry};
+pub use v2::adm::{LprAdmRegistry, create_deserializer as create_adm_deserializer};
+pub use v2::bes::LprBesRegistry;
+pub use v2::diag::{LprDiagRegistry, create_deserializer as create_diag_deserializer};
 
-pub use v3::kontakter::{create_deserializer as create_kontakter_deserializer, Lpr3KontakterRegistry};
-pub use v3::diagnoser::{create_deserializer as create_diagnoser_deserializer, Lpr3DiagnoserRegistry};
+pub use v3::diagnoser::{
+    Lpr3DiagnoserRegistry, create_deserializer as create_diagnoser_deserializer,
+};
+pub use v3::kontakter::{
+    Lpr3KontakterRegistry, create_deserializer as create_kontakter_deserializer,
+};
 
 // Version-specific modules
 pub mod v2;

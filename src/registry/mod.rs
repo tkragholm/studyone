@@ -174,7 +174,7 @@ pub trait RegisterLoader: Send + Sync {
                 // Handle PNR filtering if needed
                 if let Some(pnr_filter) = pnr_filter {
                     // If PNR column is available, apply filtering
-                    if let Some(_) = pnr_column {
+                    if pnr_column.is_some() {
                         let schema_ref = schema.clone();
                         let pnr_filter = pnr_filter.clone();
 

@@ -1,6 +1,6 @@
-//! LPR_BES registry using the macro-based approach
+//! `LPR_BES` registry using the macro-based approach
 //!
-//! The LPR_BES registry contains outpatient visit records from the Danish National Patient Registry.
+//! The `LPR_BES` registry contains outpatient visit records from the Danish National Patient Registry.
 
 use crate::RegistryTrait;
 use arrow::datatypes::{DataType, Field, Schema};
