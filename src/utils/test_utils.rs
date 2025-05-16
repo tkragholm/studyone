@@ -51,46 +51,6 @@ pub fn test_config() -> ParquetReaderConfig {
     }
 }
 
-/// Print summary information about record batches
-pub fn print_batch_summary(batches: &[RecordBatch], elapsed: std::time::Duration) {
-    println!("Read {} record batches in {:?}", batches.len(), elapsed);
-    println!(
-        "Total rows: {}",
-        batches.iter().map(RecordBatch::num_rows).sum::<usize>()
-    );
-}
-
-/// Print detailed schema information from the first batch
-pub fn print_schema_info(batch: &RecordBatch) {
-    println!("Schema:");
-    for field in batch.schema().fields() {
-        println!("  - {} ({})", field.name(), field.data_type());
-    }
-}
-
-/// Print sample rows from a batch
-pub fn print_sample_rows(batch: &RecordBatch, num_rows: usize) {
-    println!("First {num_rows} rows:");
-    for row_idx in 0..std::cmp::min(num_rows, batch.num_rows()) {
-        print!("Row {row_idx}: [");
-        for col_idx in 0..batch.num_columns() {
-            let column = batch.column(col_idx);
-            print!("{}: ", batch.schema().field(col_idx).name());
-
-            if column.is_null(row_idx) {
-                print!("NULL");
-            } else {
-                print!("Value"); // Simplified - actual value display would depend on column type
-            }
-
-            if col_idx < batch.num_columns() - 1 {
-                print!(", ");
-            }
-        }
-        println!("]");
-    }
-}
-
 /// Timed execution of a function that returns a Result<Vec<RecordBatch>>
 pub fn timed_execution<F>(func: F) -> (std::time::Duration, Result<Vec<RecordBatch>>)
 where
@@ -100,33 +60,6 @@ where
     let result = func();
     let elapsed = start.elapsed();
     (elapsed, result)
-}
-
-/// Get all available year files from a registry directory
-#[must_use]
-pub fn get_available_year_files(registry: &str) -> Vec<PathBuf> {
-    let dir = registry_dir(registry);
-    if !dir.exists() {
-        return Vec::new();
-    }
-
-    std::fs::read_dir(dir)
-        .ok()
-        .map(|entries| {
-            entries
-                .filter_map(|res: std::io::Result<std::fs::DirEntry>| res.ok())
-                .filter(|entry| {
-                    let path = entry.path();
-                    path.is_file()
-                        && path.extension().is_some_and(|ext| ext == "parquet")
-                        && path
-                            .file_stem()
-                            .is_some_and(|name| name.to_string_lossy().parse::<u32>().is_ok())
-                })
-                .map(|entry| entry.path())
-                .collect()
-        })
-        .unwrap_or_default()
 }
 
 /// Convert an expression to a filter
