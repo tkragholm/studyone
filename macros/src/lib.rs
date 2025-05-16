@@ -210,12 +210,9 @@ fn generate_registry_impl(
     });
 
     // Check if the struct has the specified ID field
-    let has_id_field = fields.iter().any(|field| {
-        field
-            .ident
-            .as_ref()
-            .is_some_and(|ident| *ident == id_field)
-    });
+    let has_id_field = fields
+        .iter()
+        .any(|field| field.ident.as_ref().is_some_and(|ident| *ident == id_field));
 
     // Check if the struct has a record_number field (for debugging)
     let _has_record_number = has_field_named(fields, "record_number");
@@ -284,11 +281,11 @@ fn generate_registry_impl(
                             // Extract Option<String> property - try both field name and source field name
                             if let Some(props) = individual.properties() {
                                 // Debug logging has been removed
-                                
+
                                 // Try both actual field name and stringified field name
                                 let property_value = props.get(#field_name_str)
                                     .or_else(|| props.get(stringify!(#field_name)));
-                                    
+
                                 if let Some(value) = property_value {
                                     if let Some(string_val) = value.downcast_ref::<Option<String>>() {
                                         // Debug logging has been removed
@@ -305,7 +302,7 @@ fn generate_registry_impl(
                                 // Try both actual field name and stringified field name
                                 let property_value = props.get(#field_name_str)
                                     .or_else(|| props.get(stringify!(#field_name)));
-                                    
+
                                 if let Some(value) = property_value {
                                     if let Some(string_val) = value.downcast_ref::<String>() {
                                         instance.#field_name = string_val.clone();
@@ -321,11 +318,11 @@ fn generate_registry_impl(
                         // Extract Option<NaiveDate> property - try both field name and source field name
                         if let Some(props) = individual.properties() {
                             // Debug logging has been removed
-                            
+
                             // Try both actual field name and stringified field name
                             let property_value = props.get(#field_name_str)
                                 .or_else(|| props.get(stringify!(#field_name)));
-                                
+
                             if let Some(value) = property_value {
                                 if let Some(date_val) = value.downcast_ref::<Option<chrono::NaiveDate>>() {
                                     // Debug logging has been removed
@@ -357,15 +354,6 @@ fn generate_registry_impl(
         quote! {
             impl From<crate::models::core::Individual> for #struct_name {
                 fn from(individual: crate::models::core::Individual) -> Self {
-                    // Only print for the first few records to avoid flooding the console
-                    static mut PRINT_COUNT: usize = 0;
-                    unsafe {
-                        if PRINT_COUNT < 3 {
-                            println!("Converting Individual to {}", stringify!(#struct_name));
-                            PRINT_COUNT += 1;
-                        }
-                    }
-
                     // Create a default instance of our struct
                     let mut instance = Self::default();
 
@@ -385,15 +373,6 @@ fn generate_registry_impl(
         quote! {
             impl From<crate::models::core::Individual> for #struct_name {
                 fn from(individual: crate::models::core::Individual) -> Self {
-                    // Only print for the first few records to avoid flooding the console
-                    static mut PRINT_COUNT: usize = 0;
-                    unsafe {
-                        if PRINT_COUNT < 3 {
-                            println!("Converting Individual to {}", stringify!(#struct_name));
-                            PRINT_COUNT += 1;
-                        }
-                    }
-
                     // Create a default instance of our struct
                     let mut instance = Self::default();
 
@@ -419,15 +398,6 @@ fn generate_registry_impl(
         quote! {
             impl From<crate::models::core::Individual> for #struct_name {
                 fn from(individual: crate::models::core::Individual) -> Self {
-                    // Only print for the first few records to avoid flooding the console
-                    static mut PRINT_COUNT: usize = 0;
-                    unsafe {
-                        if PRINT_COUNT < 3 {
-                            println!("Converting Individual to {}", stringify!(#struct_name));
-                            PRINT_COUNT += 1;
-                        }
-                    }
-
                     // Create a default instance of our struct
                     let mut instance = Self::default();
 
@@ -453,14 +423,6 @@ fn generate_registry_impl(
         quote! {
             impl From<crate::models::core::Individual> for #struct_name {
                 fn from(individual: crate::models::core::Individual) -> Self {
-                    // Only print for the first few records to avoid flooding the console
-                    static mut PRINT_COUNT: usize = 0;
-                    unsafe {
-                        if PRINT_COUNT < 3 {
-                            println!("Converting Individual to {}", stringify!(#struct_name));
-                            PRINT_COUNT += 1;
-                        }
-                    }
 
                     // Create a default instance of our struct
                     let mut instance = Self::default();
@@ -566,10 +528,7 @@ fn generate_registry_impl(
 
 /// Helper to check if a struct has a specific field
 fn has_field_named(fields: &ast::Fields<RegistryFieldReceiver>, name: &str) -> bool {
-    fields.iter().any(|field| {
-        field
-            .ident
-            .as_ref()
-            .is_some_and(|ident| *ident == name)
-    })
+    fields
+        .iter()
+        .any(|field| field.ident.as_ref().is_some_and(|ident| *ident == name))
 }

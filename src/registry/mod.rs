@@ -287,26 +287,9 @@ pub mod mfr;
 pub mod uddf;
 pub mod vnds;
 
-// Generic deserializer for all registries
-pub mod generic_deserializer;
-
 // Unified registry system support
-pub mod unified_registry;
-
-// Re-export registry structs for easier access
-pub use death::dod::DodRegistry;
-pub use death::dodsaarsag::DodsaarsagRegister;
-pub use ind::IndRegistry;
-pub use lpr::{
-    discovery::{LprPaths, find_lpr_files},
-    v2::{LprAdmRegister, LprBesRegister, LprDiagRegister},
-    v3::{Lpr3DiagnoserRegister, Lpr3KontakterRegister},
-};
-pub use mfr::MfrRegistry;
-pub use uddf::UddfRegistry;
-pub use vnds::VndsRegistry;
-
 pub mod factory;
+pub mod unified_registry;
 
 mod transform;
 pub use transform::{

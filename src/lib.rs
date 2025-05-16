@@ -51,8 +51,8 @@ pub use models::core::individual::Individual;
 // Model collections
 pub use collections::{
     // These collections are not yet properly exported
-    // DiagnosisCollection,
-    // FamilyCollection,
+    DiagnosisCollection,
+    FamilyCollection,
     // Generic collections
     GenericCollection,
     // Specialized collections

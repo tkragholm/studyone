@@ -1,45 +1,53 @@
-use crate::{RegistryTrait, error, models, registry, schema};
+//! LPR_ADM registry using the macro-based approach
+//!
+//! The LPR_ADM registry contains administrative records from the Danish National Patient Registry.
+
+use crate::RegistryTrait;
+use arrow::datatypes::{DataType, Field, Schema};
 use chrono::NaiveDate;
 
 // Define LPR ADM Registry using the derive macro
 #[derive(RegistryTrait, Debug)]
 #[registry(name = "LPR_ADM", description = "LPR Administrative registry")]
-struct LprAdmRegister {
+pub struct LprAdmRegistry {
     // Core identification fields
     #[field(name = "PNR")]
-    pnr: String,
+    pub pnr: String,
 
     // Admission-related fields
     #[field(name = "C_ADIAG")]
-    action_diagnosis: Option<String>,
+    pub action_diagnosis: Option<String>,
 
     #[field(name = "C_AFD")]
-    department_code: Option<String>,
+    pub department_code: Option<String>,
 
     #[field(name = "C_KOM")]
-    municipality_code: Option<String>,
+    pub municipality_code: Option<String>,
 
     #[field(name = "D_INDDTO")]
-    admission_date: Option<NaiveDate>,
+    pub admission_date: Option<NaiveDate>,
 
     #[field(name = "D_UDDTO")]
-    discharge_date: Option<NaiveDate>,
+    pub discharge_date: Option<NaiveDate>,
 
     #[field(name = "V_ALDER")]
-    age: Option<i32>,
+    pub age: Option<i32>,
 
     #[field(name = "V_SENGDAGE")]
-    length_of_stay: Option<i32>,
+    pub length_of_stay: Option<i32>,
+
+    #[field(name = "RECNUM")]
+    pub record_number: Option<String>,
 }
 
-/// Helper function to create a new DOD deserializer
-pub fn create_deserializer() -> LprAdmRegisterDeserializer {
-    LprAdmRegisterDeserializer::new()
+/// Helper function to create a new LPR admission deserializer
+pub fn create_deserializer() -> LprAdmRegistryDeserializer {
+    LprAdmRegistryDeserializer::new()
 }
 
 /// Helper function to deserialize a batch of records
 pub fn deserialize_batch(
-    deserializer: &LprAdmRegisterDeserializer,
+    deserializer: &LprAdmRegistryDeserializer,
     batch: &crate::RecordBatch,
 ) -> crate::error::Result<Vec<crate::models::core::Individual>> {
     // Use the inner deserializer to deserialize the batch
@@ -47,7 +55,7 @@ pub fn deserialize_batch(
 }
 
 // Implement RegisterLoader for the macro-generated deserializer
-impl crate::registry::RegisterLoader for LprAdmRegisterDeserializer {
+impl crate::registry::RegisterLoader for LprAdmRegistryDeserializer {
     /// Get the name of the register
     fn get_register_name(&self) -> &'static str {
         "lpr_adm"
@@ -86,6 +94,6 @@ impl crate::registry::RegisterLoader for LprAdmRegisterDeserializer {
             Field::new("VERSION", DataType::Utf8, true),
         ];
 
-        std::sync::Arc::new(arrow::datatypes::Schema::new(fields))
+        std::sync::Arc::new(Schema::new(fields))
     }
 }

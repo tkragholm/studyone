@@ -5,7 +5,6 @@
 use super::RegisterLoader;
 use crate::RecordBatch;
 use crate::error::{ParquetReaderError, Result};
-use crate::registry::death::dodsaarsag::DodsaarsagRegister;
 use std::collections::HashSet;
 use std::path::Path;
 use std::sync::Arc;
@@ -28,7 +27,11 @@ pub fn registry_from_name(name: &str) -> Result<Arc<dyn RegisterLoader>> {
             let registry = super::death::dod::create_deserializer();
             Ok(Arc::new(registry))
         }
-        "dodsaarsag" => Ok(Arc::new(DodsaarsagRegister::new())),
+        "dodsaarsag" => {
+            // Use the macro-based DODSAARSAG registry for the new implementation
+            let registry = super::death::dodsaarsag::create_deserializer();
+            Ok(Arc::new(registry))
+        }
         "ind" => {
             // Use the macro-based IND registry for the new implementation
             let registry = super::ind::create_deserializer();
@@ -50,34 +53,29 @@ pub fn registry_from_name(name: &str) -> Result<Arc<dyn RegisterLoader>> {
             Ok(Arc::new(registry))
         }
         "lpr_adm" => {
-            let mut register = super::lpr::LprAdmRegister::new();
-            // Enable unified system for LPR_ADM
-            register.use_unified_system(true);
-            Ok(Arc::new(register))
+            // Use the macro-based LPR ADM registry
+            let registry = super::lpr::create_adm_deserializer();
+            Ok(Arc::new(registry))
         }
         "lpr_diag" => {
-            let mut register = super::lpr::LprDiagRegister::new();
-            // Enable unified system for LPR_DIAG
-            register.use_unified_system(true);
-            Ok(Arc::new(register))
+            // Use the macro-based LPR DIAG registry
+            let registry = super::lpr::create_diag_deserializer();
+            Ok(Arc::new(registry))
         }
         "lpr_bes" => {
-            let mut register = super::lpr::LprBesRegister::new();
-            // Enable unified system for LPR_BES
-            register.use_unified_system(true);
-            Ok(Arc::new(register))
+            // Use the macro-based LPR BES registry
+            let registry = super::lpr::create_bes_deserializer();
+            Ok(Arc::new(registry))
         }
         "lpr3_kontakter" => {
-            let mut register = super::lpr::Lpr3KontakterRegister::new();
-            // Enable unified system for LPR3_KONTAKTER
-            register.use_unified_system(true);
-            Ok(Arc::new(register))
+            // Use the macro-based LPR3 KONTAKTER registry
+            let registry = super::lpr::create_kontakter_deserializer();
+            Ok(Arc::new(registry))
         }
         "lpr3_diagnoser" => {
-            let mut register = super::lpr::Lpr3DiagnoserRegister::new();
-            // Enable unified system for LPR3_DIAGNOSER
-            register.use_unified_system(true);
-            Ok(Arc::new(register))
+            // Use the macro-based LPR3 DIAGNOSER registry
+            let registry = super::lpr::create_diagnoser_deserializer();
+            Ok(Arc::new(registry))
         }
         _ => Err(ParquetReaderError::MetadataError(format!("Unknown registry: {name}")).into()),
     }
@@ -100,7 +98,8 @@ pub fn registry_from_path(path: &Path) -> Result<Arc<dyn RegisterLoader>> {
             let registry = super::death::dod::create_deserializer();
             return Ok(Arc::new(registry));
         } else if lower_name.contains("dodsaarsag") {
-            return Ok(Arc::new(DodsaarsagRegister::new()));
+            let registry = super::death::dodsaarsag::create_deserializer();
+            return Ok(Arc::new(registry));
         } else if lower_name.contains("ind") {
             let registry = super::ind::create_deserializer();
             return Ok(Arc::new(registry));
@@ -114,25 +113,20 @@ pub fn registry_from_path(path: &Path) -> Result<Arc<dyn RegisterLoader>> {
             let registry = super::vnds::create_deserializer();
             return Ok(Arc::new(registry));
         } else if lower_name.contains("lpr_adm") {
-            let mut register = super::lpr::LprAdmRegister::new();
-            register.use_unified_system(true);
-            return Ok(Arc::new(register));
+            let registry = super::lpr::create_adm_deserializer();
+            return Ok(Arc::new(registry));
         } else if lower_name.contains("lpr_diag") {
-            let mut register = super::lpr::LprDiagRegister::new();
-            register.use_unified_system(true);
-            return Ok(Arc::new(register));
+            let registry = super::lpr::create_diag_deserializer();
+            return Ok(Arc::new(registry));
         } else if lower_name.contains("lpr_bes") {
-            let mut register = super::lpr::LprBesRegister::new();
-            register.use_unified_system(true);
-            return Ok(Arc::new(register));
+            let registry = super::lpr::create_bes_deserializer();
+            return Ok(Arc::new(registry));
         } else if lower_name.contains("lpr3_kontakter") {
-            let mut register = super::lpr::Lpr3KontakterRegister::new();
-            register.use_unified_system(true);
-            return Ok(Arc::new(register));
+            let registry = super::lpr::create_kontakter_deserializer();
+            return Ok(Arc::new(registry));
         } else if lower_name.contains("lpr3_diagnoser") {
-            let mut register = super::lpr::Lpr3DiagnoserRegister::new();
-            register.use_unified_system(true);
-            return Ok(Arc::new(register));
+            let registry = super::lpr::create_diagnoser_deserializer();
+            return Ok(Arc::new(registry));
         }
     }
 

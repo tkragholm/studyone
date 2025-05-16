@@ -1,110 +1,85 @@
-//! DODSAARSAG registry loader implementation
+//! Dodsaarsag (Cause of Death) registry using the macro-based approach
 //!
-//! The DODSAARSAG registry contains death cause information.
+//! The Dodsaarsag registry contains information about cause of death from death certificates.
 
-use crate::RecordBatch;
-use crate::Result;
-use crate::async_io::parallel_ops::load_parquet_files_parallel_with_pnr_filter_async;
-use crate::registry::RegisterLoader;
-pub mod schema;
-use crate::load_parquet_files_parallel;
-use arrow::datatypes::SchemaRef;
-use std::collections::HashSet;
-use std::future::Future;
-use std::path::Path;
-use std::pin::Pin;
+use crate::RegistryTrait;
+use chrono::NaiveDate;
 
-/// DODSAARSAG registry loader for death cause information
-#[derive(Debug, Clone)]
-pub struct DodsaarsagRegister {
-    schema: SchemaRef,
+/// Death causes registry with death certificate information
+#[derive(RegistryTrait, Debug)]
+#[registry(name = "DODSAARSAG", description = "Cause of Death registry")]
+pub struct DodsaarsagRegistry {
+    /// Person ID (CPR number)
+    #[field(name = "PNR")]
+    pub pnr: String,
+
+    /// Death cause (ICD-10 code)
+    #[field(name = "C_AARSAG")]
+    pub death_cause: Option<String>,
+
+    /// Death condition (ICD-10 code)
+    #[field(name = "C_TILSTAND")]
+    pub death_condition: Option<String>,
+
+    /// Death date
+    #[field(name = "D_DATO")]
+    pub death_date: Option<NaiveDate>,
 }
 
-impl DodsaarsagRegister {
-    /// Create a new DODSAARSAG registry loader
-    #[must_use]
-    pub fn new() -> Self {
-        Self {
-            schema: schema::dodsaarsag_schema(),
-        }
-    }
+/// Helper function to create a new Dodsaarsag deserializer
+pub fn create_deserializer() -> DodsaarsagRegistryDeserializer {
+    DodsaarsagRegistryDeserializer::new()
 }
 
-impl Default for DodsaarsagRegister {
-    fn default() -> Self {
-        Self::new()
-    }
+/// Helper function to deserialize a batch of records
+pub fn deserialize_batch(
+    deserializer: &DodsaarsagRegistryDeserializer,
+    batch: &crate::RecordBatch,
+) -> crate::error::Result<Vec<crate::models::core::Individual>> {
+    // Use the inner deserializer to deserialize the batch
+    deserializer.inner.deserialize_batch(batch)
 }
 
-impl RegisterLoader for DodsaarsagRegister {
+// Implement RegisterLoader for the macro-generated deserializer
+impl crate::registry::RegisterLoader for DodsaarsagRegistryDeserializer {
     /// Get the name of the register
     fn get_register_name(&self) -> &'static str {
         "DODSAARSAG"
     }
 
     /// Get the schema for this register
-    fn get_schema(&self) -> SchemaRef {
-        self.schema.clone()
-    }
+    fn get_schema(&self) -> crate::SchemaRef {
+        // Create Arrow schema for Dodsaarsag
+        let fields = vec![
+            arrow::datatypes::Field::new("PNR", arrow::datatypes::DataType::Utf8, false),
+            arrow::datatypes::Field::new("C_AARSAG", arrow::datatypes::DataType::Utf8, true),
+            arrow::datatypes::Field::new("C_TILSTAND", arrow::datatypes::DataType::Utf8, true),
+            arrow::datatypes::Field::new("D_DATO", arrow::datatypes::DataType::Date32, true),
+        ];
 
-    /// Load records from the DODSAARSAG register
-    ///
-    /// # Arguments
-    /// * `base_path` - Base directory containing the DODSAARSAG parquet files
-    /// * `pnr_filter` - Optional filter to only load data for specific PNRs
-    ///
-    /// # Returns
-    /// * `Result<Vec<RecordBatch>>` - Arrow record batches containing the loaded data
-    fn load(
-        &self,
-        base_path: &Path,
-        pnr_filter: Option<&HashSet<String>>,
-    ) -> Result<Vec<RecordBatch>> {
-        // Use optimized parallel loading for DODSAARSAG data
-        let pnr_filter_arc = pnr_filter.map(|f| std::sync::Arc::new(f.clone()));
-        let pnr_filter_ref = pnr_filter_arc.as_ref().map(std::convert::AsRef::as_ref);
-        load_parquet_files_parallel(
-            base_path,
-            Some(self.schema.as_ref()),
-            pnr_filter_ref,
-            None,
-            None,
-        )
+        std::sync::Arc::new(arrow::datatypes::Schema::new(fields))
     }
+}
 
-    /// Load records from the DODSAARSAG register asynchronously
+// Re-export the standardized schema function for compatibility
+pub use schema::dodsaarsag_standardized_schema;
+
+mod schema {
+    use arrow::datatypes::{DataType, Field, Schema};
+    use std::sync::Arc;
+
+    /// Returns a standardized schema for the Dodsaarsag register
     ///
-    /// # Arguments
-    /// * `base_path` - Base directory containing the DODSAARSAG parquet files
-    /// * `pnr_filter` - Optional filter to only load data for specific PNRs
-    ///
-    /// # Returns
-    /// * `Result<Vec<RecordBatch>>` - Arrow record batches containing the loaded data
-    fn load_async<'a>(
-        &'a self,
-        base_path: &'a Path,
-        pnr_filter: Option<&'a HashSet<String>>,
-    ) -> Pin<Box<dyn Future<Output = Result<Vec<RecordBatch>>> + Send + 'a>> {
-        Box::pin(async move {
-            // Use optimized async parallel loading for DODSAARSAG data
-            let pnr_filter_arc = pnr_filter.map(|f| std::sync::Arc::new(f.clone()));
-            let pnr_filter_ref = pnr_filter_arc.as_ref().map(std::convert::AsRef::as_ref);
-            load_parquet_files_parallel_with_pnr_filter_async(
-                base_path,
-                Some(self.schema.as_ref()),
-                pnr_filter_ref,
-            )
-            .await
-        })
-    }
+    /// This schema provides normalized field names for the cause of death data
+    pub fn dodsaarsag_standardized_schema() -> Arc<Schema> {
+        let fields = vec![
+            Field::new("PNR", DataType::Utf8, false),
+            Field::new("DEATH_CAUSE", DataType::Utf8, true),
+            Field::new("DEATH_CONDITION", DataType::Utf8, true),
+            Field::new("DEATH_CAUSE_CHAPTER", DataType::Utf8, true),
+            Field::new("DEATH_DATE", DataType::Date32, true),
+        ];
 
-    /// Returns whether this registry supports direct PNR filtering
-    fn supports_pnr_filter(&self) -> bool {
-        true
-    }
-
-    /// Returns the column name containing the PNR
-    fn get_pnr_column_name(&self) -> Option<&'static str> {
-        Some("PNR")
+        Arc::new(Schema::new(fields))
     }
 }

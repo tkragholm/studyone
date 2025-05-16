@@ -3,59 +3,22 @@
 //! This module contains registry loaders for different versions of the Danish National Patient Registry (LPR).
 //! Includes loaders for different versions and types of LPR data, along with
 //! direct model conversion capabilities.
+//!
+//! The LPR data is split into two main versions:
+//! - LPR version 2 (1977-2019): Contains adm (admissions), diag (diagnoses), and bes (outpatient visits)
+//! - LPR version 3 (2019-present): Contains kontakter (contacts) and diagnoser (diagnoses)
+//!
+//! Each version has its own schema and data structure, but both provide health information
+//! about patients in the Danish healthcare system.
 
-// Import submodules
-pub mod discovery;
-pub mod individual;
-pub mod trait_deserializer;
+// Re-export registry structs for easier access
+pub use v2::adm::{create_deserializer as create_adm_deserializer, LprAdmRegistry};
+pub use v2::diag::{create_deserializer as create_diag_deserializer, LprDiagRegistry};
+pub use v2::bes::{create_deserializer as create_bes_deserializer, LprBesRegistry};
+
+pub use v3::kontakter::{create_deserializer as create_kontakter_deserializer, Lpr3KontakterRegistry};
+pub use v3::diagnoser::{create_deserializer as create_diagnoser_deserializer, Lpr3DiagnoserRegistry};
+
+// Version-specific modules
 pub mod v2;
 pub mod v3;
-
-// Create conversion module
-pub mod conversion {
-    //! Conversion utilities for LPR registry data
-
-    /// PNR lookup trait for LPR registries
-    pub trait PnrLookupRegistry {
-        /// Get the PNR lookup map
-        fn get_pnr_lookup(&self) -> Option<std::collections::HashMap<String, String>>;
-
-        /// Set the PNR lookup map
-        fn set_pnr_lookup(&mut self, lookup: std::collections::HashMap<String, String>);
-    }
-}
-
-// Re-export trait deserializers
-pub use self::v2::deserializer as v2_trait;
-pub use self::v3::deserializer as v3_trait;
-
-// Re-export PNR lookup trait
-pub use self::conversion::PnrLookupRegistry;
-
-// Re-export specific loaders
-pub use self::discovery::{LprPaths, find_lpr_files};
-pub use self::v2::{LprAdmRegister, LprBesRegister, LprDiagRegister};
-pub use self::v3::{Lpr3DiagnoserRegister, Lpr3KontakterRegister};
-
-// Implement PNR lookup for LPR registries
-impl PnrLookupRegistry for LprDiagRegister {
-    fn get_pnr_lookup(&self) -> Option<std::collections::HashMap<String, String>> {
-        // Call the struct's method directly
-        self.pnr_lookup.clone()
-    }
-
-    fn set_pnr_lookup(&mut self, lookup: std::collections::HashMap<String, String>) {
-        // Call the struct's method directly
-        self.pnr_lookup = Some(lookup);
-    }
-}
-
-impl PnrLookupRegistry for Lpr3DiagnoserRegister {
-    fn get_pnr_lookup(&self) -> Option<std::collections::HashMap<String, String>> {
-        self.pnr_lookup.clone()
-    }
-
-    fn set_pnr_lookup(&mut self, lookup: std::collections::HashMap<String, String>) {
-        self.pnr_lookup = Some(lookup);
-    }
-}
