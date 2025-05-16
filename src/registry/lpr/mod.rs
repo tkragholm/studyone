@@ -13,7 +13,7 @@
 
 // Re-export registry structs for easier access
 pub use v2::adm::{LprAdmRegistry, create_deserializer as create_adm_deserializer};
-pub use v2::bes::LprBesRegistry;
+pub use v2::bes::{LprBesRegistry, create_deserializer as create_bes_deserializer};
 pub use v2::diag::{LprDiagRegistry, create_deserializer as create_diag_deserializer};
 
 pub use v3::diagnoser::{

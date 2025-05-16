@@ -68,7 +68,7 @@ impl Individual {
     ///
     /// This method uses `serde_arrow` for efficient direct deserialization from Arrow to Rust structs.
     /// It handles field name mapping and type conversions automatically.
-    pub fn from_registry_batch_with_serde_arrow(batch: &RecordBatch) -> Result<Vec<Self>> {
+    pub fn from_registry_batch_with_serde_arrow(_batch: &RecordBatch) -> Result<Vec<Self>> {
         todo!();
         // Use the central deserializer which will route to the appropriate registry-specific deserializer
         //deserializer::deserialize_batch(batch)
