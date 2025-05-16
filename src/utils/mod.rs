@@ -18,9 +18,12 @@ use crate::error::Result;
 pub mod array_utils;
 pub mod arrow_utils;
 pub mod field_extractors;
+pub mod logging;
 pub mod progress;
 pub mod registry_utils;
 pub mod test_utils;
+
+pub use logging::*;
 
 /// Validates that a directory exists and is a directory
 ///
@@ -66,59 +69,6 @@ pub fn get_batch_size() -> Option<usize> {
     std::env::var("PARQUET_BATCH_SIZE")
         .ok()
         .and_then(|s| s.parse::<usize>().ok())
-}
-
-/// Log an operation start with consistent format
-///
-/// # Arguments
-/// * `operation` - Description of the operation
-/// * `path` - Path of the file or directory being operated on
-pub fn log_operation_start(operation: &str, path: &Path) {
-    log::info!("{} {}", operation, path.display());
-}
-
-/// Log an operation completion with consistent format
-///
-/// # Arguments
-/// * `operation` - Description of the operation
-/// * `path` - Path of the file or directory that was operated on
-/// * `items` - Number of items processed
-/// * `elapsed` - Optional elapsed time
-pub fn log_operation_complete(
-    operation: &str,
-    path: &Path,
-    items: usize,
-    elapsed: Option<std::time::Duration>,
-) {
-    if let Some(duration) = elapsed {
-        log::info!(
-            "Successfully {} {} items from {} in {:?}",
-            operation,
-            items,
-            path.display(),
-            duration
-        );
-    } else {
-        log::info!(
-            "Successfully {} {} items from {}",
-            operation,
-            items,
-            path.display()
-        );
-    }
-}
-
-/// Log an operation warning with consistent format
-///
-/// # Arguments
-/// * `message` - Warning message
-/// * `path` - Optional path related to the warning
-pub fn log_warning(message: &str, path: Option<&Path>) {
-    if let Some(path) = path {
-        log::warn!("{}: {}", message, path.display());
-    } else {
-        log::warn!("{message}");
-    }
 }
 
 /// Helper for creating projection mask from schema
@@ -189,7 +139,7 @@ pub fn create_projection(
 ///
 /// # Panics
 /// Panics if the projection mask is Some but is attempted to be unwrapped as None
-pub fn read_parquet<S: ::std::hash::BuildHasher + std::marker::Sync>(
+pub fn read_parquet<S: std::hash::BuildHasher + std::marker::Sync>(
     path: &Path,
     schema: Option<&Schema>,
     pnr_filter: Option<&HashSet<String, S>>,
@@ -236,8 +186,6 @@ pub fn read_parquet<S: ::std::hash::BuildHasher + std::marker::Sync>(
             .build()
             .map_err(|e| anyhow::anyhow!("Failed to build parquet reader. Error: {}", e))?
     };
-
-    // Read the implementation to leverage rayon's parallel processing
 
     // Collect the batches first to enable parallel processing
     let batch_results: Vec<_> = reader.collect();

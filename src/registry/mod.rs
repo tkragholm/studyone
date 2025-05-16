@@ -7,12 +7,11 @@
 //! This module also contains the implementations for converting registry data to domain models,
 //! supporting direct model conversion capabilities.
 //!
-//! Available registries:
+//! Available registers:
 //! - AKM (Arbejdsklassifikationsmodulet): Employment information
 //! - BEF (Befolkning): Population demographic information
 //! - DOD (Deaths): Death records
 //! - DODSAARSAG (Causes of death): Death cause information
-//! - (Removed IDAN registry)
 //! - IND (Indkomst): Income and tax information
 //! - LPR (Landspatientregistret): National Patient Registry (versions 2 and 3)
 //! - MFR (Medical Birth Registry): Birth information
@@ -21,8 +20,7 @@
 
 use crate::RecordBatch;
 use crate::Result;
-use crate::common::traits::async_loading::AsyncFilterableLoader;
-use crate::common::traits::async_loading::AsyncLoader;
+
 use arrow::datatypes::SchemaRef;
 use std::collections::HashSet;
 use std::path::Path;
@@ -60,145 +58,179 @@ pub trait RegisterLoader: Send + Sync {
     }
 
     /// Load records from the register asynchronously
+    ///
+    /// This is the main implementation that handles both directory and file loading
+    /// in an efficient and consistent way
     fn load_async<'a>(
         &'a self,
         base_path: &'a Path,
         pnr_filter: Option<&'a HashSet<String>>,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<RecordBatch>>> + Send + 'a>> {
-        // Default implementation for macro-generated deserializers
-        // Get the schema and clone other needed values
+        // Get the schema for this registry
         let schema = self.get_schema();
 
-        if let Some(pnr_column) = self.get_pnr_column_name() {
-            // Move everything into the async block to avoid local variable references
-            Box::pin(async move {
-                // Create a loader inside the async block
-                let loader = crate::async_io::loader::Loader::with_schema_ref(schema.clone())
-                    .with_pnr_column(pnr_column);
+        // Get the PNR column name if available
+        let pnr_column = self.get_pnr_column_name();
 
-                // First check if we're dealing with a directory
-                let metadata = tokio::fs::metadata(base_path).await;
+        // Move into async block
+        Box::pin(async move {
+            // Check if path exists and is a directory or file
+            let metadata = tokio::fs::metadata(base_path).await.map_err(|e| {
+                anyhow::anyhow!("Failed to access path {}: {}", base_path.display(), e)
+            })?;
 
-                if let Ok(md) = metadata {
-                    if md.is_dir() {
-                        // Handle directory loading - consistently use DirectoryLoader for better code path
-                        if let Some(filter) = pnr_filter {
-                            // Create a PNR filter using the expr module
-                            use crate::filter::expr::{Expr, ExpressionFilter, LiteralValue};
+            if metadata.is_dir() {
+                // DIRECTORY HANDLING
+                // Use a single, consistent approach to find parquet files in the directory
+                log::info!("Loading from directory: {}", base_path.display());
 
-                            // Create the expression filter using the proper column name
-                            let values: Vec<LiteralValue> = filter
-                                .iter()
-                                .map(|s| LiteralValue::String(s.clone()))
-                                .collect();
+                // Use tokio's async file operations for the initial file search
+                let base_path_owned = base_path.to_path_buf(); // Create owned copy for the task
+                let parquet_files = tokio::task::spawn_blocking(move || {
+                    // Use the synchronous file finding utility which has parallel optimization
+                    crate::utils::find_parquet_files(&base_path_owned)
+                })
+                .await
+                .map_err(|e| anyhow::anyhow!("Task join error: {}", e))??;
 
-                            // Create the expression
-                            let expr = Expr::In(pnr_column.to_string(), values);
-                            
-                            // Load with PNR filtering by converting to Express filter
-                            let filter = std::sync::Arc::new(ExpressionFilter::new(expr.clone()));
-                            
-                            // First find all files
-                            let parquet_files = crate::common::traits::async_loading::AsyncFileHelper::find_parquet_files(base_path).await?;
-                            
-                            if parquet_files.is_empty() {
-                                log::warn!("No parquet files found in directory: {}", base_path.display());
-                                return Ok(Vec::new());
-                            }
-                            
-                            // Then process each file with the filter
-                            let mut all_batches = Vec::new();
-                            for file_path in parquet_files {
-                                let batches = loader.load_with_filter_async(&file_path, filter.clone()).await?;
-                                all_batches.extend(batches);
-                            }
-                            
-                            Ok(all_batches)
-                        } else {
-                            // Load directory without filtering
-                            // Use a single approach to find files
-                            let parquet_files = crate::common::traits::async_loading::AsyncFileHelper::find_parquet_files(base_path).await?;
-                            
-                            if parquet_files.is_empty() {
-                                log::warn!("No parquet files found in directory: {}", base_path.display());
-                                return Ok(Vec::new());
-                            }
-                            
-                            // Then process each file
-                            let mut all_batches = Vec::new();
-                            for file_path in parquet_files {
-                                let batches = loader.load_async(&file_path).await?;
-                                all_batches.extend(batches);
-                            }
-                            
-                            Ok(all_batches)
-                        }
+                if parquet_files.is_empty() {
+                    log::warn!(
+                        "No parquet files found in directory: {}",
+                        base_path.display()
+                    );
+                    return Ok(Vec::new());
+                }
+
+                log::info!(
+                    "Found {} parquet files in {}",
+                    parquet_files.len(),
+                    base_path.display()
+                );
+
+                // Handle PNR filtering if needed
+                if let Some(pnr_filter) = pnr_filter {
+                    // If PNR column is available, apply filtering
+                    if let Some(pnr_column) = pnr_column {
+                        // Use tokio's spawn_blocking to leverage rayon's parallel processing
+                        // This moves CPU-intensive work off the async runtime
+                        let schema_ref = schema.clone();
+                        let pnr_filter = pnr_filter.clone();
+
+                        let base_path_owned = base_path.to_path_buf(); // Create owned copy
+                        tokio::task::spawn_blocking(move || {
+                            // Use the optimized parallel loading that handles PNR filtering
+                            crate::utils::load_parquet_files_parallel(
+                                &base_path_owned,
+                                Some(schema_ref.as_ref()),
+                                Some(&pnr_filter),
+                                None,
+                                None,
+                            )
+                        })
+                        .await
+                        .map_err(|e| anyhow::anyhow!("Task join error: {}", e))?
                     } else {
-                        // Handle single file loading
-                        if let Some(filter) = pnr_filter {
-                            // Create a PNR filter using the expr module
-                            use crate::filter::expr::{Expr, ExpressionFilter, LiteralValue};
+                        // PNR filtering requested but no PNR column available
+                        log::warn!(
+                            "PNR filtering requested but registry {} doesn't support PNR filtering",
+                            self.get_register_name()
+                        );
 
-                            // Create the expression filter using the proper column name
-                            let values: Vec<LiteralValue> = filter
-                                .iter()
-                                .map(|s| LiteralValue::String(s.clone()))
-                                .collect();
-
-                            let expr = Expr::In(pnr_column.to_string(), values);
-                            let pnr_filter = ExpressionFilter::new(expr);
-
-                            // Use filter with loader for single file
-                            loader
-                                .load_with_filter_async(base_path, std::sync::Arc::new(pnr_filter))
-                                .await
-                        } else {
-                            // Load without filtering
-                            loader.load_async(base_path).await
-                        }
+                        // Fall back to loading without filtering
+                        let schema_ref = schema.clone();
+                        let base_path_owned = base_path.to_path_buf(); // Create owned copy
+                        tokio::task::spawn_blocking(move || {
+                            crate::utils::load_parquet_files_parallel(
+                                &base_path_owned,
+                                Some(schema_ref.as_ref()),
+                                None::<&HashSet<String>>, // No filtering
+                                None,
+                                None,
+                            )
+                        })
+                        .await
+                        .map_err(|e| anyhow::anyhow!("Task join error: {}", e))?
                     }
                 } else {
-                    // Handle path not found or accessible
-                    Err(anyhow::anyhow!("Failed to access path: {}", base_path.display()).into())
+                    // No PNR filtering needed, just load all files
+                    let schema_ref = schema.clone();
+                    let base_path_owned = base_path.to_path_buf(); // Create owned copy
+                    tokio::task::spawn_blocking(move || {
+                        crate::utils::load_parquet_files_parallel(
+                            &base_path_owned,
+                            Some(schema_ref.as_ref()),
+                            None::<&HashSet<String>>, // No filtering
+                            None,
+                            None,
+                        )
+                    })
+                    .await
+                    .map_err(|e| anyhow::anyhow!("Task join error: {}", e))?
                 }
-            })
-        } else {
-            // If no PNR column is available, use a regular loader
-            Box::pin(async move {
-                let loader = crate::async_io::loader::Loader::with_schema_ref(schema);
+            } else {
+                // SINGLE FILE HANDLING
+                log::info!("Loading from single file: {}", base_path.display());
 
-                // First check if we're dealing with a directory
-                let metadata = tokio::fs::metadata(base_path).await;
+                // Handle PNR filtering if needed
+                if let Some(pnr_filter) = pnr_filter {
+                    // If PNR column is available, apply filtering
+                    if let Some(_) = pnr_column {
+                        let schema_ref = schema.clone();
+                        let pnr_filter = pnr_filter.clone();
 
-                if let Ok(md) = metadata {
-                    if md.is_dir() {
-                        // Handle directory loading
-                        // Use a single approach to find files
-                        let parquet_files = crate::common::traits::async_loading::AsyncFileHelper::find_parquet_files(base_path).await?;
-                        
-                        if parquet_files.is_empty() {
-                            log::warn!("No parquet files found in directory: {}", base_path.display());
-                            return Ok(Vec::new());
-                        }
-                        
-                        // Then process each file
-                        let mut all_batches = Vec::new();
-                        for file_path in parquet_files {
-                            let batches = loader.load_async(&file_path).await?;
-                            all_batches.extend(batches);
-                        }
-                        
-                        Ok(all_batches)
+                        // Use tokio's spawn_blocking for CPU-intensive work
+                        let base_path_owned = base_path.to_path_buf(); // Create owned copy
+                        tokio::task::spawn_blocking(move || {
+                            crate::utils::read_parquet(
+                                &base_path_owned,
+                                Some(schema_ref.as_ref()),
+                                Some(&pnr_filter),
+                                None,
+                                None,
+                            )
+                        })
+                        .await
+                        .map_err(|e| anyhow::anyhow!("Task join error: {}", e))?
                     } else {
-                        // Load single file
-                        loader.load_async(base_path).await
+                        // PNR filtering requested but no PNR column available
+                        log::warn!(
+                            "PNR filtering requested but registry {} doesn't support PNR filtering",
+                            self.get_register_name()
+                        );
+
+                        // Fall back to loading without filtering
+                        let schema_ref = schema.clone();
+                        let base_path_owned = base_path.to_path_buf(); // Create owned copy
+                        tokio::task::spawn_blocking(move || {
+                            crate::utils::read_parquet(
+                                &base_path_owned,
+                                Some(schema_ref.as_ref()),
+                                None::<&HashSet<String>>, // No filtering
+                                None,
+                                None,
+                            )
+                        })
+                        .await
+                        .map_err(|e| anyhow::anyhow!("Task join error: {}", e))?
                     }
                 } else {
-                    // Handle path not found or accessible
-                    Err(anyhow::anyhow!("Failed to access path: {}", base_path.display()).into())
+                    // No PNR filtering needed, just load the file
+                    let schema_ref = schema.clone();
+                    let base_path_owned = base_path.to_path_buf(); // Create owned copy
+                    tokio::task::spawn_blocking(move || {
+                        crate::utils::read_parquet(
+                            &base_path_owned,
+                            Some(schema_ref.as_ref()),
+                            None::<&HashSet<String>>, // No filtering
+                            None,
+                            None,
+                        )
+                    })
+                    .await
+                    .map_err(|e| anyhow::anyhow!("Task join error: {}", e))?
                 }
-            })
-        }
+            }
+        })
     }
 
     /// Returns whether this registry supports direct PNR filtering
@@ -283,11 +315,9 @@ pub use transform::{
 };
 
 // Centralized registry deserialization and detection
-pub mod deserializer_functions;
-pub mod deserializer_macros;
 pub mod detect;
 pub mod extractors;
 pub mod models;
-//pub mod registry_macros;
+
 pub mod trait_deserializer;
 pub mod trait_deserializer_impl;

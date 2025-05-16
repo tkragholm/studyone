@@ -11,11 +11,11 @@ use arrow::record_batch::RecordBatch;
 
 /// Base path for test data files
 #[must_use]
-pub fn test_data_dir() -> PathBuf {
+pub fn data_dir() -> PathBuf {
     match std::env::consts::OS {
         "macos" => PathBuf::from("/Users/tobiaskragholm/generated_data/parquet"),
         "linux" => PathBuf::from("/home/tkragholm/generated_data/parquet"),
-        //"windows" => PathBuf::from("C:\\Users\\yourusername\\generated_data\\parquet"),
+        "windows" => PathBuf::from("E:\\workdata\\708245\\generated_data\\parquet"),
         _ => panic!("Unsupported operating system"),
     }
 }
@@ -23,7 +23,7 @@ pub fn test_data_dir() -> PathBuf {
 /// Create a path to a specific registry folder
 #[must_use]
 pub fn registry_dir(registry: &str) -> PathBuf {
-    test_data_dir().join(registry)
+    data_dir().join(registry)
 }
 
 /// Create a path to a specific file in a registry folder
@@ -35,7 +35,7 @@ pub fn registry_file(registry: &str, filename: &str) -> PathBuf {
 /// Ensure the given path exists
 pub fn ensure_path_exists(path: &Path) -> Result<()> {
     if !path.exists() {
-        return Err(anyhow::anyhow!("Test file not found: {}", path.display()));
+        return Err(anyhow::anyhow!("File not found: {}", path.display()));
     }
     Ok(())
 }

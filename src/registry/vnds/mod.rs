@@ -28,7 +28,10 @@ pub fn create_deserializer() -> VndsRegistryDeserializer {
 }
 
 /// Helper function to deserialize a batch of records
-pub fn deserialize_batch(deserializer: &VndsRegistryDeserializer, batch: &crate::RecordBatch) -> crate::error::Result<Vec<crate::models::core::Individual>> {
+pub fn deserialize_batch(
+    deserializer: &VndsRegistryDeserializer,
+    batch: &crate::RecordBatch,
+) -> crate::error::Result<Vec<crate::models::core::Individual>> {
     // Use the inner deserializer to deserialize the batch
     deserializer.inner.deserialize_batch(batch)
 }
@@ -52,7 +55,3 @@ impl crate::registry::RegisterLoader for VndsRegistryDeserializer {
         std::sync::Arc::new(arrow::datatypes::Schema::new(fields))
     }
 }
-
-pub mod individual;
-pub mod schema;
-pub mod trait_deserializer_macro;

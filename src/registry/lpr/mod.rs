@@ -5,7 +5,6 @@
 //! direct model conversion capabilities.
 
 // Import submodules
-pub mod deserializer;
 pub mod discovery;
 pub mod individual;
 pub mod trait_deserializer;
@@ -60,5 +59,3 @@ impl PnrLookupRegistry for Lpr3DiagnoserRegister {
         self.pnr_lookup = Some(lookup);
     }
 }
-
-// Note: LprRegistry trait is now implemented for Diagnosis in models/registry.rs

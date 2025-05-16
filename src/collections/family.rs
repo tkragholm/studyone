@@ -4,11 +4,11 @@
 
 use crate::collections::GenericCollection;
 use crate::common::traits::{LookupCollection, ModelCollection, TemporalCollection};
-use crate::models::Child;
-use crate::models::Family;
 use crate::models::FamilyType;
 use crate::models::Individual;
-use crate::models::Parent;
+use crate::models::derived::Child;
+use crate::models::derived::Family;
+use crate::models::derived::Parent;
 use crate::models::derived::family::FamilySnapshot;
 use crate::models::{HealthStatus, TemporalValidity};
 use chrono::NaiveDate;

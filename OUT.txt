@@ -1,18 +1,24 @@
-[2025-05-15T11:44:55Z INFO  par_reader] Loading registry data from: /Users/tobiaskragholm/generated_data/parquet
-[2025-05-15T11:44:55Z INFO  par_reader] Loading BEF registry data...
-[2025-05-15T11:44:55Z INFO  par_reader::utils] Searching for parquet files recursively in /Users/tobiaskragholm/generated_data/parquet/bef
-[2025-05-15T11:44:55Z INFO  par_reader::common::traits::async_loading] Successfully found 35 items from /Users/tobiaskragholm/generated_data/parquet/bef (searched recursively)
-[2025-05-15T11:44:55Z INFO  par_reader::utils] Searching for parquet files recursively in /Users/tobiaskragholm/generated_data/parquet/bef
-[2025-05-15T11:44:55Z INFO  par_reader::common::traits::async_loading] Successfully found 35 items from /Users/tobiaskragholm/generated_data/parquet/bef (searched recursively)
-[2025-05-15T11:44:55Z INFO  par_reader::utils] Reading parquet file asynchronously /Users/tobiaskragholm/generated_data/parquet/bef/201906.parquet
-[2025-05-15T11:44:55Z INFO  par_reader::utils] Reading parquet file asynchronously /Users/tobiaskragholm/generated_data/parquet/bef/202106.parquet
-[2025-05-15T11:44:55Z INFO  par_reader::utils] Reading parquet file asynchronously /Users/tobiaskragholm/generated_data/parquet/bef/202212.parquet
-[2025-05-15T11:44:55Z INFO  par_reader::utils] Reading parquet file asynchronously /Users/tobiaskragholm/generated_data/parquet/bef/200312.parquet
-[2025-05-15T11:44:55Z INFO  par_reader::utils] Reading parquet file asynchronously /Users/tobiaskragholm/generated_data/parquet/bef/201712.parquet
-[2025-05-15T11:44:55Z INFO  par_reader::utils] Reading parquet file asynchronously /Users/tobiaskragholm/generated_data/parquet/bef/200812.parquet
-[2025-05-15T11:44:55Z INFO  par_reader::utils] Reading parquet file asynchronously /Users/tobiaskragholm/generated_data/parquet/bef/202203.parquet
-[2025-05-15T11:44:55Z INFO  par_reader::utils] Reading parquet file asynchronously /Users/tobiaskragholm/generated_data/parquet/bef/200512.parquet
-[2025-05-15T11:44:55Z INFO  par_reader::utils] Reading parquet file asynchronously /Users/tobiaskragholm/generated_data/parquet/bef/201112.parquet
-[2025-05-15T11:44:55Z INFO  par_reader::utils] Reading parquet file asynchronously /Users/tobiaskragholm/generated_data/parquet/bef/202006.parquet
-[2025-05-15T11:44:55Z INFO  par_reader::utils] Reading parquet file asynchronously /Users/tobiaskragholm/generated_data/parquet/bef/201612.parquet
-[2025-05-15T11:44:55Z INFO  par_reader::utils] Reading parquet file asynchronously /Users/tobiaskragholm/generated_data/parquet/bef/200212.parquet
+par-reader on  main [⇡] is 📦 v0.1.0 via 🦀 v1.86.0
+❯ cargo run
+   Compiling par-reader v0.1.0 (/Users/tobiaskragholm/par-reader)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.32s
+     Running `target/debug/par-reader`
+[2025-05-15T11:48:42Z INFO  par_reader] Loading registry data from: /Users/tobiaskragholm/generated_data/parquet
+[2025-05-15T11:48:42Z INFO  par_reader] Loading BEF registry data...
+[2025-05-15T11:48:42Z INFO  par_reader::utils] Searching for parquet files recursively in /Users/tobiaskragholm/generated_data/parquet/bef
+[2025-05-15T11:48:42Z INFO  par_reader::common::traits::async_loading] Successfully found 35 items from /Users/tobiaskragholm/generated_data/parquet/bef (searched recursively)
+[2025-05-15T11:48:42Z INFO  par_reader::utils] Reading parquet file asynchronously /Users/tobiaskragholm/generated_data/parquet/bef/201906.parquet
+[2025-05-15T11:48:42Z WARN  par_reader::utils] Field IE_TYPE not found in parquet file, skipping
+[2025-05-15T11:48:42Z WARN  par_reader::utils] Field PLADS not found in parquet file, skipping
+[2025-05-15T11:48:42Z INFO  par_reader::utils] Successfully read 11 items from /Users/tobiaskragholm/generated_data/parquet/bef/201906.parquet in 371.482291ms
+[2025-05-15T11:48:42Z INFO  par_reader::utils] Reading parquet file asynchronously /Users/tobiaskragholm/generated_data/parquet/bef/202106.parquet
+[2025-05-15T11:48:42Z WARN  par_reader::utils] Field IE_TYPE not found in parquet file, skipping
+[2025-05-15T11:48:42Z WARN  par_reader::utils] Field PLADS not found in parquet file, skipping
+[2025-05-15T11:48:43Z INFO  par_reader::utils] Successfully read 11 items from /Users/tobiaskragholm/generated_data/parquet/bef/202106.parquet in 359.195333ms
+[2025-05-15T11:48:43Z INFO  par_reader::utils] Reading parquet file asynchronously /Users/tobiaskragholm/generated_data/parquet/bef/202212.parquet
+[2025-05-15T11:48:43Z WARN  par_reader::utils] Field IE_TYPE not found in parquet file, skipping
+[2025-05-15T11:48:43Z WARN  par_reader::utils] Field PLADS not found in parquet file, skipping
+[2025-05-15T11:48:43Z INFO  par_reader::utils] Successfully read 11 items from /Users/tobiaskragholm/generated_data/parquet/bef/202212.parquet in 359.560667ms
+[2025-05-15T11:48:43Z INFO  par_reader::utils] Reading parquet file asynchronously /Users/tobiaskragholm/generated_data/parquet/bef/200312.parquet
+^C⏎
+par-reader on  main [!⇡] is 📦 v0.1.0 via 🦀 v1.86.0 took 6m4s

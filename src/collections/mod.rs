@@ -8,13 +8,13 @@
 //! and specialized collections that provide domain-specific functionality.
 
 // Specialized collection modules
-// pub mod diagnosis;
-// pub mod family;
+pub mod diagnosis;
+pub mod family;
 pub mod individual;
 
 // Re-export specialized collections for convenience
-// pub use diagnosis::DiagnosisCollection;
-// pub use family::FamilyCollection;
+pub use diagnosis::DiagnosisCollection;
+pub use family::FamilyCollection;
 pub use individual::IndividualCollection;
 
 use crate::common::traits::{

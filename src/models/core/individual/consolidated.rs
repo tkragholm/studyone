@@ -684,8 +684,7 @@ impl Individual {
     ///
     /// This method copies fields from the source Individual, but only if
     /// the corresponding field in this Individual is not already set.
-    #[allow(dead_code)]
-    fn merge_fields(&mut self, source: &Self) {
+    pub fn merge_fields(&mut self, source: &Self) {
         // Only copy fields if they're not already set
         if self.gender.is_none() {
             self.gender = source.gender.clone();
