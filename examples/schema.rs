@@ -34,8 +34,7 @@ pub fn main() {
     println!("Created deserializer for VNDS registry");
 
     // Path to the VNDS Parquet file
-    let parquet_path =
-        Path::new("/Users/tobiaskragholm/generated_data/parquet/vnds/202209.parquet");
+    let parquet_path = Path::new("/home/tkragholm/generated_data/parquet/vnds/202209.parquet");
     println!("Loading data from: {parquet_path:?}");
 
     // Load the Parquet file using the crate's utility function
