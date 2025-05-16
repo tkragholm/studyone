@@ -582,7 +582,7 @@ impl Individual {
     }
 
     /// Get access to the properties map
-    pub fn properties(&self) -> Option<&HashMap<String, Box<dyn std::any::Any + Send + Sync>>> {
+    #[must_use] pub fn properties(&self) -> Option<&HashMap<String, Box<dyn std::any::Any + Send + Sync>>> {
         self.properties.as_ref()
     }
 

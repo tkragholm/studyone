@@ -47,7 +47,7 @@ pub struct UddfRegistry {
 }
 
 /// Helper function to create a new UDDF deserializer
-pub fn create_deserializer() -> UddfRegistryDeserializer {
+#[must_use] pub fn create_deserializer() -> UddfRegistryDeserializer {
     UddfRegistryDeserializer::new()
 }
 

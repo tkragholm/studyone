@@ -70,7 +70,7 @@ pub struct BefRegistry {
 }
 
 /// Helper function to create a new BEF deserializer
-pub fn create_deserializer() -> BefRegistryDeserializer {
+#[must_use] pub fn create_deserializer() -> BefRegistryDeserializer {
     BefRegistryDeserializer::new()
 }
 

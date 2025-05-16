@@ -30,7 +30,7 @@ pub struct LprBesRegistry {
 }
 
 /// Helper function to create a new LPR outpatient visit deserializer
-pub fn create_deserializer() -> LprBesRegistryDeserializer {
+#[must_use] pub fn create_deserializer() -> LprBesRegistryDeserializer {
     LprBesRegistryDeserializer::new()
 }
 

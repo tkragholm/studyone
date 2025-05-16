@@ -27,7 +27,7 @@ pub struct DodsaarsagRegistry {
 }
 
 /// Helper function to create a new Dodsaarsag deserializer
-pub fn create_deserializer() -> DodsaarsagRegistryDeserializer {
+#[must_use] pub fn create_deserializer() -> DodsaarsagRegistryDeserializer {
     DodsaarsagRegistryDeserializer::new()
 }
 
@@ -71,7 +71,7 @@ mod schema {
     /// Returns a standardized schema for the Dodsaarsag register
     ///
     /// This schema provides normalized field names for the cause of death data
-    pub fn dodsaarsag_standardized_schema() -> Arc<Schema> {
+    #[must_use] pub fn dodsaarsag_standardized_schema() -> Arc<Schema> {
         let fields = vec![
             Field::new("PNR", DataType::Utf8, false),
             Field::new("DEATH_CAUSE", DataType::Utf8, true),

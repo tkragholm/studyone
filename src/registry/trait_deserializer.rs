@@ -68,13 +68,13 @@ pub trait RegistryDeserializer: Send + Sync + std::fmt::Debug {
     /// This returns the type of field used as the primary identifier
     /// in this registry. Possible values are:
     /// - "pnr" - Personal identification number (default)
-    /// - "record_number" - Record number (used in LPR_DIAG)
-    /// - "dw_ek_kontakt" - Kontakt ID (used in LPR3)
+    /// - "`record_number`" - Record number (used in `LPR_DIAG`)
+    /// - "`dw_ek_kontakt`" - Kontakt ID (used in LPR3)
     ///
     /// # Returns
     ///
     /// A string indicating the ID field type
-    fn id_field_type(&self) -> &str {
+    fn id_field_type(&self) -> &'static str {
         // Default implementation returns "pnr" for backward compatibility
         "pnr"
     }

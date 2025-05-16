@@ -1,0 +1,16 @@
+
+error: `impl` item signature doesn't match `trait` item signature
+   --> src/registry/trait_deserializer_impl.rs:119:5
+    |
+119 |     fn id_field_type(&self) -> &str {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ found `fn(&'1 registry::trait_deserializer_impl::RegistryDeserializerImpl) -> &'1 str`
+    |
+   ::: src/registry/trait_deserializer.rs:77:5
+    |
+77  |     fn id_field_type(&self) -> &'static str {
+    |     --------------------------------------- expected `fn(&'1 registry::trait_deserializer_impl::RegistryDeserializerImpl) -> &'static str`
+    |
+    = note: expected signature `fn(&'1 registry::trait_deserializer_impl::RegistryDeserializerImpl) -> &'static str`
+               found signature `fn(&'1 registry::trait_deserializer_impl::RegistryDeserializerImpl) -> &'1 str`
+    = help: the lifetime requirements from the `impl` do not correspond to the requirementsin the `trait`
+    = help: verify the lifetime relationships in the `trait` and `impl` between the `self` argument, the other inputs and its output

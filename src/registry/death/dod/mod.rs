@@ -27,7 +27,7 @@ pub struct DodRegistry {
 }
 
 /// Helper function to create a new DOD deserializer
-pub fn create_deserializer() -> DodRegistryDeserializer {
+#[must_use] pub fn create_deserializer() -> DodRegistryDeserializer {
     DodRegistryDeserializer::new()
 }
 

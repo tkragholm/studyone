@@ -27,7 +27,7 @@ pub struct MfrRegistry {
 }
 
 /// Helper function to create a new MFR deserializer
-pub fn create_deserializer() -> MfrRegistryDeserializer {
+#[must_use] pub fn create_deserializer() -> MfrRegistryDeserializer {
     MfrRegistryDeserializer::new()
 }
 

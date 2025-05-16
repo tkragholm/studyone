@@ -1,6 +1,6 @@
-//! LPR3_KONTAKTER registry using the macro-based approach
+//! `LPR3_KONTAKTER` registry using the macro-based approach
 //!
-//! The LPR3_KONTAKTER registry contains contact records from the Danish National Patient Registry version 3.
+//! The `LPR3_KONTAKTER` registry contains contact records from the Danish National Patient Registry version 3.
 
 use crate::RegistryTrait;
 use arrow::datatypes::{DataType, Field, Schema, TimeUnit};
@@ -78,7 +78,7 @@ pub struct Lpr3KontakterRegistry {
 }
 
 /// Helper function to create a new LPR3 kontakter deserializer
-pub fn create_deserializer() -> Lpr3KontakterRegistryDeserializer {
+#[must_use] pub fn create_deserializer() -> Lpr3KontakterRegistryDeserializer {
     Lpr3KontakterRegistryDeserializer::new()
 }
 

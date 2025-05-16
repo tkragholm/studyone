@@ -18,7 +18,7 @@ pub struct AkmRegistry {
 }
 
 /// Helper function to create a new AKM deserializer
-pub fn create_deserializer() -> AkmRegistryDeserializer {
+#[must_use] pub fn create_deserializer() -> AkmRegistryDeserializer {
     AkmRegistryDeserializer::new()
 }
 

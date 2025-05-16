@@ -1,6 +1,6 @@
-//! LPR3_DIAGNOSER registry using the macro-based approach
+//! `LPR3_DIAGNOSER` registry using the macro-based approach
 //!
-//! The LPR3_DIAGNOSER registry contains diagnosis records from the Danish National Patient Registry version 3.
+//! The `LPR3_DIAGNOSER` registry contains diagnosis records from the Danish National Patient Registry version 3.
 
 use crate::RegistryTrait;
 use arrow::datatypes::{DataType, Field, Schema};
@@ -40,7 +40,7 @@ pub struct Lpr3DiagnoserRegistry {
 }
 
 /// Helper function to create a new LPR3 diagnoses deserializer
-pub fn create_deserializer() -> Lpr3DiagnoserRegistryDeserializer {
+#[must_use] pub fn create_deserializer() -> Lpr3DiagnoserRegistryDeserializer {
     Lpr3DiagnoserRegistryDeserializer::new()
 }
 

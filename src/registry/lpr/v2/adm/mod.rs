@@ -1,6 +1,6 @@
-//! LPR_ADM registry using the macro-based approach
+//! `LPR_ADM` registry using the macro-based approach
 //!
-//! The LPR_ADM registry contains administrative records from the Danish National Patient Registry.
+//! The `LPR_ADM` registry contains administrative records from the Danish National Patient Registry.
 
 use crate::RegistryTrait;
 use arrow::datatypes::{DataType, Field, Schema};
@@ -41,7 +41,7 @@ pub struct LprAdmRegistry {
 }
 
 /// Helper function to create a new LPR admission deserializer
-pub fn create_deserializer() -> LprAdmRegistryDeserializer {
+#[must_use] pub fn create_deserializer() -> LprAdmRegistryDeserializer {
     LprAdmRegistryDeserializer::new()
 }
 

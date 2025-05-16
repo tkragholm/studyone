@@ -22,7 +22,7 @@ pub trait DiagnosisMapper {
 
 /// Trait for registry models that can be mapped to Diagnosis
 pub trait DiagnosisRegistryMapper {
-    /// Map a batch of registry records to a DiagnosisCollection
+    /// Map a batch of registry records to a `DiagnosisCollection`
     fn map_batch_to_diagnoses(
         records: &[Self],
         pnr_lookup: &HashMap<String, String>,
@@ -58,7 +58,7 @@ pub struct RecnumToPnrMap {
 
 impl RecnumToPnrMap {
     /// Create a new empty mapping
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         Self {
             recnum_to_pnr: HashMap::new(),
         }
@@ -69,7 +69,7 @@ impl RecnumToPnrMap {
         self.recnum_to_pnr.insert(recnum, pnr);
     }
     
-    /// Build a mapping from a batch of LPR_ADM records
+    /// Build a mapping from a batch of `LPR_ADM` records
     pub fn build_from_adm_records<T>(records: &[T]) -> Self 
     where 
         T: RecnumProvider + PnrProvider,
@@ -86,7 +86,7 @@ impl RecnumToPnrMap {
     }
     
     /// Look up a PNR by RECNUM
-    pub fn lookup_pnr(&self, recnum: &str) -> Option<&String> {
+    #[must_use] pub fn lookup_pnr(&self, recnum: &str) -> Option<&String> {
         self.recnum_to_pnr.get(recnum)
     }
 }
@@ -104,7 +104,7 @@ pub trait PnrProvider {
 }
 
 /// Helper function to determine diagnosis type
-pub fn determine_diagnosis_type(type_code: &str) -> DiagnosisType {
+#[must_use] pub fn determine_diagnosis_type(type_code: &str) -> DiagnosisType {
     match type_code {
         "A" => DiagnosisType::Primary,
         "B" => DiagnosisType::Secondary,

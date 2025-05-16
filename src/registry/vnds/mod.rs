@@ -23,7 +23,7 @@ pub struct VndsRegistry {
 }
 
 /// Helper function to create a new VNDS deserializer
-pub fn create_deserializer() -> VndsRegistryDeserializer {
+#[must_use] pub fn create_deserializer() -> VndsRegistryDeserializer {
     VndsRegistryDeserializer::new()
 }
 

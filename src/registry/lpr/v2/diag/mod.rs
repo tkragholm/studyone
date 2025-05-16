@@ -1,6 +1,6 @@
-//! LPR_DIAG registry using the macro-based approach
+//! `LPR_DIAG` registry using the macro-based approach
 //!
-//! The LPR_DIAG registry contains diagnosis records from the Danish National Patient Registry.
+//! The `LPR_DIAG` registry contains diagnosis records from the Danish National Patient Registry.
 
 use crate::RegistryTrait;
 use arrow::datatypes::{DataType, Field, Schema};
@@ -35,7 +35,7 @@ pub struct LprDiagRegistry {
 }
 
 /// Helper function to create a new LPR diagnosis deserializer
-pub fn create_deserializer() -> LprDiagRegistryDeserializer {
+#[must_use] pub fn create_deserializer() -> LprDiagRegistryDeserializer {
     LprDiagRegistryDeserializer::new()
 }
 

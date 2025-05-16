@@ -30,7 +30,7 @@ pub struct IndRegistry {
 }
 
 /// Helper function to create a new IND deserializer
-pub fn create_deserializer() -> IndRegistryDeserializer {
+#[must_use] pub fn create_deserializer() -> IndRegistryDeserializer {
     IndRegistryDeserializer::new()
 }
 
