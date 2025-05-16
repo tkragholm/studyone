@@ -15,7 +15,7 @@ pub struct VndsRegistry {
 
     /// Migration code (in/out)
     #[field(name = "INDUD_KODE")]
-    pub migration_code: Option<String>,
+    pub event_type: Option<String>,
 
     /// Event date
     #[field(name = "HAEND_DATO")]

@@ -4,11 +4,8 @@
 
 use crate::RecordBatch;
 use crate::error::Result;
-use crate::models::core::registry_traits::{
-    BefFields, DodFields, IndFields, LprFields, MfrFields, UddfFields,
-};
 use crate::models::core::traits::EntityModel;
-
+use macros::PropertyField;
 
 use arrow::array::Array;
 use arrow::array::StringArray;
@@ -35,23 +32,28 @@ pub enum Role {
 ///
 /// A single unified struct that handles both storage and serde operations
 /// All BEF derived dates are in the following format: DD/MM/YYYY
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PropertyField)]
 pub struct Individual {
     // Identifiers
     /// Personal identification number (PNR)
     #[serde(alias = "PNR")]
+    #[property(name = "pnr")]
     pub pnr: String,
     /// Mother's PNR, if known
     #[serde(alias = "MOR_ID")]
+    #[property(name = "mother_pnr")]
     pub mother_pnr: Option<String>,
     /// Father's PNR, if known
     #[serde(alias = "FAR_ID")]
+    #[property(name = "father_pnr")]
     pub father_pnr: Option<String>,
     /// Family identifier
     #[serde(alias = "FAMILIE_ID")]
+    #[property(name = "family_id")]
     pub family_id: Option<String>,
     /// Spouse's personal identification number
     #[serde(alias = "E_FAELLE_ID")]
+    #[property(name = "spouse_pnr")]
     pub spouse_pnr: Option<String>,
 
     /// Additional properties that don't have explicit fields
@@ -61,23 +63,29 @@ pub struct Individual {
     // Core characteristics
     /// Gender of the individual
     #[serde(alias = "KOEN")]
+    #[property(name = "gender")]
     pub gender: Option<String>,
     /// Birth date
     #[serde(alias = "FOED_DAG")]
+    #[property(name = "birth_date")]
     pub birth_date: Option<NaiveDate>,
     /// Death date, if applicable
     #[serde(alias = "DODDATO")]
+    #[property(name = "death_date")]
     pub death_date: Option<NaiveDate>,
     /// Age
     #[serde(skip)]
+    #[property(name = "age")]
     pub age: Option<i32>,
 
     // Background
     /// Geographic origin category
     #[serde(alias = "OPR_LAND")]
+    #[property(name = "origin")]
     pub origin: Option<String>,
     /// Citizenship status
     #[serde(alias = "STATSB")]
+    #[property(name = "citizenship_status")]
     pub citizenship_status: Option<String>,
 
     /// Immigration type
@@ -85,6 +93,7 @@ pub struct Individual {
     /// 2: Immigrants
     /// 3: Descendants
     #[serde(alias = "IE_TYPE")]
+    #[property(name = "immigration_type")]
     pub immigration_type: Option<String>,
 
     /// Marital status
@@ -98,14 +107,17 @@ pub struct Individual {
     /// U: Unmarried
     /// 9: Undisclosed marital status
     #[serde(alias = "CIVST")]
+    #[property(name = "marital_status")]
     pub marital_status: Option<String>,
     /// Marital date
     #[serde(alias = "CIV_VFRA")]
+    #[property(name = "marital_date")]
     pub marital_date: Option<NaiveDate>,
 
     // Basic demographic information
     /// Municipality code
     #[serde(alias = "KOM")]
+    #[property(name = "municipality_code")]
     pub municipality_code: Option<String>,
     /// Regional code
     /// 0: Uoplyst
@@ -115,6 +127,7 @@ pub struct Individual {
     /// 84: Hovedstaden
     /// 85: Sjælland
     #[serde(alias = "REG")]
+    #[property(name = "regional_code")]
     pub regional_code: Option<String>,
 
     /// Whether the individual lives in a rural area
@@ -133,16 +146,19 @@ pub struct Individual {
 
     /// Number of persons in household
     #[serde(alias = "ANTPERSF")]
+    #[property(name = "family_size")]
     pub family_size: Option<i32>,
 
     /// Family size (number of persons in family)
     #[serde(alias = "ANTPERSH")]
+    #[property(name = "household_size")]
     pub household_size: Option<i32>,
 
     // BEF registry specific fields
     /// Date of residence from
     /// Dato for tilflytning/indvandring
     #[serde(alias = "BOP_VFRA")]
+    #[property(name = "residence_from")]
     pub residence_from: Option<NaiveDate>,
 
     /// Position in family
@@ -150,31 +166,39 @@ pub struct Individual {
     /// 2: Ægtefælle/partner
     /// 3: Hjemmeboende barn
     #[serde(alias = "PLADS")]
+    #[property(name = "position_in_family")]
     pub position_in_family: Option<i32>,
 
     /// Family type
+    #[property(name = "family_type")]
     pub family_type: Option<i32>,
 
     // Migration information
     /// Event type, if applicable
     #[serde(alias = "INDUD_KODE")]
+    #[property(name = "event_type")]
     pub event_type: Option<String>,
     /// Event date, if applicable
     #[serde(alias = "HAEND_DATO")]
+    #[property(name = "event_date")]
     pub event_date: Option<NaiveDate>,
 
     // Education information
     /// Primary field of education (HFAUDD)
     #[serde(alias = "HFAUDD")]
+    #[property(name = "education_code")]
     pub education_code: Option<u16>,
     /// Most recent education completion date
     #[serde(alias = "HF_VFRA")]
+    #[property(name = "education_valid_from")]
     pub education_valid_from: Option<NaiveDate>,
     /// Education start date
     #[serde(alias = "HF_VTIL")]
+    #[property(name = "education_valid_to")]
     pub education_valid_to: Option<NaiveDate>,
     /// Institution code for highest education
     #[serde(alias = "INSTNR")]
+    #[property(name = "education_institution")]
     pub education_institution: Option<i32>,
     /// Source of information
     #[serde(alias = "HF_KILDE")]
@@ -187,78 +211,101 @@ pub struct Individual {
     // Employment and socioeconomic status
     /// Socioeconomic status classification
     #[serde(alias = "SOCIO13")]
+    #[property(name = "socioeconomic_status")]
     pub socioeconomic_status: Option<i32>,
 
     // Income information
     /// Annual income (DKK)
     #[serde(alias = "PERINDKIALT_13")]
+    #[property(name = "annual_income")]
     pub annual_income: Option<f64>,
     /// Income from employment (DKK)
     #[serde(alias = "LOENMV_13")]
+    #[property(name = "employment_income")]
     pub employment_income: Option<f64>,
     /// Income year
     #[serde(alias = "AAR")]
+    #[property(name = "income_year")]
     pub income_year: Option<i32>,
 
     // Healthcare usage
     /// Number of hospital admissions in past year
+    #[property(name = "hospital_admissions_count")]
     pub hospital_admissions_count: Option<i32>,
 
     /// Number of emergency room visits in past year
+    #[property(name = "emergency_visits_count")]
     pub emergency_visits_count: Option<i32>,
 
     /// Number of outpatient visits in past year
+    #[property(name = "outpatient_visits_count")]
     pub outpatient_visits_count: Option<i32>,
 
     /// Number of GP contacts in past year
+    #[property(name = "gp_visits_count")]
     pub gp_visits_count: Option<i32>,
 
     /// Date of most recent hospital admission
     #[serde(alias = "D_INDDTO")]
+    #[property(name = "last_hospital_admission_date")]
     pub last_hospital_admission_date: Option<NaiveDate>,
 
     /// Total hospitalization days in past year
     #[serde(alias = "LIGGETID")]
+    #[property(name = "hospitalization_days")]
     pub hospitalization_days: Option<i32>,
 
     /// Length of stay in days (for current/last admission)
+    #[property(name = "length_of_stay")]
     pub length_of_stay: Option<i32>,
 
     /// All diagnoses associated with this individual
+    #[property(name = "diagnoses")]
     pub diagnoses: Option<Vec<String>>,
 
     /// All procedures performed on this individual
+    #[property(name = "procedures")]
     pub procedures: Option<Vec<String>>,
 
     /// All hospital admission dates
+    #[property(name = "hospital_admissions")]
     pub hospital_admissions: Option<Vec<NaiveDate>>,
 
     /// All hospital discharge dates
+    #[property(name = "discharge_dates")]
     pub discharge_dates: Option<Vec<NaiveDate>>,
 
     /// Death cause code
+    #[property(name = "death_cause")]
     pub death_cause: Option<String>,
 
     /// Underlying death cause
+    #[property(name = "underlying_death_cause")]
     pub underlying_death_cause: Option<String>,
 
     // MFR registry specific fields
     /// Birth weight in grams
+    #[property(name = "birth_weight")]
     pub birth_weight: Option<i32>,
 
     /// Birth length in cm
+    #[property(name = "birth_length")]
     pub birth_length: Option<i32>,
 
     /// Gestational age in weeks
+    #[property(name = "gestational_age")]
     pub gestational_age: Option<i32>,
 
     /// APGAR score at 5 minutes
+    #[property(name = "apgar_score")]
     pub apgar_score: Option<i32>,
 
     /// Birth order for multiple births
+    #[property(name = "birth_order")]
     pub birth_order: Option<i32>,
 
     /// Plurality (number of fetuses in this pregnancy)
+    #[property(name = "plurality")]
     pub plurality: Option<i32>,
 }
 

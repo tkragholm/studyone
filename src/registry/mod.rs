@@ -300,3 +300,4 @@ pub use transform::{
 // Centralized registry deserialization
 pub mod trait_deserializer;
 pub mod trait_deserializer_impl;
+pub mod direct_deserializer;
