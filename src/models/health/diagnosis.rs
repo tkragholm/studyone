@@ -9,10 +9,10 @@
 use crate::common::traits::{LprRegistry, RegistryAware};
 use crate::error::Result;
 use crate::models::collections::ModelCollection;
-use crate::models::core::traits::EntityModel;
 use crate::models::core::traits::ArrowSchema;
+use crate::models::core::traits::EntityModel;
 use crate::models::core::types::DiagnosisType;
-use crate::utils::array_utils::{downcast_array, get_column};
+use crate::utils::arrow::array_utils::{downcast_array, get_column};
 use arrow::array::{Array, Date32Array, Int32Array, StringArray};
 use arrow::datatypes::{DataType, Field, Schema};
 use arrow::record_batch::RecordBatch;

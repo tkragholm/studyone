@@ -297,10 +297,6 @@ pub use transform::{
     map_categorical_values, scale_numeric_values, transform_records,
 };
 
-// Centralized registry deserialization and detection
-pub mod detect;
-pub mod extractors;
-pub mod models;
-
+// Centralized registry deserialization
 pub mod trait_deserializer;
 pub mod trait_deserializer_impl;

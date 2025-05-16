@@ -11,6 +11,10 @@ pub mod derived;
 pub mod economic;
 pub mod health;
 
+// Tests
+#[cfg(test)]
+mod tests;
+
 // Re-export commonly used traits for backward compatibility
 pub use core::traits::{ArrowSchema, EntityModel, Filterable, HealthStatus, TemporalValidity};
 

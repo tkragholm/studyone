@@ -1,3 +1,7 @@
+//! Logging utilities
+//!
+//! This module provides standardized logging functions for operations.
+
 use std::path::Path;
 
 /// Log an operation start with consistent format

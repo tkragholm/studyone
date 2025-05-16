@@ -4,7 +4,6 @@
 //! with a focus on extracting and converting individual values from arrays.
 //! It builds upon the type conversion functionality in the schema/adapt/conversions module.
 
-use crate::error::{ParquetReaderError, Result};
 use arrow::array::{
     Array, ArrayRef, BooleanArray, Date32Array, Date64Array, Float32Array, Float64Array,
     Int32Array, Int64Array, StringArray,
@@ -36,7 +35,8 @@ pub fn arrow_array_to_string(array: &ArrayRef, index: usize) -> Option<String> {
 }
 
 /// Convert Arrow Date32 value to `NaiveDate`
-#[must_use] pub fn arrow_date_to_naive_date(days_since_epoch: i32) -> NaiveDate {
+#[must_use]
+pub fn arrow_date_to_naive_date(days_since_epoch: i32) -> NaiveDate {
     // Using a non-const approach for the date calculation
     let epoch = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap();
     epoch
@@ -205,157 +205,4 @@ pub fn arrow_array_to_bool(array: &ArrayRef, index: usize) -> Option<bool> {
         }
         _ => None,
     }
-}
-
-/// Get the column index by name from a record batch
-///
-/// # Arguments
-/// * `batch` - The record batch
-/// * `column_name` - The name of the column to find
-///
-/// # Returns
-/// The index of the column
-///
-/// # Errors
-/// Returns an error if the column does not exist
-pub fn get_column_index(
-    batch: &arrow::record_batch::RecordBatch,
-    column_name: &str,
-) -> Result<usize> {
-    batch.schema().index_of(column_name).map_err(|_| {
-        ParquetReaderError::ValidationError(format!("Column not found: {column_name}")).into()
-    })
-}
-
-/// Get a column from a record batch by name
-///
-/// # Arguments
-/// * `batch` - The record batch
-/// * `column_name` - The name of the column to find
-///
-/// # Returns
-/// The column as an `ArrayRef`
-///
-/// # Errors
-/// Returns an error if the column does not exist
-pub fn get_column(batch: &arrow::record_batch::RecordBatch, column_name: &str) -> Result<ArrayRef> {
-    let idx = get_column_index(batch, column_name)?;
-    Ok(batch.column(idx).clone())
-}
-
-/// Type-safe extraction of a `StringArray` from a column
-///
-/// # Arguments
-/// * `batch` - The record batch
-/// * `column_name` - The name of the column to extract
-///
-/// # Returns
-/// The column as a `StringArray`
-///
-/// # Errors
-/// Returns an error if the column does not exist or is not a `StringArray`
-pub fn get_string_column<'a>(
-    batch: &'a arrow::record_batch::RecordBatch,
-    column_name: &str,
-) -> Result<&'a StringArray> {
-    let idx = get_column_index(batch, column_name)?;
-    let column = batch.column(idx);
-
-    column
-        .as_any()
-        .downcast_ref::<StringArray>()
-        .ok_or_else(|| {
-            ParquetReaderError::InvalidDataType {
-                column: column_name.to_string(),
-                expected: "StringArray".to_string(),
-            }
-            .into()
-        })
-}
-
-/// Type-safe extraction of a `Date32Array` from a column
-///
-/// # Arguments
-/// * `batch` - The record batch
-/// * `column_name` - The name of the column to extract
-///
-/// # Returns
-/// The column as a `Date32Array`
-///
-/// # Errors
-/// Returns an error if the column does not exist or is not a `Date32Array`
-pub fn get_date32_column<'a>(
-    batch: &'a arrow::record_batch::RecordBatch,
-    column_name: &str,
-) -> Result<&'a Date32Array> {
-    let idx = get_column_index(batch, column_name)?;
-    let column = batch.column(idx);
-
-    column
-        .as_any()
-        .downcast_ref::<Date32Array>()
-        .ok_or_else(|| {
-            ParquetReaderError::InvalidDataType {
-                column: column_name.to_string(),
-                expected: "Date32Array".to_string(),
-            }
-            .into()
-        })
-}
-
-/// Type-safe extraction of a `Date64Array` from a column
-///
-/// # Arguments
-/// * `batch` - The record batch
-/// * `column_name` - The name of the column to extract
-///
-/// # Returns
-/// The column as a `Date64Array`
-///
-/// # Errors
-/// Returns an error if the column does not exist or is not a `Date64Array`
-pub fn get_date64_column<'a>(
-    batch: &'a arrow::record_batch::RecordBatch,
-    column_name: &str,
-) -> Result<&'a Date64Array> {
-    let idx = get_column_index(batch, column_name)?;
-    let column = batch.column(idx);
-
-    column
-        .as_any()
-        .downcast_ref::<Date64Array>()
-        .ok_or_else(|| {
-            ParquetReaderError::InvalidDataType {
-                column: column_name.to_string(),
-                expected: "Date64Array".to_string(),
-            }
-            .into()
-        })
-}
-
-/// Type-safe extraction of an `Int32Array` from a column
-///
-/// # Arguments
-/// * `batch` - The record batch
-/// * `column_name` - The name of the column to extract
-///
-/// # Returns
-/// The column as an `Int32Array`
-///
-/// # Errors
-/// Returns an error if the column does not exist or is not an `Int32Array`
-pub fn get_int32_column<'a>(
-    batch: &'a arrow::record_batch::RecordBatch,
-    column_name: &str,
-) -> Result<&'a Int32Array> {
-    let idx = get_column_index(batch, column_name)?;
-    let column = batch.column(idx);
-
-    column.as_any().downcast_ref::<Int32Array>().ok_or_else(|| {
-        ParquetReaderError::InvalidDataType {
-            column: column_name.to_string(),
-            expected: "Int32Array".to_string(),
-        }
-        .into()
-    })
 }

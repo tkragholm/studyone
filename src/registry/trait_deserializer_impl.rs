@@ -5,12 +5,12 @@
 
 use std::collections::HashMap;
 
-use crate::registry::extractors::{
-    DateExtractor, FloatExtractor, IntegerExtractor, Setter, StringExtractor,
-};
 use crate::registry::trait_deserializer::{RegistryDeserializer, RegistryFieldExtractor};
 use crate::schema::RegistrySchema;
 use crate::schema::field_def::FieldType;
+use crate::utils::register::extractors::{
+    DateExtractor, FloatExtractor, IntegerExtractor, Setter, StringExtractor,
+};
 
 /// Generic implementation of a registry deserializer
 #[derive(Debug)]
@@ -115,7 +115,7 @@ impl RegistryDeserializer for RegistryDeserializerImpl {
     fn field_mapping(&self) -> HashMap<String, String> {
         self.field_map.clone()
     }
-    
+
     fn id_field_type(&self) -> &'static str {
         match self.id_field.as_str() {
             "pnr" => "pnr",

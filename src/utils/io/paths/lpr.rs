@@ -2,8 +2,7 @@
 //!
 //! This module contains utilities for discovering LPR files in file systems.
 
-use crate::Error;
-use crate::Result;
+use crate::error::{Error, Result};
 use std::path::{Path, PathBuf};
 
 /// Data structure to hold paths to different LPR files

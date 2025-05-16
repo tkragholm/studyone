@@ -10,9 +10,7 @@ use log::{info, warn};
 use std::sync::Arc;
 
 use crate::error::{Error, Result};
-use crate::schema::adapt::{
-    compatibility, conversions, DateFormatConfig
-};
+use crate::schema::adapt::{DateFormatConfig, compatibility, conversions};
 
 /// Get a column from a record batch with automatic type adaptation
 ///
@@ -39,7 +37,9 @@ pub fn get_column(
     required: bool,
 ) -> Result<Option<ArrayRef>> {
     // Try to find the column
-    let idx = if let Ok(idx) = batch.schema().index_of(column_name) { idx } else {
+    let idx = if let Ok(idx) = batch.schema().index_of(column_name) {
+        idx
+    } else {
         if required {
             return Err(Error::ColumnNotFound {
                 column: column_name.to_string(),
@@ -60,9 +60,7 @@ pub fn get_column(
     }
 
     // Types don't match, try to convert
-    info!(
-        "Converting column '{column_name}' from {actual_type:?} to {expected_type:?}"
-    );
+    info!("Converting column '{column_name}' from {actual_type:?} to {expected_type:?}");
 
     // Use appropriate conversion based on the target type
     let date_config = DateFormatConfig::default();
@@ -72,13 +70,11 @@ pub fn get_column(
             match conversions::convert_array(column, expected_type, &date_config) {
                 Ok(converted) => converted,
                 Err(err) => {
-                    warn!(
-                        "Failed to convert column '{column_name}' to {expected_type:?}: {err}"
-                    );
+                    warn!("Failed to convert column '{column_name}' to {expected_type:?}: {err}");
                     // Create a null array as fallback
                     match conversions::create_null_array(expected_type, batch.num_rows()) {
                         Ok(null_array) => null_array,
-                        Err(_) => Arc::new(arrow::array::NullArray::new(batch.num_rows()))
+                        Err(_) => Arc::new(arrow::array::NullArray::new(batch.num_rows())),
                     }
                 }
             }
@@ -94,7 +90,7 @@ pub fn get_column(
                     // Create a null array as fallback
                     match conversions::create_null_array(expected_type, batch.num_rows()) {
                         Ok(null_array) => null_array,
-                        Err(_) => Arc::new(arrow::array::NullArray::new(batch.num_rows()))
+                        Err(_) => Arc::new(arrow::array::NullArray::new(batch.num_rows())),
                     }
                 }
             }
@@ -104,13 +100,11 @@ pub fn get_column(
             match conversions::convert_array(column, expected_type, &date_config) {
                 Ok(converted) => converted,
                 Err(err) => {
-                    warn!(
-                        "Failed to convert column '{column_name}' to {expected_type:?}: {err}"
-                    );
+                    warn!("Failed to convert column '{column_name}' to {expected_type:?}: {err}");
                     // Create a null array as fallback
                     match conversions::create_null_array(expected_type, batch.num_rows()) {
                         Ok(null_array) => null_array,
-                        Err(_) => Arc::new(arrow::array::NullArray::new(batch.num_rows()))
+                        Err(_) => Arc::new(arrow::array::NullArray::new(batch.num_rows())),
                     }
                 }
             }
@@ -149,7 +143,43 @@ pub fn downcast_array<'a, A: Array + 'static>(
             column: column_name.to_string(),
             expected: expected_type_name.to_string(),
         });
-    
+
     // Then convert from our custom error to anyhow::Error
     result.map_err(std::convert::Into::into)
+}
+
+/// Get the column index by name from a record batch
+///
+/// # Arguments
+/// * `batch` - The record batch
+/// * `column_name` - The name of the column to find
+///
+/// # Returns
+/// The index of the column
+///
+/// # Errors
+/// Returns an error if the column does not exist
+pub fn get_column_index(batch: &RecordBatch, column_name: &str) -> Result<usize> {
+    batch.schema().index_of(column_name).map_err(|_| {
+        Error::ColumnNotFound {
+            column: column_name.to_string(),
+        }
+        .into()
+    })
+}
+
+/// Get a column from a record batch by name
+///
+/// # Arguments
+/// * `batch` - The record batch
+/// * `column_name` - The name of the column to find
+///
+/// # Returns
+/// The column as an `ArrayRef`
+///
+/// # Errors
+/// Returns an error if the column does not exist
+pub fn get_column_by_name(batch: &RecordBatch, column_name: &str) -> Result<ArrayRef> {
+    let idx = get_column_index(batch, column_name)?;
+    Ok(batch.column(idx).clone())
 }

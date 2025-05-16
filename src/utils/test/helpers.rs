@@ -1,36 +1,17 @@
+//! Test helper functions
+//!
+//! This module provides utilities for testing and benchmarking.
+
 use crate::Expr;
 use crate::ParquetReaderConfig;
 use crate::Result;
 use crate::filter::ExpressionFilter;
-use crate::utils::BatchFilter;
-use std::path::{Path, PathBuf};
+use crate::filter::core::BatchFilter;
+use std::path::Path;
 use std::sync::Arc;
 use std::time::Instant;
 
 use arrow::record_batch::RecordBatch;
-
-/// Base path for test data files
-#[must_use]
-pub fn data_dir() -> PathBuf {
-    match std::env::consts::OS {
-        "macos" => PathBuf::from("/Users/tobiaskragholm/generated_data/parquet"),
-        "linux" => PathBuf::from("/home/tkragholm/generated_data/parquet"),
-        "windows" => PathBuf::from("E:\\workdata\\708245\\generated_data\\parquet"),
-        _ => panic!("Unsupported operating system"),
-    }
-}
-
-/// Create a path to a specific registry folder
-#[must_use]
-pub fn registry_dir(registry: &str) -> PathBuf {
-    data_dir().join(registry)
-}
-
-/// Create a path to a specific file in a registry folder
-#[must_use]
-pub fn registry_file(registry: &str, filename: &str) -> PathBuf {
-    registry_dir(registry).join(filename)
-}
 
 /// Ensure the given path exists
 pub fn ensure_path_exists(path: &Path) -> Result<()> {

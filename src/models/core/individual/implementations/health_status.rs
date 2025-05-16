@@ -1,8 +1,3 @@
-//! Health validity and age-related functionality
-//!
-//! This module contains implementations for time-dependent operations on Individuals,
-//! such as age calculation, validity checking, and temporal snapshots.
-
 use crate::models::core::individual::Individual;
 use crate::models::core::traits::HealthStatus;
 use chrono::{Datelike, NaiveDate};

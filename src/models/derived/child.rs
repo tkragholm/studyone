@@ -154,7 +154,7 @@ impl Child {
     /// Create Child models from a batch of registry records using `serde_arrow`
     pub fn from_registry_batch_with_serde_arrow(batch: &RecordBatch) -> Result<Vec<Self>> {
         // First create Individuals from the registry batch
-        let individuals = Individual::from_registry_batch_with_serde_arrow(batch)?;
+        let individuals = Individual::from_batch(batch)?;
 
         // Then convert those Individuals to Children and enhance them
         let mut children = Vec::with_capacity(individuals.len());
@@ -334,8 +334,20 @@ impl ArrowSchema for Child {
     }
 
     fn from_record_batch(batch: &RecordBatch) -> Result<Vec<Self>> {
-        // Use registry-aware from_registry_batch_with_serde_arrow which handles Individual creation
-        Self::from_registry_batch_with_serde_arrow(batch)
+        // Convert the record batch to a vector of Child instances using serde_arrow
+        let schema = batch.schema();
+        
+        // First create Individual instances from the batch
+        let individuals = crate::models::core::Individual::from_batch(batch)?;
+        
+        // Convert those Individuals to Children
+        let mut children = Vec::with_capacity(individuals.len());
+        for individual in individuals {
+            let child = Self::from_individual(std::sync::Arc::new(individual));
+            children.push(child);
+        }
+        
+        Ok(children)
     }
 
     fn to_record_batch(children: &[Self]) -> Result<RecordBatch> {

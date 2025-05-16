@@ -5,10 +5,8 @@
 //! for mapping registry fields to the Individual model.
 
 use std::any::Any;
-use std::collections::HashMap;
-use std::sync::Arc;
 
-use arrow::array::{ArrayRef, StringArray, Date32Array};
+use arrow::array::{Array, ArrayRef, Date32Array, StringArray};
 use arrow::record_batch::RecordBatch;
 use chrono::NaiveDate;
 
@@ -21,13 +19,10 @@ use crate::models::core::registry_traits::*;
 pub struct FieldDefinition {
     /// Field name in the registry data
     pub name: String,
-    
     /// Field description
     pub description: String,
-    
     /// Required or optional field
     pub required: bool,
-    
     /// Field type identifier
     pub field_type: FieldType,
 }
@@ -37,25 +32,25 @@ pub struct FieldDefinition {
 pub enum FieldType {
     /// String field type
     String,
-    
+
     /// Integer field type
     Integer,
-    
+
     /// Float field type
     Float,
-    
+
     /// Boolean field type
     Boolean,
-    
+
     /// Date field type
     Date,
-    
+
     /// Personal identification number (PNR)
     PNR,
-    
+
     /// Array of strings
     StringArray,
-    
+
     /// Array of dates
     DateArray,
 }
@@ -79,10 +74,10 @@ impl FieldDefinition {
 pub struct FieldMapping<T: 'static> {
     /// Field definition with metadata
     pub field_def: FieldDefinition,
-    
+
     /// Arrow array value extractor function
     pub extractor: Box<dyn Fn(&ArrayRef, usize) -> Option<T> + Send + Sync>,
-    
+
     /// Trait-based field setter function
     pub setter: Box<dyn Fn(&mut dyn Any, T) -> () + Send + Sync>,
 }
@@ -100,7 +95,7 @@ impl<T: 'static> FieldMapping<T> {
             setter: Box::new(setter),
         }
     }
-    
+
     /// Apply this mapping to an individual
     ///
     /// # Arguments
@@ -127,8 +122,12 @@ impl<T: 'static> FieldMapping<T> {
 /// * `description` - Field description
 /// * `required` - Whether the field is required
 /// * `setter` - Trait-based field setter function
-#[allow(dead_code)]
-pub fn string_field<F>(name: &str, description: &str, required: bool, setter: F) -> FieldMapping<String>
+pub fn string_field<F>(
+    name: &str,
+    description: &str,
+    required: bool,
+    setter: F,
+) -> FieldMapping<String>
 where
     F: Fn(&mut dyn Any, String) -> () + Send + Sync + 'static,
 {
@@ -154,8 +153,12 @@ where
 /// * `description` - Field description
 /// * `required` - Whether the field is required
 /// * `setter` - Trait-based field setter function
-#[allow(dead_code)]
-pub fn date_field<F>(name: &str, description: &str, required: bool, setter: F) -> FieldMapping<NaiveDate>
+pub fn date_field<F>(
+    name: &str,
+    description: &str,
+    required: bool,
+    setter: F,
+) -> FieldMapping<NaiveDate>
 where
     F: Fn(&mut dyn Any, NaiveDate) -> () + Send + Sync + 'static,
 {
@@ -184,8 +187,12 @@ where
 /// * `description` - Field description
 /// * `required` - Whether the field is required
 /// * `setter` - Trait-based field setter function
-#[allow(dead_code)]
-pub fn integer_field<F>(name: &str, description: &str, required: bool, setter: F) -> FieldMapping<i32>
+pub fn integer_field<F>(
+    name: &str,
+    description: &str,
+    required: bool,
+    setter: F,
+) -> FieldMapping<i32>
 where
     F: Fn(&mut dyn Any, i32) -> () + Send + Sync + 'static,
 {
@@ -195,37 +202,50 @@ where
             if array.is_null(idx) {
                 return None;
             }
-            
+
             // Extract the value based on data type
             match array.data_type() {
                 arrow::datatypes::DataType::Int8 => {
-                    let array = arrow::array::cast::as_primitive_array::<arrow::datatypes::Int8Type>(array);
+                    let array =
+                        arrow::array::cast::as_primitive_array::<arrow::datatypes::Int8Type>(array);
                     Some(array.value(idx) as i32)
-                },
+                }
                 arrow::datatypes::DataType::Int16 => {
-                    let array = arrow::array::cast::as_primitive_array::<arrow::datatypes::Int16Type>(array);
+                    let array = arrow::array::cast::as_primitive_array::<arrow::datatypes::Int16Type>(
+                        array,
+                    );
                     Some(array.value(idx) as i32)
-                },
+                }
                 arrow::datatypes::DataType::Int32 => {
-                    let array = arrow::array::cast::as_primitive_array::<arrow::datatypes::Int32Type>(array);
+                    let array = arrow::array::cast::as_primitive_array::<arrow::datatypes::Int32Type>(
+                        array,
+                    );
                     Some(array.value(idx))
-                },
+                }
                 arrow::datatypes::DataType::Int64 => {
-                    let array = arrow::array::cast::as_primitive_array::<arrow::datatypes::Int64Type>(array);
+                    let array = arrow::array::cast::as_primitive_array::<arrow::datatypes::Int64Type>(
+                        array,
+                    );
                     Some(array.value(idx) as i32)
-                },
+                }
                 arrow::datatypes::DataType::UInt8 => {
-                    let array = arrow::array::cast::as_primitive_array::<arrow::datatypes::UInt8Type>(array);
+                    let array = arrow::array::cast::as_primitive_array::<arrow::datatypes::UInt8Type>(
+                        array,
+                    );
                     Some(array.value(idx) as i32)
-                },
+                }
                 arrow::datatypes::DataType::UInt16 => {
-                    let array = arrow::array::cast::as_primitive_array::<arrow::datatypes::UInt16Type>(array);
+                    let array = arrow::array::cast::as_primitive_array::<
+                        arrow::datatypes::UInt16Type,
+                    >(array);
                     Some(array.value(idx) as i32)
-                },
+                }
                 arrow::datatypes::DataType::UInt32 => {
-                    let array = arrow::array::cast::as_primitive_array::<arrow::datatypes::UInt32Type>(array);
+                    let array = arrow::array::cast::as_primitive_array::<
+                        arrow::datatypes::UInt32Type,
+                    >(array);
                     Some(array.value(idx) as i32)
-                },
+                }
                 _ => None,
             }
         },
@@ -241,7 +261,6 @@ where
 /// * `description` - Field description
 /// * `required` - Whether the field is required
 /// * `setter` - Trait-based field setter function
-#[allow(dead_code)]
 pub fn float_field<F>(name: &str, description: &str, required: bool, setter: F) -> FieldMapping<f64>
 where
     F: Fn(&mut dyn Any, f64) -> () + Send + Sync + 'static,
@@ -252,17 +271,21 @@ where
             if array.is_null(idx) {
                 return None;
             }
-            
+
             // Extract the value based on data type
             match array.data_type() {
                 arrow::datatypes::DataType::Float32 => {
-                    let array = arrow::array::cast::as_primitive_array::<arrow::datatypes::Float32Type>(array);
+                    let array = arrow::array::cast::as_primitive_array::<
+                        arrow::datatypes::Float32Type,
+                    >(array);
                     Some(array.value(idx) as f64)
-                },
+                }
                 arrow::datatypes::DataType::Float64 => {
-                    let array = arrow::array::cast::as_primitive_array::<arrow::datatypes::Float64Type>(array);
+                    let array = arrow::array::cast::as_primitive_array::<
+                        arrow::datatypes::Float64Type,
+                    >(array);
                     Some(array.value(idx))
-                },
+                }
                 _ => None,
             }
         },
@@ -277,7 +300,7 @@ where
 pub trait RegistryFieldMapper: Send + Sync {
     /// Get the registry type name
     fn registry_type(&self) -> &str;
-    
+
     /// Apply all field mappings to an individual
     ///
     /// # Arguments
@@ -289,11 +312,15 @@ pub trait RegistryFieldMapper: Send + Sync {
     /// # Returns
     ///
     /// A Result indicating success or failure
-    fn apply_mappings(&self, individual: &mut dyn Any, record_batch: &RecordBatch, row: usize) -> Result<()>;
+    fn apply_mappings(
+        &self,
+        individual: &mut dyn Any,
+        record_batch: &RecordBatch,
+        row: usize,
+    ) -> Result<()>;
 }
 
 /// Helper function to cast Any to BefFields
-#[allow(dead_code)]
 pub fn as_bef_fields(any: &mut dyn Any) -> Option<&mut dyn BefFields> {
     if let Some(individual) = any.downcast_mut::<Individual>() {
         Some(individual as &mut dyn BefFields)
@@ -303,7 +330,6 @@ pub fn as_bef_fields(any: &mut dyn Any) -> Option<&mut dyn BefFields> {
 }
 
 /// Helper function to cast Any to LprFields
-#[allow(dead_code)]
 pub fn as_lpr_fields(any: &mut dyn Any) -> Option<&mut dyn LprFields> {
     if let Some(individual) = any.downcast_mut::<Individual>() {
         Some(individual as &mut dyn LprFields)
@@ -313,7 +339,6 @@ pub fn as_lpr_fields(any: &mut dyn Any) -> Option<&mut dyn LprFields> {
 }
 
 /// Helper function to cast Any to MfrFields
-#[allow(dead_code)]
 pub fn as_mfr_fields(any: &mut dyn Any) -> Option<&mut dyn MfrFields> {
     if let Some(individual) = any.downcast_mut::<Individual>() {
         Some(individual as &mut dyn MfrFields)
@@ -343,7 +368,6 @@ pub fn as_ind_fields(any: &mut dyn Any) -> Option<&mut dyn IndFields> {
 }
 
 /// Helper function to cast Any to AkmFields
-#[allow(dead_code)]
 pub fn as_akm_fields(any: &mut dyn Any) -> Option<&mut dyn AkmFields> {
     if let Some(individual) = any.downcast_mut::<Individual>() {
         Some(individual as &mut dyn AkmFields)
@@ -353,7 +377,6 @@ pub fn as_akm_fields(any: &mut dyn Any) -> Option<&mut dyn AkmFields> {
 }
 
 /// Helper function to cast Any to VndsFields
-#[allow(dead_code)]
 pub fn as_vnds_fields(any: &mut dyn Any) -> Option<&mut dyn VndsFields> {
     if let Some(individual) = any.downcast_mut::<Individual>() {
         Some(individual as &mut dyn VndsFields)
@@ -363,7 +386,6 @@ pub fn as_vnds_fields(any: &mut dyn Any) -> Option<&mut dyn VndsFields> {
 }
 
 /// Helper function to cast Any to DodFields
-#[allow(dead_code)]
 pub fn as_dod_fields(any: &mut dyn Any) -> Option<&mut dyn DodFields> {
     if let Some(individual) = any.downcast_mut::<Individual>() {
         Some(individual as &mut dyn DodFields)

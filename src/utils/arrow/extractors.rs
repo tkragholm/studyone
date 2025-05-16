@@ -4,8 +4,10 @@
 //! from Arrow record batches with appropriate error handling and type conversion.
 
 use crate::error::Result;
-use crate::utils::array_utils::{downcast_array, get_column};
-use arrow::array::{Array, BooleanArray, Date32Array, Float64Array, Int8Array, Int32Array, StringArray};
+use crate::utils::arrow::array_utils::{downcast_array, get_column};
+use arrow::array::{
+    Array, BooleanArray, Date32Array, Float64Array, Int8Array, Int32Array, StringArray,
+};
 use arrow::datatypes::DataType;
 use arrow::record_batch::RecordBatch;
 use chrono::NaiveDate;
@@ -31,10 +33,10 @@ pub fn extract_string(
     required: bool,
 ) -> Result<Option<String>> {
     let array_opt = get_column(batch, column_name, &DataType::Utf8, required)?;
-    
+
     if let Some(array) = array_opt {
         let string_array = downcast_array::<StringArray>(&array, column_name, "String")?;
-        
+
         if row < string_array.len() && !string_array.is_null(row) {
             let value = string_array.value(row).to_string();
             if !value.is_empty() {
@@ -42,7 +44,7 @@ pub fn extract_string(
             }
         }
     }
-    
+
     Ok(None)
 }
 
@@ -59,7 +61,16 @@ pub fn extract_string(
 ///
 /// * `Ok(Some(NaiveDate))` - The extracted date value
 /// * `Ok(None)` - If the column is null or not present (and not required)
-/// * `Err` - If an error occurs during extraction
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - The column cannot be retrieved
+/// - The column cannot be downcast to the expected array type
+///
+/// # Panics
+///
+/// This function does not panic, as it uses `.from_ymd_opt()` instead of `.unwrap()`
 pub fn extract_date32(
     batch: &RecordBatch,
     row: usize,
@@ -67,18 +78,20 @@ pub fn extract_date32(
     required: bool,
 ) -> Result<Option<NaiveDate>> {
     let array_opt = get_column(batch, column_name, &DataType::Date32, required)?;
-    
+
     if let Some(array) = array_opt {
         let date_array = downcast_array::<Date32Array>(&array, column_name, "Date32")?;
-        
+
         if row < date_array.len() && !date_array.is_null(row) {
-            let days_since_epoch = date_array.value(row) as u64;
-            return Ok(chrono::NaiveDate::from_ymd_opt(1970, 1, 1)
-                .unwrap()
-                .checked_add_days(chrono::Days::new(days_since_epoch)));
+            let days_since_epoch = date_array.value(row);
+            return Ok(
+                chrono::NaiveDate::from_ymd_opt(1970, 1, 1).and_then(|base_date| {
+                    base_date.checked_add_days(chrono::Days::new(days_since_epoch as u64))
+                }),
+            );
         }
     }
-    
+
     Ok(None)
 }
 
@@ -113,7 +126,7 @@ pub fn extract_date_from_string(
             }
         }
     }
-    
+
     Ok(None)
 }
 
@@ -140,16 +153,16 @@ pub fn extract_int8_as_padded_string(
     padding: usize,
 ) -> Result<Option<String>> {
     let array_opt = get_column(batch, column_name, &DataType::Int8, required)?;
-    
+
     if let Some(array) = array_opt {
         let int_array = downcast_array::<Int8Array>(&array, column_name, "Int8")?;
-        
+
         if row < int_array.len() && !int_array.is_null(row) {
             let value = int_array.value(row);
             return Ok(Some(format!("{value:0padding$}")));
         }
     }
-    
+
     Ok(None)
 }
 
@@ -174,26 +187,26 @@ pub fn extract_int32(
     required: bool,
 ) -> Result<Option<i32>> {
     let array_opt = get_column(batch, column_name, &DataType::Int32, required)?;
-    
+
     if let Some(array) = array_opt {
         let int_array = downcast_array::<Int32Array>(&array, column_name, "Int32")?;
-        
+
         if row < int_array.len() && !int_array.is_null(row) {
             return Ok(Some(int_array.value(row)));
         }
     }
-    
+
     // Try with Int8 if Int32 is not available
     let array_opt = get_column(batch, column_name, &DataType::Int8, required)?;
-    
+
     if let Some(array) = array_opt {
         let int_array = downcast_array::<Int8Array>(&array, column_name, "Int8")?;
-        
+
         if row < int_array.len() && !int_array.is_null(row) {
             return Ok(Some(i32::from(int_array.value(row))));
         }
     }
-    
+
     Ok(None)
 }
 
@@ -218,15 +231,15 @@ pub fn extract_boolean(
     required: bool,
 ) -> Result<Option<bool>> {
     let array_opt = get_column(batch, column_name, &DataType::Boolean, required)?;
-    
+
     if let Some(array) = array_opt {
         let bool_array = downcast_array::<BooleanArray>(&array, column_name, "Boolean")?;
-        
+
         if row < bool_array.len() && !bool_array.is_null(row) {
             return Ok(Some(bool_array.value(row)));
         }
     }
-    
+
     Ok(None)
 }
 
@@ -251,15 +264,15 @@ pub fn extract_float64(
     required: bool,
 ) -> Result<Option<f64>> {
     let array_opt = get_column(batch, column_name, &DataType::Float64, required)?;
-    
+
     if let Some(array) = array_opt {
         let float_array = downcast_array::<Float64Array>(&array, column_name, "Float64")?;
-        
+
         if row < float_array.len() && !float_array.is_null(row) {
             return Ok(Some(float_array.value(row)));
         }
     }
-    
+
     Ok(None)
 }
 
@@ -302,14 +315,14 @@ where
     F: FnOnce(&A, usize) -> Option<T>,
 {
     let array_opt = get_column(batch, column_name, data_type, required)?;
-    
+
     if let Some(array) = array_opt {
         let typed_array = downcast_array::<A>(&array, column_name, type_name)?;
-        
+
         if row < typed_array.len() && !typed_array.is_null(row) {
             return Ok(transform(typed_array, row));
         }
     }
-    
+
     Ok(None)
 }

@@ -4,10 +4,11 @@
 
 use crate::RecordBatch;
 use crate::error::Result;
-use crate::models::core::registry_traits::{DodFields, IndFields, LprFields};
-use crate::models::core::traits::{ArrowSchema, EntityModel};
+use crate::models::core::registry_traits::{
+    BefFields, DodFields, IndFields, LprFields, MfrFields, UddfFields,
+};
+use crate::models::core::traits::EntityModel;
 
-use arrow::datatypes::{Field, Schema};
 
 use arrow::array::Array;
 use arrow::array::StringArray;
@@ -55,7 +56,7 @@ pub struct Individual {
 
     /// Additional properties that don't have explicit fields
     #[serde(skip)]
-    properties: Option<HashMap<String, Box<dyn std::any::Any + Send + Sync>>>,
+    pub properties: Option<HashMap<String, Box<dyn std::any::Any + Send + Sync>>>,
 
     // Core characteristics
     /// Gender of the individual
@@ -448,142 +449,23 @@ impl Individual {
     /// This method is used by the registry deserializer to set property values
     /// dynamically, primarily for the procedural macro system.
     pub fn set_property(&mut self, property: &str, value: Box<dyn std::any::Any + Send + Sync>) {
-        // First set the value in dedicated fields when appropriate
-        match property {
-            "pnr" => {
-                if let Some(v) = value.downcast_ref::<String>() {
-                    self.pnr = v.clone();
-                }
-            }
-            "gender" => {
-                if let Some(v) = value.downcast_ref::<Option<String>>() {
-                    self.gender = v.clone();
-                }
-            }
-            "birth_date" => {
-                if let Some(v) = value.downcast_ref::<Option<NaiveDate>>() {
-                    self.birth_date = *v;
-                }
-            }
-            "death_date" => {
-                if let Some(v) = value.downcast_ref::<Option<NaiveDate>>() {
-                    self.death_date = *v;
-                }
-            }
-            "mother_pnr" => {
-                if let Some(v) = value.downcast_ref::<Option<String>>() {
-                    self.mother_pnr = v.clone();
-                }
-            }
-            "father_pnr" => {
-                if let Some(v) = value.downcast_ref::<Option<String>>() {
-                    self.father_pnr = v.clone();
-                }
-            }
-            "event_type" => {
-                if let Some(v) = value.downcast_ref::<Option<String>>() {
-                    self.event_type = v.clone();
-                }
-            }
-            "event_date" => {
-                if let Some(v) = value.downcast_ref::<Option<NaiveDate>>() {
-                    self.event_date = *v;
-                }
-            }
-            // LPR specific fields
-            "action_diagnosis" => {
-                if let Some(v) = value.downcast_ref::<Option<String>>() {
-                    if let Some(ref mut diagnoses) = self.diagnoses {
-                        if let Some(diagnosis) = v {
-                            diagnoses.push(diagnosis.clone());
-                        }
-                    } else if let Some(diagnosis) = v {
-                        self.diagnoses = Some(vec![diagnosis.clone()]);
-                    }
-                }
-            }
-            "diagnosis_code" => {
-                // First extract the value for adding to the diagnoses vector
-                if let Some(v) = value.downcast_ref::<Option<String>>() {
-                    if let Some(ref mut diagnoses) = self.diagnoses {
-                        if let Some(diagnosis) = v {
-                            diagnoses.push(diagnosis.clone());
-                        }
-                    } else if let Some(diagnosis) = v {
-                        self.diagnoses = Some(vec![diagnosis.clone()]);
-                    }
-                }
-            }
-            "municipality_code" => {
-                if let Some(v) = value.downcast_ref::<Option<String>>() {
-                    self.municipality_code = v.clone();
-                }
-            }
-            "admission_date" => {
-                if let Some(v) = value.downcast_ref::<Option<NaiveDate>>() {
-                    if let Some(date) = *v {
-                        if let Some(ref mut admissions) = self.hospital_admissions {
-                            admissions.push(date);
-                        } else {
-                            self.hospital_admissions = Some(vec![date]);
-                        }
-                        // Also update last admission date if newer
-                        if let Some(last_date) = self.last_hospital_admission_date {
-                            if date > last_date {
-                                self.last_hospital_admission_date = Some(date);
-                            }
-                        } else {
-                            self.last_hospital_admission_date = Some(date);
-                        }
-                    }
-                }
-            }
-            "discharge_date" => {
-                if let Some(v) = value.downcast_ref::<Option<NaiveDate>>() {
-                    if let Some(date) = *v {
-                        if let Some(ref mut discharges) = self.discharge_dates {
-                            discharges.push(date);
-                        } else {
-                            self.discharge_dates = Some(vec![date]);
-                        }
-                    }
-                }
-            }
-            "age" => {
-                if let Some(v) = value.downcast_ref::<Option<i32>>() {
-                    self.age = *v;
-                }
-            }
-            "length_of_stay" => {
-                if let Some(v) = value.downcast_ref::<Option<i32>>() {
-                    self.length_of_stay = *v;
-                }
-            }
-            // Other fields are handled below
-            _ => {}
-        }
+        use crate::models::core::individual::implementations::property_reflection::PropertyReflection;
 
-        // Always store all properties in the properties map for access in From<Individual> implementations
-        // This ensures consistent property access when converting back to registry-specific types
-        self.store_property(property, value);
-    }
-
-    /// Store a property in the properties map
-    fn store_property(&mut self, property: &str, value: Box<dyn std::any::Any + Send + Sync>) {
-        // Create the properties map if it doesn't exist
-        if self.properties.is_none() {
-            self.properties = Some(HashMap::new());
-        }
-
-        // Now we can safely unwrap and insert
-        if let Some(props) = &mut self.properties {
-            props.insert(property.to_string(), value);
-        }
+        // Use the PropertyReflection trait to handle both dedicated fields and the properties map
+        self.set_reflected_property(property, value);
     }
 
     /// Get access to the properties map
-    #[must_use] pub fn properties(&self) -> Option<&HashMap<String, Box<dyn std::any::Any + Send + Sync>>> {
+    #[must_use]
+    pub fn properties(&self) -> Option<&HashMap<String, Box<dyn std::any::Any + Send + Sync>>> {
         self.properties.as_ref()
+    }
+
+    /// Store a property in the properties map
+    /// This is kept for compatibility with existing code
+    pub fn store_property(&mut self, property: &str, value: Box<dyn std::any::Any + Send + Sync>) {
+        use crate::models::core::individual::implementations::property_reflection::PropertyReflection;
+        PropertyReflection::store_property(self, property, value);
     }
 
     /// Compute rural status from municipality code
@@ -665,7 +547,7 @@ impl Individual {
 
     /// Check if this Individual's PNR matches the PNR in a registry record
     pub fn pnr_matches_record(&self, batch: &RecordBatch, row: usize) -> Result<bool> {
-        use crate::utils::array_utils::{downcast_array, get_column};
+        use crate::utils::arrow::array_utils::{downcast_array, get_column};
 
         // Try to get PNR column
         let pnr_col = get_column(batch, "PNR", &DataType::Utf8, false)?;
@@ -926,214 +808,5 @@ impl Individual {
     #[must_use]
     pub const fn has_any_parent(&self) -> bool {
         self.has_mother() || self.has_father()
-    }
-}
-
-// Implement the DodFields trait for Individual
-impl DodFields for Individual {
-    fn death_date(&self) -> Option<NaiveDate> {
-        self.death_date
-    }
-
-    fn set_death_date(&mut self, value: Option<NaiveDate>) {
-        self.death_date = value;
-    }
-
-    fn death_cause(&self) -> Option<&str> {
-        self.death_cause.as_deref()
-    }
-
-    fn set_death_cause(&mut self, value: Option<String>) {
-        self.death_cause = value;
-    }
-
-    fn underlying_death_cause(&self) -> Option<&str> {
-        self.underlying_death_cause.as_deref()
-    }
-
-    fn set_underlying_death_cause(&mut self, value: Option<String>) {
-        self.underlying_death_cause = value;
-    }
-}
-
-// Implement ArrowSchema for Individual
-impl ArrowSchema for Individual {
-    /// Get the Arrow schema for this model
-    fn schema() -> Schema {
-        // Create a simplified schema with the most important fields
-        let fields = vec![
-            Field::new("pnr", DataType::Utf8, false),
-            Field::new("birth_date", DataType::Date32, true),
-            Field::new("death_date", DataType::Date32, true),
-            Field::new("gender", DataType::Utf8, true),
-            Field::new("mother_pnr", DataType::Utf8, true),
-            Field::new("father_pnr", DataType::Utf8, true),
-            // Add more fields as needed
-        ];
-
-        Schema::new(fields)
-    }
-
-    /// Convert a `RecordBatch` to a vector of Individual models
-    fn from_record_batch(batch: &RecordBatch) -> Result<Vec<Self>> {
-        // This is a placeholder implementation - a full implementation would
-        // extract all individual fields from the batch
-        let mut individuals = Vec::with_capacity(batch.num_rows());
-
-        // Extract the PNR column
-        if let Some(pnr_column) = batch.column_by_name("pnr") {
-            if let Some(pnr_array) = pnr_column.as_any().downcast_ref::<StringArray>() {
-                for i in 0..batch.num_rows() {
-                    if !pnr_array.is_null(i) {
-                        let pnr = pnr_array.value(i).to_string();
-                        let individual = Self::new(pnr, None);
-                        individuals.push(individual);
-                    }
-                }
-            }
-        }
-
-        Ok(individuals)
-    }
-
-    /// Convert a vector of Individual models to a `RecordBatch`
-    fn to_record_batch(_models: &[Self]) -> Result<RecordBatch> {
-        // This is a placeholder - a full implementation would convert
-        // all fields to Arrow arrays
-        todo!("Not implemented yet");
-    }
-}
-
-// Implement the IndFields trait for Individual
-impl IndFields for Individual {
-    fn annual_income(&self) -> Option<f64> {
-        self.annual_income
-    }
-
-    fn set_annual_income(&mut self, value: Option<f64>) {
-        self.annual_income = value;
-    }
-
-    fn disposable_income(&self) -> Option<f64> {
-        None // Not implemented in the Individual struct yet
-    }
-
-    fn set_disposable_income(&mut self, _value: Option<f64>) {
-        // Not implemented in the Individual struct yet
-    }
-
-    fn employment_income(&self) -> Option<f64> {
-        self.employment_income
-    }
-
-    fn set_employment_income(&mut self, value: Option<f64>) {
-        self.employment_income = value;
-    }
-
-    fn self_employment_income(&self) -> Option<f64> {
-        None // Not implemented in the Individual struct yet
-    }
-
-    fn set_self_employment_income(&mut self, _value: Option<f64>) {
-        // Not implemented in the Individual struct yet
-    }
-
-    fn capital_income(&self) -> Option<f64> {
-        None // Not implemented in the Individual struct yet
-    }
-
-    fn set_capital_income(&mut self, _value: Option<f64>) {
-        // Not implemented in the Individual struct yet
-    }
-
-    fn transfer_income(&self) -> Option<f64> {
-        None // Not implemented in the Individual struct yet
-    }
-
-    fn set_transfer_income(&mut self, _value: Option<f64>) {
-        // Not implemented in the Individual struct yet
-    }
-
-    fn income_year(&self) -> Option<i32> {
-        self.income_year
-    }
-
-    fn set_income_year(&mut self, value: Option<i32>) {
-        self.income_year = value;
-    }
-}
-
-// Implement the LprFields trait for Individual
-impl LprFields for Individual {
-    fn diagnoses(&self) -> Option<&[String]> {
-        self.diagnoses.as_deref()
-    }
-
-    fn set_diagnoses(&mut self, value: Option<Vec<String>>) {
-        self.diagnoses = value;
-    }
-
-    fn add_diagnosis(&mut self, diagnosis: String) {
-        if let Some(diagnoses) = &mut self.diagnoses {
-            diagnoses.push(diagnosis);
-        } else {
-            self.diagnoses = Some(vec![diagnosis]);
-        }
-    }
-
-    fn procedures(&self) -> Option<&[String]> {
-        self.procedures.as_deref()
-    }
-
-    fn set_procedures(&mut self, value: Option<Vec<String>>) {
-        self.procedures = value;
-    }
-
-    fn add_procedure(&mut self, procedure: String) {
-        if let Some(procedures) = &mut self.procedures {
-            procedures.push(procedure);
-        } else {
-            self.procedures = Some(vec![procedure]);
-        }
-    }
-
-    fn hospital_admissions(&self) -> Option<&[NaiveDate]> {
-        self.hospital_admissions.as_deref()
-    }
-
-    fn set_hospital_admissions(&mut self, value: Option<Vec<NaiveDate>>) {
-        self.hospital_admissions = value;
-    }
-
-    fn add_hospital_admission(&mut self, date: NaiveDate) {
-        if let Some(admissions) = &mut self.hospital_admissions {
-            admissions.push(date);
-        } else {
-            self.hospital_admissions = Some(vec![date]);
-        }
-    }
-
-    fn discharge_dates(&self) -> Option<&[NaiveDate]> {
-        self.discharge_dates.as_deref()
-    }
-
-    fn set_discharge_dates(&mut self, value: Option<Vec<NaiveDate>>) {
-        self.discharge_dates = value;
-    }
-
-    fn add_discharge_date(&mut self, date: NaiveDate) {
-        if let Some(dates) = &mut self.discharge_dates {
-            dates.push(date);
-        } else {
-            self.discharge_dates = Some(vec![date]);
-        }
-    }
-
-    fn length_of_stay(&self) -> Option<i32> {
-        self.length_of_stay
-    }
-
-    fn set_length_of_stay(&mut self, value: Option<i32>) {
-        self.length_of_stay = value;
     }
 }

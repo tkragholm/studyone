@@ -1,3 +1,9 @@
+//! Console output utilities
+//!
+//! This module provides utilities for formatted console output.
+
+use arrow::record_batch::RecordBatch;
+
 /// Print summary information about record batches
 pub fn print_batch_summary(batches: &[RecordBatch], elapsed: std::time::Duration) {
     println!("Read {} record batches in {:?}", batches.len(), elapsed);

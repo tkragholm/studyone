@@ -8,7 +8,7 @@ use crate::common::traits::{IndRegistry, RegistryAware};
 use crate::error::Result;
 use crate::models::collections::ModelCollection;
 use crate::models::core::traits::{ArrowSchema, EntityModel};
-use crate::utils::array_utils::{downcast_array, get_column};
+use crate::utils::arrow::array_utils::{downcast_array, get_column};
 use arrow::array::{Array, Float64Array, StringArray};
 use arrow::datatypes::{DataType, Field, Schema};
 use arrow::record_batch::RecordBatch;

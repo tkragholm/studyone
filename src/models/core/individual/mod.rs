@@ -8,6 +8,7 @@ pub use self::consolidated::Role;
 
 // Core implementation
 pub mod consolidated;
-mod health;
+pub mod implementations;
+
 mod relationships;
 mod temporal;

@@ -3,6 +3,7 @@
 //! This module provides shared utilities for working with registry data across the application.
 //! It includes functions for column extraction, date conversion, and standardized registry operations.
 
+use std::any::Any;
 use std::collections::{HashMap, HashSet};
 use std::future::Future;
 use std::path::Path;
@@ -17,7 +18,7 @@ use chrono::NaiveDate;
 
 use crate::error::{ParquetReaderError, Result};
 use crate::models::core::Individual;
-use crate::utils::arrow_utils;
+use crate::utils::arrow::conversion;
 
 /// Trait defining a registry interface for consistent data integration
 pub trait Registry: Send + Sync {
@@ -91,11 +92,7 @@ impl DateRangeConfig {
 /// Convert Arrow Date32 value to `NaiveDate`
 #[must_use]
 pub fn arrow_date_to_naive_date(days_since_epoch: i32) -> NaiveDate {
-    // Using checked_add_days instead of + operator for compatibility with const fn
-    let epoch = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap();
-    epoch
-        .checked_add_days(chrono::Days::new(days_since_epoch as u64))
-        .unwrap_or(epoch)
+    conversion::arrow_date_to_naive_date(days_since_epoch)
 }
 
 /// Configuration for column mappings between registries
@@ -155,12 +152,34 @@ impl ColumnMappingConfig {
 
 /// Extract a string column from a record batch
 pub fn get_string_column<'a>(batch: &'a RecordBatch, column_name: &str) -> Result<&'a StringArray> {
-    arrow_utils::get_string_column(batch, column_name)
+    batch
+        .column_by_name(column_name)
+        .ok_or_else(|| ParquetReaderError::column_not_found(column_name))?
+        .as_any()
+        .downcast_ref::<StringArray>()
+        .ok_or_else(|| {
+            ParquetReaderError::InvalidDataType {
+                column: column_name.to_string(),
+                expected: "StringArray".to_string(),
+            }
+            .into()
+        })
 }
 
 /// Extract a date column from a record batch
 pub fn get_date_column<'a>(batch: &'a RecordBatch, column_name: &str) -> Result<&'a Date32Array> {
-    arrow_utils::get_date32_column(batch, column_name)
+    batch
+        .column_by_name(column_name)
+        .ok_or_else(|| ParquetReaderError::column_not_found(column_name))?
+        .as_any()
+        .downcast_ref::<Date32Array>()
+        .ok_or_else(|| {
+            ParquetReaderError::InvalidDataType {
+                column: column_name.to_string(),
+                expected: "Date32Array".to_string(),
+            }
+            .into()
+        })
 }
 
 /// Extract an integer column from a record batch
@@ -285,7 +304,7 @@ impl Registry for BaseRegistry {
     }
 
     fn load(&self, path: &Path, filter: Option<&HashSet<String>>) -> Result<Vec<RecordBatch>> {
-        crate::utils::read_parquet::<std::collections::hash_map::RandomState>(
+        crate::utils::io::parquet::read_parquet::<std::collections::hash_map::RandomState>(
             path,
             Some(&self.schema),
             filter,
@@ -420,4 +439,31 @@ pub fn collect_birth_dates_from_individuals(
     }
 
     birth_dates
+}
+
+/// Registry field mapper
+///
+/// This trait defines an interface for mapping registry fields to Individual
+/// model fields using field mappers.
+pub trait RegistryFieldMapper: Send + Sync {
+    /// Get the registry type name
+    fn registry_type(&self) -> &str;
+
+    /// Apply all field mappings to an individual
+    ///
+    /// # Arguments
+    ///
+    /// * `individual` - The individual to apply mappings to
+    /// * `record_batch` - The record batch to extract values from
+    /// * `row` - The row index to extract
+    ///
+    /// # Returns
+    ///
+    /// A Result indicating success or failure
+    fn apply_mappings(
+        &self,
+        individual: &mut dyn Any,
+        record_batch: &RecordBatch,
+        row: usize,
+    ) -> Result<()>;
 }
