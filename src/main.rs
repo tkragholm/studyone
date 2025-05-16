@@ -121,7 +121,7 @@ async fn main() -> Result<()> {
             );
         }
         Err(e) => {
-            warn!("Error loading multiple registries: {}", e);
+            warn!("Error loading multiple registries: {e}");
         }
     }
 
