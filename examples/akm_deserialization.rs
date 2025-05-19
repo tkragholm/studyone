@@ -28,9 +28,6 @@ pub fn main() {
             if let Some(batch) = batches.first() {
                 eprintln!("Processing batch with {} rows", batch.num_rows());
 
-                // Print batch schema to see available columns
-                //eprintln!("Batch schema: {:?}", batch.schema());
-
                 // Print information about field extractors
                 eprintln!("Field extractors used by the deserializer:");
                 for extractor in deserializer.field_extractors() {
@@ -78,9 +75,7 @@ pub fn main() {
 
                         eprintln!("\nSocioeconomic Status Summary:");
                         eprintln!("  Individuals with status: {individuals_with_status}");
-                        eprintln!(
-                            "  Individuals without status: {individuals_without_status}"
-                        );
+                        eprintln!("  Individuals without status: {individuals_without_status}");
 
                         eprintln!("\nSocioeconomic Status Distribution:");
                         let mut sorted_statuses: Vec<_> = status_counts.iter().collect();

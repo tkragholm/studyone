@@ -110,7 +110,7 @@ pub trait RegisterLoader: Send + Sync {
                 // Handle PNR filtering if needed
                 if let Some(pnr_filter) = pnr_filter {
                     // If PNR column is available, apply filtering
-                    if let Some(pnr_column) = pnr_column {
+                    if let Some(_pnr_column) = pnr_column {
                         // Use tokio's spawn_blocking to leverage rayon's parallel processing
                         // This moves CPU-intensive work off the async runtime
                         let schema_ref = schema.clone();
@@ -302,3 +302,5 @@ pub use transform::{
 pub mod trait_deserializer;
 pub mod trait_deserializer_impl;
 pub mod direct_deserializer;
+pub mod direct_registry_loader;
+pub mod temporal_registry_loader;

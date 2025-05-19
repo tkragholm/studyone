@@ -9,7 +9,8 @@ use crate::schema::field_def::{
 };
 
 /// Create field mappings for UDDF registry
-#[must_use] pub fn create_field_mappings() -> Vec<FieldMapping> {
+#[must_use]
+pub fn create_field_mappings() -> Vec<FieldMapping> {
     vec![
         // PNR mapping (required)
         FieldMapping::new(
@@ -25,7 +26,8 @@ use crate::schema::field_def::{
             Extractors::string("CPRTJEK"),
             ModelSetters::string_setter(|individual, value| {
                 // Store CPR check in properties map since there's no dedicated field
-                if let cpr_check = value.as_str() {
+                let cpr_check = value.as_str();
+                {
                     individual.store_property("cpr_check", Box::new(cpr_check.to_string()));
                 }
             }),
@@ -36,7 +38,8 @@ use crate::schema::field_def::{
             Extractors::string("CPRTYPE"),
             ModelSetters::string_setter(|individual, value| {
                 // Store CPR type in properties map since there's no dedicated field
-                if let cpr_type = value.as_str() {
+                let cpr_type = value.as_str();
+                {
                     individual.store_property("cpr_type", Box::new(cpr_type.to_string()));
                 }
             }),
@@ -55,7 +58,8 @@ use crate::schema::field_def::{
             Extractors::string("HF_KILDE"),
             ModelSetters::string_setter(|individual, value| {
                 // Convert source from string to u8 if possible
-                if let source = value.as_str() {
+                let source = value.as_str();
+                {
                     if let Ok(source_num) = source.parse::<u8>() {
                         individual.education_source = Some(source_num);
                     }
@@ -92,7 +96,8 @@ use crate::schema::field_def::{
             Extractors::string("VERSION"),
             ModelSetters::string_setter(|individual, value| {
                 // Store version in properties map since there's no dedicated field
-                if let version = value.as_str() {
+                let version = value.as_str();
+                {
                     individual.store_property("uddf_version", Box::new(version.to_string()));
                 }
             }),

@@ -5,10 +5,11 @@
 // Re-export the main Individual struct and related types
 pub use self::consolidated::Individual;
 pub use self::consolidated::Role;
+pub use self::temporal::TimePeriod;
 
 // Core implementation
 pub mod consolidated;
 pub mod implementations;
 
 mod relationships;
-mod temporal;
+pub mod temporal;

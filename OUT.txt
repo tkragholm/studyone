@@ -1,18 +1,174 @@
-Successfully deserialized 1024 individuals
-First 5 individuals:
-[1] PNR: 090756-4624, Event Type: Some("U"), Event Date: None
-[2] PNR: 150459-1058, Event Type: Some("I"), Event Date: None
-[3] PNR: 221090-4972, Event Type: Some("I"), Event Date: None
-[4] PNR: 290496-3284, Event Type: Some("I"), Event Date: None
-[5] PNR: 160980-2798, Event Type: Some("U"), Event Date: None
+ Period 2000: 1000000 individuals
+    Period 200012: 148753 individuals
+    Period 200112: 151616 individuals
+    Period 200212: 154500 individuals
+    Period 200312: 157396 individuals
+    Period 2001: 1000000 individuals
+    Period 2002: 1000000 individuals
+    Period 2003: 1000000 individuals
+    Period 2004: 1000000 individuals
+    Period 2005: 0 individuals
+    Period 2006: 1000000 individuals
+    Period 2007: 1000000 individuals
+    Period 2008: 1000000 individuals
+    Period 2009: 1000000 individuals
+    Period 2010: 1000000 individuals
+    Period 2011: 0 individuals
+    Period 2012: 1000000 individuals
+    Period 200412: 160313 individuals
+    Period 200512: 163181 individuals
+    Period 200612: 166084 individuals
+    Period 2013: 1000000 individuals
+    Period 2014: 1000000 individuals
+    Period 2015: 1000000 individuals
+    Period 2016: 1000000 individuals
+    Period 2017: 0 individuals
+    Period 2018: 1000000 individuals
+    Period 2019: 1000000 individuals
+    Period 2020: 1000000 individuals
+    Period 2021: 0 individuals
+    Period 2022: 1000000 individuals
+    Period 200712: 168965 individuals
+    Period 200812: 171883 individuals
+    Period 200912: 174874 individuals
+    Period 201012: 175000 individuals
+    Period 201112: 175000 individuals
+    Period 201212: 175000 individuals
+    Period 201312: 175000 individuals
+    Period 201412: 175000 individuals
+    Period 201512: 175000 individuals
+    Period 201612: 175000 individuals
+    Period 201712: 175000 individuals
+    Period 201812: 175000 individuals
+    Period 201903: 175000 individuals
+    Period 201906: 175000 individuals
+    Period 201909: 175000 individuals
+    Period 201912: 175000 individuals
+    Period 202003: 175000 individuals
+    Period 202006: 175000 individuals
+    Period 202009: 175000 individuals
+    Period 202012: 175000 individuals
+    Period 202103: 175000 individuals
+    Period 202106: 175000 individuals
+    Period 202109: 175000 individuals
+    Period 202112: 175000 individuals
+    Period 202203: 175000 individuals
+    Period 202206: 175000 individuals
+    Period 202209: 175000 individuals
+    Period 202212: 175000 individuals
+    Period 2000: 1000000 individuals
+    Period 2001: 1000000 individuals
+    Period 2002: 1000000 individuals
+    Period 2003: 1000000 individuals
+    Period 2004: 1000000 individuals
+    Period 2005: 1000000 individuals
+    Period 2006: 1000000 individuals
+    Period 2007: 1000000 individuals
+    Period 2008: 1000000 individuals
+    Period 2009: 1000000 individuals
+    Period 2010: 1000000 individuals
+    Period 2011: 1000000 individuals
+    Period 2012: 1000000 individuals
+    Period 2013: 1000000 individuals
+    Period 2014: 1000000 individuals
+    Period 2015: 1000000 individuals
+    Period 2016: 1000000 individuals
+    Period 2017: 1000000 individuals
+    Period 2018: 1000000 individuals
+    Period 2019: 1000000 individuals
+    Period 2020: 1000000 individuals
+    Period 2021: 1000000 individuals
+    Period 2022: 1000000 individuals
+Processed 47992565 total individuals across all registries
+Found 997477 unique individuals
+Kept 997477 individuals for analysis
 
-Accessing via properties map (for comparison):
-[1] Properties map - Event Type: None
-[2] Properties map - Event Type: None
-[3] Properties map - Event Type: None
-[4] Properties map - Event Type: None
-[5] Properties map - Event Type: None
+=== Dataset Information ===
+Total individuals: 997477
+Registries loaded: 3
 
-Event Type Distribution:
-  U: 612 records
-  I: 412 records
+=== Registry Time Periods ===
+Registry 'ind': 23 time periods
+  2000: Y
+  2001: Y
+  2002: Y
+  2003: Y
+  2004: Y
+  2005: Y
+  2006: Y
+  2007: Y
+  2008: Y
+  2009: Y
+  2010: Y
+  2011: Y
+  2012: Y
+  2013: Y
+  2014: Y
+  2015: Y
+  2016: Y
+  2017: Y
+  2018: Y
+  2019: Y
+  2020: Y
+  2021: Y
+  2022: Y
+Registry 'akm': 23 time periods
+  2000: Y
+  2001: Y
+  2002: Y
+  2003: Y
+  2004: Y
+  2005: Y
+  2006: Y
+  2007: Y
+  2008: Y
+  2009: Y
+  2010: Y
+  2011: Y
+  2012: Y
+  2013: Y
+  2014: Y
+  2015: Y
+  2016: Y
+  2017: Y
+  2018: Y
+  2019: Y
+  2020: Y
+  2021: Y
+  2022: Y
+Registry 'bef': 35 time periods
+  2000: M12
+  2001: M12
+  2002: M12
+  2003: M12
+  2004: M12
+  2005: M12
+  2006: M12
+  2007: M12
+  2008: M12
+  2009: M12
+  2010: M12
+  2011: M12
+  2012: M12
+  2013: M12
+  2014: M12
+  2015: M12
+  2016: M12
+  2017: M12
+  2018: M12
+  2019: M03, M06, M09, M12
+  2020: M03, M06, M09, M12
+  2021: M03, M06, M09, M12
+  2022: M03, M06, M09, M12
+
+Individuals by number of registries:
+  1 registries: 997477 individuals
+
+=== Section 5: Time-Specific Data Queries ===
+Individuals valid on 2020-06-15: 174929
+Individuals with data for Year(2020): 0
+
+=== Section 6: Historical Analysis ===
+No individuals found with historical data across multiple time periods
+
+Longitudinal data loading example completed successfully!

@@ -9,7 +9,8 @@ use crate::schema::field_def::{
 };
 
 /// Create field mappings for LPR v3 DIAGNOSER registry
-#[must_use] pub fn create_field_mappings() -> Vec<FieldMapping> {
+#[must_use]
+pub fn create_field_mappings() -> Vec<FieldMapping> {
     vec![
         // Contact ID (required, used as ID)
         FieldMapping::new(
@@ -18,7 +19,8 @@ use crate::schema::field_def::{
             ModelSetters::string_setter(|individual, value| {
                 // Store contact ID in properties map
                 // This is used for lookup/join with kontakter, but not directly stored in Individual
-                if let contact_id = value.as_str() {
+                let contact_id = value.as_str();
+                {
                     individual
                         .store_property("lpr3_diag_contact_id", Box::new(contact_id.to_string()));
                 }
@@ -29,7 +31,8 @@ use crate::schema::field_def::{
             FieldDefinition::new("diagnosekode", "diagnosis_code", FieldType::String, true),
             Extractors::string("diagnosekode"),
             ModelSetters::string_setter(|individual, value| {
-                if let diagnosis = value.as_str() {
+                let diagnosis = value.as_str();
+                {
                     // Skip empty values
                     if diagnosis.trim().is_empty() {
                         return;
@@ -56,7 +59,8 @@ use crate::schema::field_def::{
             Extractors::string("diagnosetype"),
             ModelSetters::string_setter(|individual, value| {
                 // Store diagnosis type in properties map as a list of types
-                if let diag_type = value.as_str() {
+                let diag_type = value.as_str();
+                {
                     if diag_type.trim().is_empty() {
                         return;
                     }
@@ -101,7 +105,8 @@ use crate::schema::field_def::{
             Extractors::string("senere_afkraeftet"),
             ModelSetters::string_setter(|individual, value| {
                 // Store whether diagnosis was disproved
-                if let disproved = value.as_str() {
+                let disproved = value.as_str();
+                {
                     if disproved.trim().is_empty() {
                         return;
                     }
@@ -123,7 +128,8 @@ use crate::schema::field_def::{
             ),
             Extractors::string("diagnosekode_parent"),
             ModelSetters::string_setter(|individual, value| {
-                if let parent_diagnosis = value.as_str() {
+                let parent_diagnosis = value.as_str();
+                {
                     // Skip empty values
                     if parent_diagnosis.trim().is_empty() {
                         return;
@@ -147,7 +153,8 @@ use crate::schema::field_def::{
             ),
             Extractors::string("diagnosetype_parent"),
             ModelSetters::string_setter(|individual, value| {
-                if let parent_type = value.as_str() {
+                let parent_type = value.as_str();
+                {
                     // Skip empty values
                     if parent_type.trim().is_empty() {
                         return;
@@ -171,7 +178,8 @@ use crate::schema::field_def::{
             ),
             Extractors::string("lprindberetningssystem"),
             ModelSetters::string_setter(|individual, value| {
-                if let system = value.as_str() {
+                let system = value.as_str();
+                {
                     individual
                         .store_property("lpr3_diag_reporting_system", Box::new(system.to_string()));
                 }

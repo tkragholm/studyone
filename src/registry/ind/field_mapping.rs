@@ -9,7 +9,8 @@ use crate::schema::field_def::{
 };
 
 /// Create field mappings for IND registry
-#[must_use] pub fn create_field_mappings() -> Vec<FieldMapping> {
+#[must_use]
+pub fn create_field_mappings() -> Vec<FieldMapping> {
     vec![
         // PNR mapping (required)
         FieldMapping::new(
@@ -41,9 +42,8 @@ use crate::schema::field_def::{
             Extractors::string("VERSION"),
             ModelSetters::string_setter(|individual, value| {
                 // Store version in properties map since there's no dedicated field
-                if let version = value {
-                    individual.store_property("version", Box::new(version));
-                }
+                let version = value;
+                individual.store_property("version", Box::new(version));
             }),
         ),
         // Year

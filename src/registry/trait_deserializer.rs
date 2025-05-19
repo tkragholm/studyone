@@ -7,9 +7,33 @@
 use arrow::record_batch::RecordBatch;
 use std::any::Any;
 use std::collections::HashMap;
+use log::info;
 
 use crate::error::Result;
 use crate::models::core::Individual;
+
+/// Deserialize a single row from a record batch based on registry name
+///
+/// This function provides a simple interface for deserializing a single
+/// row from a record batch to an Individual, based on the registry name.
+/// It dispatches to the appropriate deserializer.
+///
+/// # Arguments
+///
+/// * `registry_name` - The name of the registry
+/// * `batch` - The record batch
+/// * `row` - The row index to deserialize
+///
+/// # Returns
+///
+/// A Result containing an Option with the deserialized Individual
+pub fn deserialize_row(registry_name: &str, batch: &RecordBatch, row: usize) -> Result<Option<Individual>> {
+    // Use the DirectIndividualDeserializer which is designed for direct Arrow to Individual conversion
+    let deserializer = crate::registry::direct_deserializer::DirectIndividualDeserializer::new(registry_name);
+    
+    info!("Deserializing row {} from {} registry", row, registry_name);
+    deserializer.deserialize_row(batch, row)
+}
 
 /// Marker trait for registry-specific types
 ///
@@ -44,6 +68,20 @@ pub trait RegistryFieldExtractor: Send + Sync + std::fmt::Debug {
 
     /// Get the target field name in the Individual model
     fn target_field_name(&self) -> &str;
+
+    /// Get the field definition
+    ///
+    /// Returns the field definition for this extractor
+    fn get_field_definition(&self) -> crate::schema::field_def::field::FieldDefinition {
+        use crate::schema::field_def::field::{FieldDefinition, FieldType};
+        // Create a default field definition based on the field names
+        FieldDefinition::new(
+            self.source_field_name(),
+            self.target_field_name(),
+            FieldType::String, // Default to string type
+            true, // Default to nullable
+        )
+    }
 }
 
 /// Trait for registry-specific deserialization

@@ -9,7 +9,8 @@ use crate::schema::field_def::{
 };
 
 /// Create field mappings for LPR v2 DIAG registry
-#[must_use] pub fn create_field_mappings() -> Vec<FieldMapping> {
+#[must_use]
+pub fn create_field_mappings() -> Vec<FieldMapping> {
     vec![
         // Record number (required, used as ID)
         FieldMapping::new(
@@ -17,7 +18,8 @@ use crate::schema::field_def::{
             Extractors::string("RECNUM"),
             ModelSetters::string_setter(|individual, value| {
                 // Store record number in properties map
-                if let record_num = value.as_str() {
+                let record_num = value.as_str();
+                {
                     individual
                         .store_property("lpr_diag_record_number", Box::new(record_num.to_string()));
                 }
@@ -28,7 +30,8 @@ use crate::schema::field_def::{
             FieldDefinition::new("C_DIAG", "diagnosis_code", FieldType::String, true),
             Extractors::string("C_DIAG"),
             ModelSetters::string_setter(|individual, value| {
-                if let diagnosis = value.as_str() {
+                let diagnosis = value.as_str();
+                {
                     // Initialize the diagnoses vector if it doesn't exist
                     if individual.diagnoses.is_none() {
                         individual.diagnoses = Some(Vec::new());
@@ -49,7 +52,8 @@ use crate::schema::field_def::{
             Extractors::string("C_DIAGTYPE"),
             ModelSetters::string_setter(|individual, value| {
                 // Store diagnosis type in properties map
-                if let diag_type = value.as_str() {
+                let diag_type = value.as_str();
+                {
                     individual.store_property("diagnosis_type", Box::new(diag_type.to_string()));
                 }
             }),
@@ -59,7 +63,8 @@ use crate::schema::field_def::{
             FieldDefinition::new("C_TILDIAG", "additional_diagnosis", FieldType::String, true),
             Extractors::string("C_TILDIAG"),
             ModelSetters::string_setter(|individual, value| {
-                if let additional_diag = value.as_str() {
+                let additional_diag = value.as_str();
+                {
                     // Skip empty values
                     if additional_diag.trim().is_empty() {
                         return;
@@ -85,7 +90,8 @@ use crate::schema::field_def::{
             Extractors::date("LEVERANCEDATO"),
             ModelSetters::string_setter(|individual, value| {
                 // Store the delivery date in properties map
-                if let date = value {
+                let date = value;
+                {
                     individual.store_property("lpr_diag_delivery_date", Box::new(date));
                 }
             }),
@@ -96,7 +102,8 @@ use crate::schema::field_def::{
             Extractors::string("VERSION"),
             ModelSetters::string_setter(|individual, value| {
                 // Store version in properties map
-                if let version = value.as_str() {
+                let version = value.as_str();
+                {
                     individual.store_property("lpr_diag_version", Box::new(version.to_string()));
                 }
             }),

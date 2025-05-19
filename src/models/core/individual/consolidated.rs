@@ -4,6 +4,7 @@
 
 use crate::RecordBatch;
 use crate::error::Result;
+use crate::models::core::individual::temporal::TimePeriod;
 use crate::models::core::traits::EntityModel;
 use macros::PropertyField;
 
@@ -12,7 +13,7 @@ use arrow::array::StringArray;
 use arrow::datatypes::DataType;
 use chrono::{Datelike, NaiveDate};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::default::Default;
 
 /// Role of an individual in the study context
@@ -228,6 +229,15 @@ pub struct Individual {
     #[property(name = "income_year")]
     pub income_year: Option<i32>,
 
+    /// Time period information for each registry
+    /// Maps registry name to a sorted map of time periods with their associated data
+    #[serde(skip)]
+    pub time_periods: HashMap<String, BTreeMap<TimePeriod, String>>,
+
+    /// Current time period being processed - used during loading
+    #[serde(skip)]
+    pub current_time_period: Option<(String, TimePeriod)>,
+
     // Healthcare usage
     /// Number of hospital admissions in past year
     #[property(name = "hospital_admissions_count")]
@@ -389,10 +399,100 @@ impl Clone for Individual {
         cloned.birth_order = self.birth_order;
         cloned.plurality = self.plurality;
 
+        // Clone time periods
+        for (registry, periods) in &self.time_periods {
+            cloned
+                .time_periods
+                .insert(registry.clone(), periods.clone());
+        }
+        cloned.current_time_period = self.current_time_period.clone();
+
         // Don't copy properties - they can't be cloned
         // This is acceptable behavior since properties are just for temporary storage
 
         cloned
+    }
+}
+
+// Time period related methods for Individual
+impl Individual {
+    /// Set the current time period for a registry
+    pub fn set_current_time_period(&mut self, registry: String, period: TimePeriod) {
+        self.current_time_period = Some((registry, period));
+    }
+
+    /// Add a registry time period entry
+    pub fn add_time_period(&mut self, registry: String, period: TimePeriod, data_source: String) {
+        self.time_periods
+            .entry(registry)
+            .or_insert_with(BTreeMap::new)
+            .insert(period, data_source);
+    }
+
+    /// Get all time periods for a registry
+    pub fn get_time_periods(&self, registry: &str) -> Option<&BTreeMap<TimePeriod, String>> {
+        self.time_periods.get(registry)
+    }
+
+    /// Get the earliest time period data for a registry
+    pub fn get_earliest_time_period(&self, registry: &str) -> Option<TimePeriod> {
+        self.time_periods
+            .get(registry)
+            .and_then(|periods| periods.keys().next().copied())
+    }
+
+    /// Get the latest time period data for a registry
+    pub fn get_latest_time_period(&self, registry: &str) -> Option<TimePeriod> {
+        self.time_periods
+            .get(registry)
+            .and_then(|periods| periods.keys().rev().next().copied())
+    }
+
+    /// Get all data sources for a specific time period across all registries
+    pub fn get_data_sources_for_date(&self, date: NaiveDate) -> HashMap<String, Vec<TimePeriod>> {
+        let mut result = HashMap::new();
+
+        for (registry, periods) in &self.time_periods {
+            let matching_periods: Vec<TimePeriod> = periods
+                .keys()
+                .filter(|period| period.contains(date))
+                .copied()
+                .collect();
+
+            if !matching_periods.is_empty() {
+                result.insert(registry.clone(), matching_periods);
+            }
+        }
+
+        result
+    }
+
+    /// Filter data to a specific time range
+    pub fn filter_to_time_range(
+        &self,
+        start_date: NaiveDate,
+        end_date: NaiveDate,
+    ) -> HashMap<String, Vec<TimePeriod>> {
+        let mut result = HashMap::new();
+
+        for (registry, periods) in &self.time_periods {
+            let matching_periods: Vec<TimePeriod> = periods
+                .keys()
+                .filter(|period| {
+                    let period_start = period.start_date();
+                    let period_end = period.end_date();
+                    // Check for any overlap between the period and the requested range
+                    period_start <= end_date && period_end >= start_date
+                })
+                .copied()
+                .collect();
+
+            if !matching_periods.is_empty() {
+                result.insert(registry.clone(), matching_periods);
+            }
+        }
+
+        result
     }
 }
 
@@ -488,6 +588,10 @@ impl Individual {
             apgar_score: None,
             birth_order: None,
             plurality: None,
+
+            // Temporal data
+            time_periods: HashMap::new(),
+            current_time_period: None,
         }
     }
 
@@ -537,6 +641,48 @@ impl Individual {
             Err(e) => Err(anyhow::anyhow!("Failed to deserialize: {}", e)),
         }
     }
+    
+    /// Convert from a `RecordBatch` with time period information extracted from the file path
+    ///
+    /// This version of from_batch extracts time period information from the file path
+    /// and sets it on the resulting Individual objects.
+    ///
+    /// # Arguments
+    ///
+    /// * `batch` - The record batch to convert
+    /// * `file_path` - The path to the file containing the data
+    /// * `registry_name` - The name of the registry the data is from
+    ///
+    /// # Returns
+    ///
+    /// A Result containing a vector of Individual objects with time period information
+    pub fn from_batch_with_time_period(
+        batch: &RecordBatch,
+        file_path: &std::path::Path,
+        registry_name: &str,
+    ) -> Result<Vec<Self>> {
+        // First convert to individuals
+        let mut individuals = Self::from_batch(batch)?;
+        
+        // Extract time period from filename
+        if let Some(time_period) = 
+            crate::models::core::individual::temporal::extract_time_period_from_filename(file_path) {
+            
+            // Set time period information on each individual
+            for individual in &mut individuals {
+                // Set the current time period for this registry
+                individual.set_current_time_period(registry_name.to_string(), time_period);
+                
+                // Generate a source identifier for this data point
+                let source = format!("{}_{}_{}", registry_name, time_period.to_string(), batch.num_rows());
+                
+                // Add the time period to the individual's time periods map
+                individual.add_time_period(registry_name.to_string(), time_period, source);
+            }
+        }
+        
+        Ok(individuals)
+    }
 
     /// Calculate the age of the individual at a given reference date
     pub fn calculate_age(&mut self, reference_date: NaiveDate) {
@@ -569,27 +715,57 @@ impl Individual {
     ///
     /// * `batch` - The `RecordBatch` containing registry data
     /// * `row` - The row index to use for enhancement
+    /// * `registry_name` - The name of the registry
+    /// * `time_period` - Optional time period information for this data
+    /// * `file_path` - Optional path to the file containing the data
     ///
     /// # Returns
     ///
     /// `true` if any data was added to the Individual, `false` otherwise
-    pub fn enhance_from_registry(&mut self, batch: &RecordBatch, row: usize) -> Result<bool> {
+    pub fn enhance_from_registry(
+        &mut self,
+        batch: &RecordBatch,
+        row: usize,
+        registry_name: &str,
+        time_period: Option<TimePeriod>,
+        file_path: Option<&std::path::Path>,
+    ) -> Result<bool> {
         // First check if the PNR matches
         if !self.pnr_matches_record(batch, row)? {
             return Ok(false);
         }
 
-        todo!("Not implemented yet");
-        // // Deserialize a new Individual from the registry record
-        // if let Some(enhanced_individual) =
-        //     crate::registry::trait_deserializer::deserialize_row(batch, row)?
-        // {
-        //     // Merge fields from the enhanced individual into self, but only if they're not already set
-        //     self.merge_fields(&enhanced_individual);
-        //     Ok(true)
-        // } else {
-        //     Ok(false)
-        // }
+        // Try to get time period information
+        let period = match time_period {
+            // If time period is provided directly, use it
+            Some(p) => Some(p),
+            // Otherwise, try to extract it from the file path if provided
+            None => file_path.and_then(|path| 
+                crate::models::core::individual::temporal::extract_time_period_from_filename(path)),
+        };
+
+        // Store time period information if available
+        if let Some(period) = period {
+            // Set as current time period for this enhancement operation
+            self.set_current_time_period(registry_name.to_string(), period);
+
+            // Generate a source identifier for this data point
+            let source = format!("{}_row_{}", registry_name, row);
+
+            // Store this time period in the individual's history
+            self.add_time_period(registry_name.to_string(), period, source);
+        }
+
+        // Use the direct method for enhancement since this is a direct deserialization registry
+        // Create a temporary individual from this registry row
+        use crate::registry::trait_deserializer::deserialize_row;
+        if let Some(enhanced_individual) = deserialize_row(registry_name, batch, row)? {
+            // Merge fields from the enhanced individual into self, but only if they're not already set
+            self.merge_fields(&enhanced_individual);
+            Ok(true)
+        } else {
+            Ok(false)
+        }
     }
 
     /// Check if this Individual's PNR matches the PNR in a registry record

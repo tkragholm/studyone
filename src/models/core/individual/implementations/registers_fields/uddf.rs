@@ -6,7 +6,7 @@ use chrono::NaiveDate;
 impl UddfFields for Individual {
     fn education_institution(&self) -> Option<&str> {
         // Converting i32 to String for the trait interface
-        self.education_institution.map(|val| {
+        self.education_institution.map(|_val| {
             // Use the properties map to store a temporary String representation
             if let Some(props) = &self.properties() {
                 if let Some(cached) = props.get("cached_education_institution") {

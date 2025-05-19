@@ -33,10 +33,10 @@ fn main() {
         discharge_date: Option<NaiveDate>,
 
         #[field(name = "V_ALDER")]
-        age: Option<i32>,
+        _age: Option<i32>,
 
         #[field(name = "V_SENGDAGE")]
-        length_of_stay: Option<i32>,
+        _length_of_stay: Option<i32>,
     }
 
     // Define LPR DIAG Registry using the derive macro

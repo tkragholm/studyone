@@ -9,7 +9,8 @@ use crate::schema::field_def::{
 };
 
 /// Create field mappings for LPR v3 KONTAKTER registry
-#[must_use] pub fn create_field_mappings() -> Vec<FieldMapping> {
+#[must_use]
+pub fn create_field_mappings() -> Vec<FieldMapping> {
     vec![
         // PNR mapping (required)
         FieldMapping::new(
@@ -25,7 +26,8 @@ use crate::schema::field_def::{
             Extractors::string("DW_EK_KONTAKT"),
             ModelSetters::string_setter(|individual, value| {
                 // Store contact ID in properties map
-                if let contact_id = value.as_str() {
+                let contact_id = value.as_str();
+                {
                     individual.store_property("lpr3_contact_id", Box::new(contact_id.to_string()));
                 }
             }),
@@ -36,7 +38,8 @@ use crate::schema::field_def::{
             Extractors::string("DW_EK_FORLOEB"),
             ModelSetters::string_setter(|individual, value| {
                 // Store course ID in properties map
-                if let course_id = value.as_str() {
+                let course_id = value.as_str();
+                {
                     individual.store_property("lpr3_course_id", Box::new(course_id.to_string()));
                 }
             }),
@@ -52,7 +55,8 @@ use crate::schema::field_def::{
             Extractors::string("SORENHED_IND"),
             ModelSetters::string_setter(|individual, value| {
                 // Store org unit in properties map
-                if let org_unit = value.as_str() {
+                let org_unit = value.as_str();
+                {
                     individual
                         .store_property("lpr3_org_unit_admission", Box::new(org_unit.to_string()));
                 }
@@ -63,7 +67,8 @@ use crate::schema::field_def::{
             Extractors::string("SORENHED_HEN"),
             ModelSetters::string_setter(|individual, value| {
                 // Store org unit in properties map
-                if let org_unit = value.as_str() {
+                let org_unit = value.as_str();
+                {
                     individual
                         .store_property("lpr3_org_unit_referral", Box::new(org_unit.to_string()));
                 }
@@ -79,7 +84,8 @@ use crate::schema::field_def::{
             Extractors::string("SORENHED_ANS"),
             ModelSetters::string_setter(|individual, value| {
                 // Store org unit in properties map
-                if let org_unit = value.as_str() {
+                let org_unit = value.as_str();
+                {
                     individual.store_property(
                         "lpr3_org_unit_responsible",
                         Box::new(org_unit.to_string()),
@@ -93,7 +99,8 @@ use crate::schema::field_def::{
             Extractors::date("dato_start"),
             ModelSetters::date_setter(|individual, value| {
                 // Set as hospital admission date
-                if let date = value {
+                let date = value;
+                {
                     // Update last hospital admission date
                     if individual.last_hospital_admission_date.is_none()
                         || individual.last_hospital_admission_date.unwrap() < date
@@ -122,7 +129,8 @@ use crate::schema::field_def::{
             Extractors::date("dato_slut"),
             ModelSetters::date_setter(|individual, value| {
                 // Add to discharge dates list
-                if let date = value {
+                let date = value;
+                {
                     if individual.discharge_dates.is_none() {
                         individual.discharge_dates = Some(Vec::new());
                     }
@@ -143,7 +151,8 @@ use crate::schema::field_def::{
             ),
             Extractors::string("aktionsdiagnose"),
             ModelSetters::string_setter(|individual, value| {
-                if let diagnosis = value.as_str() {
+                let diagnosis = value.as_str();
+                {
                     // Skip empty values
                     if diagnosis.trim().is_empty() {
                         return;
@@ -168,7 +177,8 @@ use crate::schema::field_def::{
             FieldDefinition::new("kontakttype", "contact_type", FieldType::String, true),
             Extractors::string("kontakttype"),
             ModelSetters::string_setter(|individual, value| {
-                if let contact_type = value.as_str() {
+                let contact_type = value.as_str();
+                {
                     // Check if this is an emergency visit
                     if contact_type.contains("akut") || contact_type.contains("emergency") {
                         // Increment emergency visits count
@@ -187,7 +197,8 @@ use crate::schema::field_def::{
             FieldDefinition::new("kontaktaarsag", "contact_reason", FieldType::String, true),
             Extractors::string("kontaktaarsag"),
             ModelSetters::string_setter(|individual, value| {
-                if let reason = value.as_str() {
+                let reason = value.as_str();
+                {
                     individual.store_property("lpr3_contact_reason", Box::new(reason.to_string()));
                 }
             }),
@@ -196,7 +207,8 @@ use crate::schema::field_def::{
             FieldDefinition::new("prioritet", "priority", FieldType::String, true),
             Extractors::string("prioritet"),
             ModelSetters::string_setter(|individual, value| {
-                if let priority = value.as_str() {
+                let priority = value.as_str();
+                {
                     individual.store_property("lpr3_priority", Box::new(priority.to_string()));
                 }
             }),
@@ -210,7 +222,8 @@ use crate::schema::field_def::{
             ),
             Extractors::string("henvisningsaarsag"),
             ModelSetters::string_setter(|individual, value| {
-                if let reason = value.as_str() {
+                let reason = value.as_str();
+                {
                     individual.store_property("lpr3_referral_reason", Box::new(reason.to_string()));
                 }
             }),
@@ -224,7 +237,8 @@ use crate::schema::field_def::{
             ),
             Extractors::string("henvisningsmaade"),
             ModelSetters::string_setter(|individual, value| {
-                if let method = value.as_str() {
+                let method = value.as_str();
+                {
                     individual.store_property("lpr3_referral_method", Box::new(method.to_string()));
                 }
             }),

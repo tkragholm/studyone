@@ -4,7 +4,7 @@
 //! their data types, and mappings to the Individual model.
 
 mod adapt;
-mod field;
+pub mod field;
 mod macros;
 pub mod mapping;
 mod registry_schema;

@@ -335,7 +335,7 @@ impl ArrowSchema for Child {
 
     fn from_record_batch(batch: &RecordBatch) -> Result<Vec<Self>> {
         // Convert the record batch to a vector of Child instances using serde_arrow
-        let schema = batch.schema();
+        let _schema = batch.schema();
         
         // First create Individual instances from the batch
         let individuals = crate::models::core::Individual::from_batch(batch)?;

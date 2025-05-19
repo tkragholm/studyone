@@ -6,6 +6,8 @@
 pub mod detection;
 pub mod extractors;
 pub mod integration;
+pub mod longitudinal;
+pub mod longitudinal_loader;
 pub mod mapping;
 
 // Re-export commonly used functions for convenience
@@ -14,4 +16,16 @@ pub use extractors::{DateExtractor, FloatExtractor, IntegerExtractor, Setter, St
 pub use integration::{
     DateConversionExt, DateRangeConfig, PnrLinked, Registry, RegistryFieldMapper,
     RegistryIntegrator, RegistryTransformer,
+};
+pub use longitudinal::{
+    LongitudinalConfig, 
+    TemporalRegistryData,
+    detect_registry_time_periods,
+    load_longitudinal_data,
+    merge_temporal_individuals,
+};
+pub use longitudinal_loader::{
+    LongitudinalDataset,
+    load_all_longitudinal_data,
+    load_selected_longitudinal_data,
 };
