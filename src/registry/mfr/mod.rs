@@ -5,6 +5,9 @@
 use crate::RegistryTrait;
 use chrono::NaiveDate;
 
+// Re-export the field_mapping module
+pub mod field_mapping;
+
 /// Medical Birth Registry with birth information
 #[derive(RegistryTrait, Debug)]
 #[registry(name = "MFR", description = "Medical Birth Registry")]

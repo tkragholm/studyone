@@ -1,5 +1,5 @@
 use crate::models::core::individual::consolidated::Individual;
-use crate::models::core::registry_traits::*;
+use crate::models::core::registry_traits::LprFields;
 use chrono::NaiveDate;
 
 // Implement the LprFields trait for Individual

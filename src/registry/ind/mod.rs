@@ -4,6 +4,9 @@
 
 use crate::RegistryTrait;
 
+// Re-export the field_mapping module
+pub mod field_mapping;
+
 /// Income registry with tax information
 #[derive(RegistryTrait, Debug)]
 #[registry(name = "IND", description = "Income registry")]

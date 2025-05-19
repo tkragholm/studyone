@@ -12,7 +12,7 @@ use chrono::NaiveDate;
 
 use crate::error::Result;
 use crate::models::core::Individual;
-use crate::models::core::registry_traits::*;
+use crate::models::core::registry_traits::{AkmFields, BefFields, DodFields, IndFields, LprFields, MfrFields, UddfFields, VndsFields};
 
 /// Field definition with metadata
 #[derive(Debug, Clone)]
@@ -57,7 +57,7 @@ pub enum FieldType {
 
 impl FieldDefinition {
     /// Create a new field definition
-    pub fn new(name: &str, description: &str, field_type: FieldType, required: bool) -> Self {
+    #[must_use] pub fn new(name: &str, description: &str, field_type: FieldType, required: bool) -> Self {
         Self {
             name: name.to_string(),
             description: description.to_string(),
@@ -79,7 +79,7 @@ pub struct FieldMapping<T: 'static> {
     pub extractor: Box<dyn Fn(&ArrayRef, usize) -> Option<T> + Send + Sync>,
 
     /// Trait-based field setter function
-    pub setter: Box<dyn Fn(&mut dyn Any, T) -> () + Send + Sync>,
+    pub setter: Box<dyn Fn(&mut dyn Any, T) + Send + Sync>,
 }
 
 impl<T: 'static> FieldMapping<T> {
@@ -87,7 +87,7 @@ impl<T: 'static> FieldMapping<T> {
     pub fn new<F, S>(field_def: FieldDefinition, extractor: F, setter: S) -> Self
     where
         F: Fn(&ArrayRef, usize) -> Option<T> + Send + Sync + 'static,
-        S: Fn(&mut dyn Any, T) -> () + Send + Sync + 'static,
+        S: Fn(&mut dyn Any, T) + Send + Sync + 'static,
     {
         Self {
             field_def,
@@ -129,7 +129,7 @@ pub fn string_field<F>(
     setter: F,
 ) -> FieldMapping<String>
 where
-    F: Fn(&mut dyn Any, String) -> () + Send + Sync + 'static,
+    F: Fn(&mut dyn Any, String) + Send + Sync + 'static,
 {
     FieldMapping::new(
         FieldDefinition::new(name, description, FieldType::String, required),
@@ -160,7 +160,7 @@ pub fn date_field<F>(
     setter: F,
 ) -> FieldMapping<NaiveDate>
 where
-    F: Fn(&mut dyn Any, NaiveDate) -> () + Send + Sync + 'static,
+    F: Fn(&mut dyn Any, NaiveDate) + Send + Sync + 'static,
 {
     FieldMapping::new(
         FieldDefinition::new(name, description, FieldType::Date, required),
@@ -170,7 +170,7 @@ where
                     let days_since_epoch = date_array.value(idx);
                     // Convert from days since UNIX epoch to NaiveDate
                     let epoch = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap();
-                    return Some(epoch + chrono::Duration::days(days_since_epoch as i64));
+                    return Some(epoch + chrono::Duration::days(i64::from(days_since_epoch)));
                 }
             }
             None
@@ -194,7 +194,7 @@ pub fn integer_field<F>(
     setter: F,
 ) -> FieldMapping<i32>
 where
-    F: Fn(&mut dyn Any, i32) -> () + Send + Sync + 'static,
+    F: Fn(&mut dyn Any, i32) + Send + Sync + 'static,
 {
     FieldMapping::new(
         FieldDefinition::new(name, description, FieldType::Integer, required),
@@ -208,13 +208,13 @@ where
                 arrow::datatypes::DataType::Int8 => {
                     let array =
                         arrow::array::cast::as_primitive_array::<arrow::datatypes::Int8Type>(array);
-                    Some(array.value(idx) as i32)
+                    Some(i32::from(array.value(idx)))
                 }
                 arrow::datatypes::DataType::Int16 => {
                     let array = arrow::array::cast::as_primitive_array::<arrow::datatypes::Int16Type>(
                         array,
                     );
-                    Some(array.value(idx) as i32)
+                    Some(i32::from(array.value(idx)))
                 }
                 arrow::datatypes::DataType::Int32 => {
                     let array = arrow::array::cast::as_primitive_array::<arrow::datatypes::Int32Type>(
@@ -232,13 +232,13 @@ where
                     let array = arrow::array::cast::as_primitive_array::<arrow::datatypes::UInt8Type>(
                         array,
                     );
-                    Some(array.value(idx) as i32)
+                    Some(i32::from(array.value(idx)))
                 }
                 arrow::datatypes::DataType::UInt16 => {
                     let array = arrow::array::cast::as_primitive_array::<
                         arrow::datatypes::UInt16Type,
                     >(array);
-                    Some(array.value(idx) as i32)
+                    Some(i32::from(array.value(idx)))
                 }
                 arrow::datatypes::DataType::UInt32 => {
                     let array = arrow::array::cast::as_primitive_array::<
@@ -263,7 +263,7 @@ where
 /// * `setter` - Trait-based field setter function
 pub fn float_field<F>(name: &str, description: &str, required: bool, setter: F) -> FieldMapping<f64>
 where
-    F: Fn(&mut dyn Any, f64) -> () + Send + Sync + 'static,
+    F: Fn(&mut dyn Any, f64) + Send + Sync + 'static,
 {
     FieldMapping::new(
         FieldDefinition::new(name, description, FieldType::Float, required),
@@ -278,7 +278,7 @@ where
                     let array = arrow::array::cast::as_primitive_array::<
                         arrow::datatypes::Float32Type,
                     >(array);
-                    Some(array.value(idx) as f64)
+                    Some(f64::from(array.value(idx)))
                 }
                 arrow::datatypes::DataType::Float64 => {
                     let array = arrow::array::cast::as_primitive_array::<
@@ -320,7 +320,7 @@ pub trait RegistryFieldMapper: Send + Sync {
     ) -> Result<()>;
 }
 
-/// Helper function to cast Any to BefFields
+/// Helper function to cast Any to `BefFields`
 pub fn as_bef_fields(any: &mut dyn Any) -> Option<&mut dyn BefFields> {
     if let Some(individual) = any.downcast_mut::<Individual>() {
         Some(individual as &mut dyn BefFields)
@@ -329,7 +329,7 @@ pub fn as_bef_fields(any: &mut dyn Any) -> Option<&mut dyn BefFields> {
     }
 }
 
-/// Helper function to cast Any to LprFields
+/// Helper function to cast Any to `LprFields`
 pub fn as_lpr_fields(any: &mut dyn Any) -> Option<&mut dyn LprFields> {
     if let Some(individual) = any.downcast_mut::<Individual>() {
         Some(individual as &mut dyn LprFields)
@@ -338,7 +338,7 @@ pub fn as_lpr_fields(any: &mut dyn Any) -> Option<&mut dyn LprFields> {
     }
 }
 
-/// Helper function to cast Any to MfrFields
+/// Helper function to cast Any to `MfrFields`
 pub fn as_mfr_fields(any: &mut dyn Any) -> Option<&mut dyn MfrFields> {
     if let Some(individual) = any.downcast_mut::<Individual>() {
         Some(individual as &mut dyn MfrFields)
@@ -347,7 +347,7 @@ pub fn as_mfr_fields(any: &mut dyn Any) -> Option<&mut dyn MfrFields> {
     }
 }
 
-/// Helper function to cast Any to UddfFields
+/// Helper function to cast Any to `UddfFields`
 #[allow(dead_code)]
 pub fn as_uddf_fields(any: &mut dyn Any) -> Option<&mut dyn UddfFields> {
     if let Some(individual) = any.downcast_mut::<Individual>() {
@@ -357,7 +357,7 @@ pub fn as_uddf_fields(any: &mut dyn Any) -> Option<&mut dyn UddfFields> {
     }
 }
 
-/// Helper function to cast Any to IndFields
+/// Helper function to cast Any to `IndFields`
 #[allow(dead_code)]
 pub fn as_ind_fields(any: &mut dyn Any) -> Option<&mut dyn IndFields> {
     if let Some(individual) = any.downcast_mut::<Individual>() {
@@ -367,7 +367,7 @@ pub fn as_ind_fields(any: &mut dyn Any) -> Option<&mut dyn IndFields> {
     }
 }
 
-/// Helper function to cast Any to AkmFields
+/// Helper function to cast Any to `AkmFields`
 pub fn as_akm_fields(any: &mut dyn Any) -> Option<&mut dyn AkmFields> {
     if let Some(individual) = any.downcast_mut::<Individual>() {
         Some(individual as &mut dyn AkmFields)
@@ -376,7 +376,7 @@ pub fn as_akm_fields(any: &mut dyn Any) -> Option<&mut dyn AkmFields> {
     }
 }
 
-/// Helper function to cast Any to VndsFields
+/// Helper function to cast Any to `VndsFields`
 pub fn as_vnds_fields(any: &mut dyn Any) -> Option<&mut dyn VndsFields> {
     if let Some(individual) = any.downcast_mut::<Individual>() {
         Some(individual as &mut dyn VndsFields)
@@ -385,7 +385,7 @@ pub fn as_vnds_fields(any: &mut dyn Any) -> Option<&mut dyn VndsFields> {
     }
 }
 
-/// Helper function to cast Any to DodFields
+/// Helper function to cast Any to `DodFields`
 pub fn as_dod_fields(any: &mut dyn Any) -> Option<&mut dyn DodFields> {
     if let Some(individual) = any.downcast_mut::<Individual>() {
         Some(individual as &mut dyn DodFields)

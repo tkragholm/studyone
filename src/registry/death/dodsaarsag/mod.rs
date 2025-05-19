@@ -5,6 +5,10 @@
 use crate::RegistryTrait;
 use chrono::NaiveDate;
 
+// Re-export the field_mapping module
+pub mod field_mapping;
+pub mod schema;
+
 /// Death causes registry with death certificate information
 #[derive(RegistryTrait, Debug)]
 #[registry(name = "DODSAARSAG", description = "Cause of Death registry")]
@@ -63,23 +67,3 @@ impl crate::registry::RegisterLoader for DodsaarsagRegistryDeserializer {
 
 // Re-export the standardized schema function for compatibility
 pub use schema::dodsaarsag_standardized_schema;
-
-mod schema {
-    use arrow::datatypes::{DataType, Field, Schema};
-    use std::sync::Arc;
-
-    /// Returns a standardized schema for the Dodsaarsag register
-    ///
-    /// This schema provides normalized field names for the cause of death data
-    #[must_use] pub fn dodsaarsag_standardized_schema() -> Arc<Schema> {
-        let fields = vec![
-            Field::new("PNR", DataType::Utf8, false),
-            Field::new("DEATH_CAUSE", DataType::Utf8, true),
-            Field::new("DEATH_CONDITION", DataType::Utf8, true),
-            Field::new("DEATH_CAUSE_CHAPTER", DataType::Utf8, true),
-            Field::new("DEATH_DATE", DataType::Date32, true),
-        ];
-
-        Arc::new(Schema::new(fields))
-    }
-}

@@ -6,6 +6,9 @@ use crate::RegistryTrait;
 use arrow::datatypes::{DataType, Field, Schema};
 use chrono::NaiveDate;
 
+// Re-export the field_mapping module
+pub mod field_mapping;
+
 // Define LPR BES Registry using the derive macro
 #[derive(RegistryTrait, Debug)]
 #[registry(

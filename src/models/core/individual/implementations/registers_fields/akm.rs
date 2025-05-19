@@ -4,7 +4,7 @@
 //! defining how registry data is accessed and manipulated.
 
 use crate::models::core::individual::consolidated::Individual;
-use crate::models::core::registry_traits::*;
+use crate::models::core::registry_traits::AkmFields;
 use chrono::NaiveDate;
 
 // Implement AkmFields for Individual

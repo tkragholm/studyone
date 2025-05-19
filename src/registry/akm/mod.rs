@@ -4,6 +4,9 @@
 
 use crate::RegistryTrait;
 
+// Field mapping module
+pub mod field_mapping;
+
 /// Labour register with employment information
 #[derive(RegistryTrait, Debug)]
 #[registry(name = "AKM", description = "Labour register")]

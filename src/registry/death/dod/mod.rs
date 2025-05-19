@@ -5,6 +5,9 @@
 use crate::RegistryTrait;
 use chrono::NaiveDate;
 
+// Re-export the field_mapping module
+pub mod field_mapping;
+
 /// Death registry with death records
 #[derive(RegistryTrait, Debug)]
 #[registry(name = "DOD", description = "Death registry")]

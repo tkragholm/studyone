@@ -277,6 +277,7 @@ pub trait RegisterLoader: Send + Sync {
 // Registry implementations
 pub mod akm;
 pub mod bef;
+pub mod common;
 pub mod death {
     pub mod dod;
     pub mod dodsaarsag;

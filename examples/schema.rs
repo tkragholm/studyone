@@ -5,7 +5,7 @@
 
 use arrow::array::Array;
 use chrono::NaiveDate;
-use par_reader::{error, models, registry, schema}; // Import everything from par_reader
+use par_reader::models; // Import everything from par_reader
 use std::path::Path;
 use std::any::Any;
 
@@ -53,7 +53,7 @@ pub fn main() {
                         if let Some(string_array) = event_array.as_any().downcast_ref::<arrow::array::StringArray>() {
                             if !string_array.is_null(row) {
                                 let value = string_array.value(row).to_string();
-                                println!("Setting event_type for row {}: {}", row, value);
+                                println!("Setting event_type for row {row}: {value}");
                                 // Set the value both directly and in properties
                                 individual.event_type = Some(value.clone());
                                 
@@ -75,11 +75,11 @@ pub fn main() {
                         if let Some(string_array) = date_array.as_any().downcast_ref::<arrow::array::StringArray>() {
                             if !string_array.is_null(row) {
                                 let date_str = string_array.value(row);
-                                println!("Parsing date string: '{}' for field 'HAEND_DATO'", date_str);
+                                println!("Parsing date string: '{date_str}' for field 'HAEND_DATO'");
                                 
                                 // Parse the date
                                 if let Ok(parsed_date) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
-                                    println!("Successfully parsed date: Some({})", parsed_date);
+                                    println!("Successfully parsed date: Some({parsed_date})");
                                     // Set the value both directly and in properties
                                     individual.event_date = Some(parsed_date);
                                     
@@ -117,7 +117,7 @@ pub fn main() {
                     let event_type_prop = individual.properties()
                         .and_then(|props| props.get("event_type"))
                         .and_then(|v| v.downcast_ref::<Option<String>>())
-                        .and_then(|v| v.as_ref().map(|s| s.as_str()));
+                        .and_then(|v| v.as_ref().map(std::string::String::as_str));
                     
                     let event_date_prop = individual.properties()
                         .and_then(|props| props.get("event_date"))

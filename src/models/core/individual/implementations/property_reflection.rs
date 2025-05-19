@@ -101,11 +101,7 @@ impl PropertyReflection for Individual {
         self.set_property_field(property, value);
         
         // Handle special cases that need custom handling (original value now consumed)
-        match property {
-            // Special handling for array additions - these cases are handled in the 
-            // PropertyField macro implementation now, so we can skip them here
-            _ => {}
-        }
+        {}
     }
 
     fn get_reflected_property(&self, property: &str) -> Option<Box<dyn Any + Send + Sync>> {

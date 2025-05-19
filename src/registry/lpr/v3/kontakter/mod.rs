@@ -7,6 +7,9 @@ use arrow::datatypes::{DataType, Field, Schema, TimeUnit};
 use chrono::{NaiveDate, NaiveTime};
 use std::sync::Arc;
 
+// Re-export the field_mapping module
+pub mod field_mapping;
+
 // Define LPR3 KONTAKTER Registry using the derive macro
 #[derive(RegistryTrait, Debug)]
 #[registry(name = "LPR3_KONTAKTER", description = "LPR v3 Contact Records")]

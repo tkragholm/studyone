@@ -5,6 +5,9 @@
 use crate::RegistryTrait;
 use chrono::NaiveDate;
 
+// Re-export the field_mapping module
+pub mod field_mapping;
+
 /// Education registry with educational information
 #[derive(RegistryTrait, Debug)]
 #[registry(name = "UDDF", description = "Education registry")]

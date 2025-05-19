@@ -5,6 +5,9 @@
 use crate::RegistryTrait;
 use chrono::NaiveDate;
 
+// Field mapping module
+pub mod field_mapping;
+
 /// Migration registry with migration information
 #[derive(RegistryTrait, Debug)]
 #[registry(name = "VNDS", description = "Migration registry")]

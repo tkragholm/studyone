@@ -1,5 +1,5 @@
 use crate::models::core::individual::consolidated::Individual;
-use crate::models::core::registry_traits::*;
+use crate::models::core::registry_traits::IndFields;
 
 // Implement the IndFields trait for Individual
 impl IndFields for Individual {

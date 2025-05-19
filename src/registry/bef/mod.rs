@@ -5,6 +5,9 @@
 use crate::RegistryTrait;
 use chrono::NaiveDate;
 
+// Field mapping module
+pub mod field_mapping;
+
 /// Population registry with demographic information
 #[derive(RegistryTrait, Debug)]
 #[registry(name = "BEF", description = "Population registry")]

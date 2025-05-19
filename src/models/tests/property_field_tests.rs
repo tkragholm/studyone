@@ -1,6 +1,6 @@
-//! Tests for the PropertyField derive macro
+//! Tests for the `PropertyField` derive macro
 //!
-//! This module contains tests for the PropertyField derive macro.
+//! This module contains tests for the `PropertyField` derive macro.
 
 #[cfg(test)]
 mod tests {
@@ -8,7 +8,7 @@ mod tests {
     use macros::PropertyField;
     use std::collections::HashMap;
     
-    /// Test struct with PropertyField derive
+    /// Test struct with `PropertyField` derive
     #[derive(Debug, PropertyField)]
     struct TestPerson {
         #[property(name = "person_id")]
@@ -28,7 +28,7 @@ mod tests {
     }
     
     impl TestPerson {
-        /// Create a new TestPerson
+        /// Create a new `TestPerson`
         fn new(id: &str, name: &str) -> Self {
             Self {
                 id: id.to_string(),

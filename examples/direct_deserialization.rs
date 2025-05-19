@@ -1,6 +1,6 @@
 //! Example demonstrating direct deserialization to Individual models
 //!
-//! This example shows how to use the DirectIndividualDeserializer to load records
+//! This example shows how to use the `DirectIndividualDeserializer` to load records
 //! directly into Individual models without intermediate registry-specific structs.
 
 use arrow::array::Array;
@@ -32,7 +32,7 @@ pub fn main() {
                         println!("First 5 date values from HAEND_DATO column:");
                         for i in 0..std::cmp::min(5, string_array.len()) {
                             if string_array.is_null(i) {
-                                println!("  [{}]: NULL", i);
+                                println!("  [{i}]: NULL");
                             } else {
                                 println!("  [{}]: '{}'", i, string_array.value(i));
                             }
@@ -46,7 +46,7 @@ pub fn main() {
             }
         }
         Err(err) => {
-            println!("Error reading Parquet file for debug: {}", err);
+            println!("Error reading Parquet file for debug: {err}");
         }
     }
 
@@ -108,9 +108,9 @@ pub fn main() {
                                 match chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
                                     Ok(date) => {
                                         individual.event_date = Some(date);
-                                        println!("Manually set event_date to Some({}) for row {}", date, row);
+                                        println!("Manually set event_date to Some({date}) for row {row}");
                                     },
-                                    Err(err) => println!("Failed to parse date manually: {}", err)
+                                    Err(err) => println!("Failed to parse date manually: {err}")
                                 }
                             }
                         }

@@ -4,7 +4,7 @@
 //! defining how registry data is accessed and manipulated.
 
 use crate::models::core::individual::consolidated::Individual;
-use crate::models::core::registry_traits::*;
+use crate::models::core::registry_traits::BefFields;
 use chrono::NaiveDate;
 
 // Implement the BefFields trait for Individual
