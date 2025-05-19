@@ -28,7 +28,7 @@ pub struct FieldDefinition {
 }
 
 /// Field type identifiers
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FieldType {
     /// String field type
     String,

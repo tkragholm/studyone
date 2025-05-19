@@ -42,7 +42,7 @@ use crate::schema::field_def::{
             ModelSetters::string_setter(|individual, value| {
                 // Store version in properties map since there's no dedicated field
                 if let version = value {
-                    individual.store_property("version", Box::new(version.to_string()));
+                    individual.store_property("version", Box::new(version));
                 }
             }),
         ),
